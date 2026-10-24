@@ -6,6 +6,7 @@ Owner: Viet Vu (Vietnamese, writes informal Vietnamese; **reply in Vietnamese**,
 
 ## Read first (source of truth lives in files, not in chat)
 - `thoughts/ledgers/CONTINUITY_CLAUDE-recap-meeting.md` — current state + next steps (loaded at session start)
+- `docs/CHANGELOG.md` — lịch sử phát triển theo commit (quyết định + chưa kiểm chứng); đọc khi cần hiểu vì sao đã làm vậy
 - `docs/PLAN.md` (roadmap + engineering rules) · `docs/ARCHITECTURE.md` (protocol §3, schema §4, auth §8)
 - `docs/DESIGN.md` (Soft admin style, component/status rules, button placement) · `docs/UI-AUDIT.md`
 - `docs/ADMIN.md` (usage REST, auth) · `docs/PHASE1.md` (minutes contract) · `docs/MORNING-CHECKLIST.md`
@@ -47,9 +48,12 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - **UI kit `@recap/admin-ui` v0.2.2 ("Soft v2"):** brand colour is **blue** (`--soft-brand`; `purple` names are deprecated aliases), floating cards + tonal secondary buttons +
   solid-brand selected states. Room = transcript turns (header only on a new speaker/gap > 30 s), density Gọn/Thoải mái, conclusions are **divider rows** (not per-segment tint),
   topic markers likewise. Row heights are measured constants pinned in `virtual-rows.test.ts` — re-measure if row markup changes. Static look reference: `design/room-preview-v1/`.
+- **Marks vs minutes (two different sources):** the room's counts come from hand marks only (`marks`: T topic marker, K conclusion = timestamp). Minutes (AI) topics/conclusions appear in the room only as "Gợi ý từ biên bản" (`minutes-suggestions.ts`, dedupe window 30 s, `marked:true` hidden, `marked:false` chip "AI đề xuất", never amber). Topic outcome labels: Đã thống nhất / Còn bỏ ngỏ / Đã loại (values `decided|open|rejected`).
+- **Local `.env` uses `STT_PROVIDER=assemblyai`** (code default is deepgram); live sessions ran AssemblyAI.
 - **Reference scan of Foresight / Meetily / Anarlog + backlog (A = upgrades, B = new features):** `docs/REFERENCE-competitor-scan.md`. Done so far: A1, A2, A3, A4, A5, A8.
 
 ## Hard rules (owner preferences — keep applying)
+- **Before every commit (via `/commit`): add an entry on top of `docs/CHANGELOG.md` (what + why, decisions, unverified) and update the "Core architecture" / "Open items" blocks here if they changed; include these files in the same commit.**
 - **Never commit/push unless asked; use the `/commit` skill, never raw `git commit`.** Remote `origin` = `github.com/buzzdeptrai/recap-meeting` (branch `main`).
   Keep `ptg-meeting-note.jpg` (owner's personal note) out of git unless told otherwise.
 - **Never publish anything online** (no Artifact tool) and **don't create files the owner didn't ask for** — local only.
