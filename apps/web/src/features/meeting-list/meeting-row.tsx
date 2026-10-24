@@ -6,10 +6,9 @@ import { roomHref } from "./meeting-format";
 import {
   Counters,
   DurationCell,
-  LangBadge,
   MeetingIcon,
   MeetingStatusBadge,
-  MinutesBadges,
+  MinutesPresence,
   SubLine,
 } from "./meeting-parts";
 import { RowActions } from "./row-actions";
@@ -64,11 +63,8 @@ export function MeetingRow({ meeting, grouped, onCopy }: RowProps) {
         </span>
       </span>
       <TimeCell meeting={meeting} grouped={grouped} />
-      <span className="flex flex-col items-start gap-1.5">
-        <LangBadge meeting={meeting} />
-        <Counters meeting={meeting} />
-      </span>
-      <MinutesBadges meeting={meeting} />
+      <Counters meeting={meeting} />
+      <MinutesPresence meeting={meeting} />
       <span>
         <MeetingStatusBadge meeting={meeting} />
       </span>

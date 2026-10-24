@@ -4,13 +4,7 @@ import { formatDateTime } from "@/lib/format";
 import { formatVnTime } from "@/lib/vn-time";
 import { durationLabel, roomHref } from "./meeting-format";
 import { ROW_FOCUS } from "./meeting-row";
-import {
-  LangBadge,
-  MeetingIcon,
-  MeetingStatusBadge,
-  MinutesBadges,
-  SubLine,
-} from "./meeting-parts";
+import { MeetingIcon, MeetingStatusBadge, MinutesPresence, SubLine } from "./meeting-parts";
 import { RowActions } from "./row-actions";
 
 interface CardProps {
@@ -52,13 +46,12 @@ export function MeetingCard({ meeting, grouped, onCopy, layout }: CardProps) {
         {meeting.durationMs === null ? null : (
           <span className="font-soft-mono">{durationLabel(meeting)}</span>
         )}
-        <LangBadge meeting={meeting} />
         <span className="sm:hidden">
           <MeetingStatusBadge meeting={meeting} />
         </span>
       </div>
       <div className="flex min-h-10 items-center justify-between gap-2">
-        {meeting.status === "ended" ? <MinutesBadges meeting={meeting} /> : <span />}
+        {meeting.status === "ended" ? <MinutesPresence meeting={meeting} /> : <span />}
         <RowActions meeting={meeting} onCopy={onCopy} />
       </div>
     </div>

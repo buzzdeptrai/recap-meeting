@@ -10,8 +10,7 @@ import {
 import { Chip, IconBadge, Tooltip, formatNumber, type IconBadgeProps } from "@recap/admin-ui";
 import type { ReactNode } from "react";
 import type { MeetingListItemDto } from "@/lib/api-types";
-import { formatLangPair } from "@/lib/format";
-import { MEETING_STATUS, NO_MINUTES_LABEL } from "@/lib/status";
+import { MEETING_STATUS } from "@/lib/status";
 import { Snippet } from "./snippet";
 import {
   chipToneFor,
@@ -20,21 +19,7 @@ import {
   minutesChips,
   subLine,
   wallClockRange,
-  type MinutesChip,
 } from "./meeting-format";
-
-/** `VI+EN → VI`: spoken language to translation target. */
-export function LangBadge({ meeting }: { meeting: MeetingListItemDto }) {
-  const pair = formatLangPair(meeting.sourceLang, meeting.targetLang);
-  if (pair === "—") return <span className="text-soft-muted">—</span>;
-  return (
-    <Tooltip content="Ngôn ngữ nói → ngôn ngữ dịch">
-      <Chip tone="outline" size="sm" className="font-soft-mono">
-        {pair.replace("AUTO", "Tự động")}
-      </Chip>
-    </Tooltip>
-  );
-}
 
 function Counter({ icon, value, label }: { icon: ReactNode; value: string; label: string }) {
   return (
@@ -71,30 +56,26 @@ export function Counters({ meeting }: { meeting: MeetingListItemDto }) {
   );
 }
 
-function MinutesChipBadge({ chip }: { chip: MinutesChip }) {
-  return (
-    <Chip tone={chipToneFor(chip.spec.tone)} size="sm">
-      {chip.lang.toUpperCase()}
-      <span className="font-medium opacity-80">· {chip.spec.label}</span>
-    </Chip>
-  );
-}
+const MINUTES_LANG_NAME = { vi: "Tiếng Việt", en: "English" } as const;
 
-/** One chip per language that has minutes (state in the label), or muted "Chưa có biên bản". */
-export function MinutesBadges({ meeting }: { meeting: MeetingListItemDto }) {
-  const chips = minutesChips(meeting);
-  if (chips.length === 0 && meeting.status !== "ended") {
-    return <span className="text-xs text-soft-muted">—</span>;
+/** Just "Có" / "Chưa" (the languages are in the tooltip); "—" while the meeting is not finished. */
+export function MinutesPresence({ meeting }: { meeting: MeetingListItemDto }) {
+  if (!hasMinutes(meeting)) {
+    return (
+      <span className="text-xs text-soft-muted">{meeting.status === "ended" ? "Chưa" : "—"}</span>
+    );
   }
-  if (chips.length === 0) {
-    return <span className="text-xs text-soft-muted">{NO_MINUTES_LABEL}</span>;
-  }
+  const langs = minutesChips(meeting)
+    .map((chip) => MINUTES_LANG_NAME[chip.lang])
+    .join(", ");
   return (
-    <span className="flex flex-wrap gap-1">
-      {chips.map((chip) => (
-        <MinutesChipBadge key={chip.lang} chip={chip} />
-      ))}
-    </span>
+    <Tooltip content={`Biên bản: ${langs}`}>
+      <span className="cursor-default">
+        <Chip tone="ok" size="sm">
+          Có
+        </Chip>
+      </span>
+    </Tooltip>
   );
 }
 
