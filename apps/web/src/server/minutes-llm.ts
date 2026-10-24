@@ -1,20 +1,39 @@
 import { loadEnvConfig } from "@next/env";
-import { OpenAiMinutesLlm, minutesConfigFromEnv, type MinutesLlm } from "@recap/minutes";
+import {
+  OpenAiMinutesLlm,
+  minutesConfigFromEnv,
+  minutesModelFromEnv,
+  type MinutesLlm,
+} from "@recap/minutes";
 import { findRepoRoot } from "./repo-root";
 import { getUsageSink, usageContext } from "./usage-recorder";
 import { ServiceError } from "./service-error";
 
 const globalForLlm = globalThis as typeof globalThis & { __recapMinutesLlm?: MinutesLlm };
 
+function loadRootEnv() {
+  // The Next server worker does not always inherit the root .env that next.config loaded.
+  loadEnvConfig(findRepoRoot(process.cwd()), process.env.NODE_ENV !== "production", {
+    info: () => {},
+    error: () => {},
+  });
+}
+
+/** Server-only. The model generation would use now, or null when it cannot be told. */
+export function currentMinutesModel(): string | null {
+  try {
+    loadRootEnv();
+    return minutesModelFromEnv(process.env);
+  } catch {
+    return null;
+  }
+}
+
 /** Server-only. The OpenAI client is built lazily so a missing key only fails minutes routes. */
 export function getMinutesLlm(): MinutesLlm {
   if (globalForLlm.__recapMinutesLlm) return globalForLlm.__recapMinutesLlm;
   try {
-    // The Next server worker does not always inherit the root .env that next.config loaded.
-    loadEnvConfig(findRepoRoot(process.cwd()), process.env.NODE_ENV !== "production", {
-      info: () => {},
-      error: () => {},
-    });
+    loadRootEnv();
     globalForLlm.__recapMinutesLlm = new OpenAiMinutesLlm(
       minutesConfigFromEnv(process.env),
       undefined,

@@ -14,6 +14,7 @@ const PINNED_SHA256: Record<number, string> = {
   4: "daf433f5b4569365a3bd6a7c3be39a4db3c72987d690ca665907eee9548e3cee",
   6: "85f4e74af0b8f9cb86288906ee5036be3f948f771411ef52bdc35643b4d8253d",
   7: "8b4d88092fbf096687efd6190fcac15de3ccdf606a8119d1219ea57790de69b1",
+  10: "88943a86db18083c729cf56cb33be4a63071a971e31bb7a6ce794262ea94deff",
 };
 
 const sha = (sql: string) => createHash("sha256").update(sql).digest("hex");

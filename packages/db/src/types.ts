@@ -88,8 +88,32 @@ export interface StoredMinutes {
   content: MinutesContent;
   source: MinutesSource;
   model: string | null;
+  /** Prompt version the AI version was generated with; null for rows from before versioning. */
+  promptVersion: string | null;
+  /** Fingerprint of the marks used at generation; null for rows from before versioning. */
+  marksFingerprint: string | null;
   generatedAt: string;
   updatedAt: string;
+}
+
+export type MinutesRunStatus = "queued" | "running" | "done" | "failed" | "cancelled";
+export type MinutesRunPhase = "map" | "reduce" | "finalize";
+
+export interface MinutesRun {
+  id: string;
+  meetingId: string;
+  lang: MinutesLang;
+  status: MinutesRunStatus;
+  totalChunks: number;
+  doneChunks: number;
+  phase: MinutesRunPhase | null;
+  /** Short, safe text (never keys or prompts). */
+  error: string | null;
+  model: string | null;
+  promptVersion: string | null;
+  startedAt: string;
+  updatedAt: string;
+  finishedAt: string | null;
 }
 
 export type UserRole = "admin" | "member";

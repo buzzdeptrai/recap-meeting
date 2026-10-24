@@ -73,6 +73,12 @@ export function generatorConfigFromEnv(
   };
 }
 
+/** The configured minutes model (no API key needed); null when the env is invalid. */
+export function minutesModelFromEnv(env: Record<string, string | undefined>): string | null {
+  const parsed = envSchema.partial({ OPENAI_API_KEY: true }).safeParse(env);
+  return parsed.success ? parsed.data.OPENAI_MINUTES_MODEL : null;
+}
+
 /** Builds the OpenAI minutes config from process.env-like input. Errors never contain values. */
 export function minutesConfigFromEnv(env: Record<string, string | undefined>): OpenAiMinutesConfig {
   const e = parseEnv(env, envSchema);

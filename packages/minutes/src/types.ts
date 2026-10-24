@@ -42,12 +42,23 @@ export interface GeneratorConfig {
   maxGlossaryTerms: number;
 }
 
+/** Where a generation is: chunk summaries (`map`), the merge (`reduce`), post-processing. */
+export interface MinutesProgress {
+  phase: "map" | "reduce" | "finalize";
+  /** Chunks summarised so far. */
+  done: number;
+  /** Number of chunks (1 for a single-pass run). */
+  total: number;
+}
+
 export interface MinutesDeps {
   repos: MinutesRepos;
   llm: MinutesLlm;
   /** Id factory for topics/actions/issues (default `crypto.randomUUID`). */
   newId?: () => string;
   config?: Partial<GeneratorConfig>;
+  /** Called after each chunk and at reduce / finalize. Errors thrown by it are ignored. */
+  onProgress?: (progress: MinutesProgress) => void;
 }
 
 export interface GenerateMinutesInput {
@@ -60,4 +71,8 @@ export interface GeneratedMinutes {
   model: string;
   /** `atMs` of marks that no decided conclusion could be tied to (the model missed them). */
   unmatchedMarks: number[];
+  /** Version of the prompts used (see PROMPT_VERSION). */
+  promptVersion: string;
+  /** Fingerprint of the marks (conclusions + topic markers) the minutes were built from. */
+  marksFingerprint: string;
 }

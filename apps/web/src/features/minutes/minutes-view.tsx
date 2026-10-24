@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import type { MinutesLang, MinutesTopic } from "@recap/core";
 import { Info, WarningCircle } from "@phosphor-icons/react";
-import { Banner, Button, Card, ConfirmDialog, EmptyState } from "@recap/admin-ui";
+import type { StaleReason } from "@recap/db";
+import { ActionGroup, Banner, Button, Card, ConfirmDialog, EmptyState } from "@recap/admin-ui";
 import { fetchMinutes } from "@/lib/api-minutes";
 import { NO_AVAILABILITY, withMinutes, type MinutesAvailability } from "./export-options";
 import { MinutesEditor } from "./minutes-editor";
 import { EmptyMinutes, GeneratingMinutes, LoadingMinutes } from "./minutes-states";
 import { MinutesTopBar, type MinutesMeetingInfo } from "./minutes-top-bar";
+import { staleBannerText } from "./stale-copy";
 import { useMinutes } from "./use-minutes";
 
 type Confirm =
@@ -66,7 +68,7 @@ interface MinutesPanelProps {
 function MinutesPanel({ meeting, lang, onLangChange, available, onHasMinutes }: MinutesPanelProps) {
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const minutes = useMinutes(meeting.id, lang);
-  const { phase, edit, dirty, failure } = minutes;
+  const { phase, edit, dirty } = minutes;
   const hasSaved = minutes.saved !== null;
   useEffect(() => {
     if (hasSaved) onHasMinutes(lang);
@@ -96,10 +98,7 @@ function MinutesPanel({ meeting, lang, onLangChange, available, onHasMinutes }: 
         onSave={minutes.save}
         onRegenerate={() => setConfirm({ kind: "regenerate" })}
       />
-      {failure && <FailureBanner message={failure.message} onDismiss={minutes.dismissFailure} />}
-      {phase === "ready" && minutes.saved?.stale && (
-        <StaleBanner onRegenerate={() => setConfirm({ kind: "regenerate" })} />
-      )}
+      <PanelBanners minutes={minutes} onRegenerate={() => setConfirm({ kind: "regenerate" })} />
       <main className="py-6">
         <PanelBody meeting={meeting} minutes={minutes} onRemoveTopic={requestRemoveTopic} />
       </main>
@@ -111,6 +110,30 @@ function MinutesPanel({ meeting, lang, onLangChange, available, onHasMinutes }: 
         onRemoveTopic={(id) => edit({ type: "topic/remove", id })}
       />
     </div>
+  );
+}
+
+function PanelBanners({
+  minutes,
+  onRegenerate,
+}: {
+  minutes: ReturnType<typeof useMinutes>;
+  onRegenerate: () => void;
+}) {
+  const { failure, phase, saved } = minutes;
+  return (
+    <>
+      {failure && (
+        <FailureBanner
+          message={failure.message}
+          onRetry={failure.action === "generate" ? minutes.generate : undefined}
+          onDismiss={minutes.dismissFailure}
+        />
+      )}
+      {phase === "ready" && saved?.stale && (
+        <StaleBanner reasons={saved.staleReasons} onRegenerate={onRegenerate} />
+      )}
+    </>
   );
 }
 
@@ -141,7 +164,7 @@ function PanelBody({ meeting, minutes, onRemoveTopic }: PanelBodyProps) {
         <EmptyMinutes meetingId={meeting.id} ended={meeting.ended} onGenerate={minutes.generate} />
       );
     case "generating":
-      return <GeneratingMinutes />;
+      return <GeneratingMinutes run={minutes.run} />;
     case "ready":
       return (
         <MinutesEditor
@@ -219,16 +242,30 @@ function describe(confirm: Confirm) {
   }
 }
 
-function FailureBanner({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+interface FailureBannerProps {
+  message: string;
+  /** Present for a failed generation: runs it again. */
+  onRetry?: () => void;
+  onDismiss: () => void;
+}
+
+function FailureBanner({ message, onRetry, onDismiss }: FailureBannerProps) {
   return (
     <Banner
       tone="error"
       icon={<WarningCircle />}
       className="mt-3"
       action={
-        <Button size="sm" variant="outline" onClick={onDismiss}>
-          Đóng
-        </Button>
+        <ActionGroup>
+          {onRetry && (
+            <Button size="sm" onClick={onRetry}>
+              Thử lại
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={onDismiss}>
+            Đóng
+          </Button>
+        </ActionGroup>
       }
     >
       {message}
@@ -236,7 +273,13 @@ function FailureBanner({ message, onDismiss }: { message: string; onDismiss: () 
   );
 }
 
-function StaleBanner({ onRegenerate }: { onRegenerate: () => void }) {
+function StaleBanner({
+  reasons,
+  onRegenerate,
+}: {
+  reasons: StaleReason[];
+  onRegenerate: () => void;
+}) {
   return (
     <Banner
       tone="warn"
@@ -248,7 +291,7 @@ function StaleBanner({ onRegenerate }: { onRegenerate: () => void }) {
         </Button>
       }
     >
-      Biên bản cũ hơn bản chép lời. Tạo lại để cập nhật.
+      {staleBannerText(reasons)}
     </Banner>
   );
 }

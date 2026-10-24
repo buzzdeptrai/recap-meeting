@@ -7,7 +7,7 @@ import type {
   SourceLang,
   TargetLang,
 } from "@recap/core";
-import type { Meeting } from "@recap/db";
+import type { Meeting, MinutesRunPhase, MinutesRunStatus, StaleReason } from "@recap/db";
 
 /** Shapes returned by the REST route handlers (JSON over the wire). */
 export type MeetingDto = Meeting;
@@ -151,6 +151,24 @@ export interface MinutesDto {
   source: MinutesSource;
   generatedAt: string;
   updatedAt: string;
-  /** Transcript or marks changed after the minutes were generated (e.g. meeting resumed). */
+  /** True when `staleReasons` is not empty. */
   stale: boolean;
+  /** Why the minutes are out of date: transcript / marks changed, older prompt, other model. */
+  staleReasons: StaleReason[];
+}
+
+/** One generation run of the minutes (`POST .../minutes` starts it, `GET .../minutes/run` polls it). */
+export interface MinutesRunDto {
+  runId: string;
+  lang: MinutesLang;
+  status: MinutesRunStatus;
+  phase: MinutesRunPhase | null;
+  /** Chunks summarised so far. */
+  done: number;
+  /** Number of chunks (0 until known). */
+  total: number;
+  /** Short safe text, only when `status` is failed. */
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
 }

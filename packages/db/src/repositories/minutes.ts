@@ -12,6 +12,8 @@ interface MinutesRow {
   content: string;
   source: MinutesSource;
   model: string | null;
+  prompt_version: string | null;
+  marks_fingerprint: string | null;
   generated_at: string;
   updated_at: string;
 }
@@ -23,6 +25,9 @@ export interface UpsertMinutesInput {
   source: MinutesSource;
   /** Model that produced an `ai` version; kept as-is when a user edit is saved without one. */
   model?: string | null;
+  /** Version stamps of an `ai` version; ignored (kept as stored) for user edits. */
+  promptVersion?: string | null;
+  marksFingerprint?: string | null;
 }
 
 function toMinutes(row: MinutesRow): StoredMinutes {
@@ -32,6 +37,8 @@ function toMinutes(row: MinutesRow): StoredMinutes {
     content: minutesContentSchema.parse(JSON.parse(row.content)),
     source: row.source,
     model: row.model,
+    promptVersion: row.prompt_version,
+    marksFingerprint: row.marks_fingerprint,
     generatedAt: row.generated_at,
     updatedAt: row.updated_at,
   };
@@ -43,12 +50,16 @@ export function createMinutesRepository({ db, now }: RepoContext) {
   );
   // generated_at changes only when the AI regenerates; an edit just bumps updated_at.
   const upsertStmt = db.prepare(
-    `INSERT INTO minutes (meeting_id, lang, content, source, model, generated_at, updated_at)
-     VALUES (@meetingId, @lang, @content, @source, @model, @at, @at)
+    `INSERT INTO minutes (meeting_id, lang, content, source, model, prompt_version, marks_fingerprint, generated_at, updated_at)
+     VALUES (@meetingId, @lang, @content, @source, @model, @promptVersion, @marksFingerprint, @at, @at)
      ON CONFLICT (meeting_id, lang) DO UPDATE SET
        content = excluded.content,
        source = excluded.source,
        model = COALESCE(excluded.model, minutes.model),
+       prompt_version = CASE WHEN excluded.source = 'ai' THEN excluded.prompt_version
+                             ELSE minutes.prompt_version END,
+       marks_fingerprint = CASE WHEN excluded.source = 'ai' THEN excluded.marks_fingerprint
+                                ELSE minutes.marks_fingerprint END,
        generated_at = CASE WHEN excluded.source = 'ai' THEN excluded.generated_at
                            ELSE minutes.generated_at END,
        updated_at = excluded.updated_at`,
@@ -67,6 +78,8 @@ export function createMinutesRepository({ db, now }: RepoContext) {
       content: JSON.stringify(content),
       source: input.source,
       model: input.model ?? null,
+      promptVersion: input.promptVersion ?? null,
+      marksFingerprint: input.marksFingerprint ?? null,
       at: now(),
     });
     return get(input.meetingId, input.lang) as StoredMinutes;

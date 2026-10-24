@@ -1,5 +1,11 @@
-import { IN_MEMORY, createRepositories, openDatabase, type Repositories } from "@recap/db";
-import { FakeMinutesLlm } from "@recap/minutes";
+import {
+  IN_MEMORY,
+  createRepositories,
+  marksFingerprint,
+  openDatabase,
+  type Repositories,
+} from "@recap/db";
+import { FakeMinutesLlm, PROMPT_VERSION } from "@recap/minutes";
 import { beforeEach, describe, expect, it } from "vitest";
 import { generateAndStoreMinutes, getMinutes, saveEditedMinutes } from "./minutes-service";
 import { ServiceError } from "./service-error";
@@ -202,5 +208,66 @@ describe("minutes staleness", () => {
     expect(getMinutes(id, "vi", deps).stale).toBe(false);
     timed.marks.updateLabel(id, mark.id, "Chủ đề mới");
     expect(getMinutes(id, "vi", deps).stale).toBe(true);
+  });
+});
+
+describe("version-based staleness", () => {
+  async function fresh() {
+    const id = endedMeeting();
+    const deps = { repos, llm: () => new FakeMinutesLlm(reply) };
+    await generateAndStoreMinutes(id, "vi", deps);
+    return { id, deps };
+  }
+
+  it("stores the prompt version and marks fingerprint at generation", async () => {
+    const { id } = await fresh();
+    const stored = repos.minutes.get(id, "vi");
+    expect(stored?.promptVersion).toBe(PROMPT_VERSION);
+    expect(stored?.marksFingerprint).toBe(marksFingerprint(repos.marks.list(id)));
+  });
+
+  it("is fresh with matching model, and lists no reasons", async () => {
+    const { id } = await fresh();
+    const dto = getMinutes(id, "vi", { repos, currentModel: () => "fake-model" });
+    expect(dto).toMatchObject({ stale: false, staleReasons: [] });
+  });
+
+  it("flags a deleted mark (marks_removed)", async () => {
+    const { id } = await fresh();
+    const mark = repos.marks.list(id)[0];
+    repos.marks.remove(id, mark?.id ?? "");
+    expect(getMinutes(id, "vi", { repos })).toMatchObject({
+      stale: true,
+      staleReasons: ["marks_removed"],
+    });
+  });
+
+  it("flags an older prompt version and a changed model", async () => {
+    const { id } = await fresh();
+    const stored = repos.minutes.get(id, "vi");
+    repos.minutes.upsert({
+      meetingId: id,
+      lang: "vi",
+      content: stored!.content,
+      source: "ai",
+      model: "old-model",
+      promptVersion: "1",
+      marksFingerprint: stored!.marksFingerprint,
+    });
+    const dto = getMinutes(id, "vi", { repos, currentModel: () => "new-model" });
+    expect(dto.staleReasons).toEqual(["prompt_updated", "model_changed"]);
+    expect(dto.stale).toBe(true);
+  });
+
+  it("never flags rows written before versioning (NULL fields)", async () => {
+    const id = endedMeeting();
+    repos.minutes.upsert({
+      meetingId: id,
+      lang: "vi",
+      content: { summary: "x", topics: [], actionItems: [], openIssues: [] },
+      source: "ai",
+    });
+    const dto = getMinutes(id, "vi", { repos, currentModel: () => "whatever" });
+    expect(dto).toMatchObject({ stale: false, staleReasons: [] });
   });
 });

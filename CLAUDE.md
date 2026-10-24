@@ -31,7 +31,7 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - Use implementation **agents with model Sonnet** (token saving) for multi-file work; verify their output yourself (run `npm run verify`, look at screenshots).
 - Observe before editing; plans/state go in files (ledger/PLAN), not memory.
 - Code: files ≤300 lines, functions ≤50 (off only for admin-ui `.tsx` and tests), early returns, no magic numbers, every external service behind an interface, vitest tests.
-- **DB migrations are immutable once applied** — add a new numbered migration (latest: 009). A test pins their checksums.
+- **DB migrations are immutable once applied** — add a new numbered migration (latest: 010). A test pins their checksums.
 - Money/token/usage numbers live **only** on `/usage` (+ Settings pricing/budget), not on dashboard or lists.
 - Amber is reserved for conclusions/decisions; no gradients except the Soft signature ones; no emoji; statuses via `apps/web/src/lib/status.ts`.
 - Don't kill the owner's dev servers with `pkill`; check ports with `curl` first.

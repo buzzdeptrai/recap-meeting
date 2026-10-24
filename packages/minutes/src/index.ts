@@ -1,7 +1,13 @@
 export { generateMinutes } from "./generate";
 export { MinutesError } from "./errors";
 export type { MinutesErrorCode } from "./errors";
-export { minutesConfigFromEnv, generatorConfigFromEnv, DEFAULT_GENERATOR_CONFIG } from "./config";
+export {
+  minutesConfigFromEnv,
+  minutesModelFromEnv,
+  generatorConfigFromEnv,
+  DEFAULT_GENERATOR_CONFIG,
+} from "./config";
+export { PROMPT_VERSION } from "./prompt-version";
 export type { OpenAiMinutesConfig } from "./config";
 export { OpenAiMinutesLlm } from "./llm/openai";
 export type { OpenAiClientLike } from "./llm/openai";
@@ -20,5 +26,6 @@ export type {
   LlmRequest,
   MinutesDeps,
   MinutesLlm,
+  MinutesProgress,
   MinutesRepos,
 } from "./types";

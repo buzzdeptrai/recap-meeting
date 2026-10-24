@@ -1,11 +1,12 @@
 import { checkSameOrigin, jsonError, parseBody, respond } from "@/server/http";
-import { generateAndStoreMinutes, getMinutes, saveEditedMinutes } from "@/server/minutes-service";
+import { startMinutesRun } from "@/server/minutes-run-service";
+import { getMinutes, saveEditedMinutes } from "@/server/minutes-service";
 import { generateMinutesSchema, minutesQuerySchema, saveMinutesSchema } from "@/server/schemas";
 import { withAuth } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
-// Generation calls an LLM and can take a while for long meetings.
-export const maxDuration = 300;
+// Generation runs in the background after the 202; this only covers validation and reads.
+export const maxDuration = 60;
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -20,13 +21,16 @@ export const GET = withAuth(async (request: Request, { params }: RouteContext) =
   return respond(() => getMinutes(id, query.data.lang));
 });
 
+const HTTP_ACCEPTED = 202;
+
+/** Starts (or joins) a background generation; progress is read from `GET .../minutes/run`. */
 export const POST = withAuth(async (request: Request, { params }: RouteContext) => {
   const forbidden = checkSameOrigin(request);
   if (forbidden) return forbidden;
   const { id } = await params;
   const parsed = await parseBody(request, generateMinutesSchema);
   if (!parsed.ok) return parsed.response;
-  return respond(() => generateAndStoreMinutes(id, parsed.data.lang));
+  return respond(() => startMinutesRun(id, parsed.data.lang), HTTP_ACCEPTED);
 });
 
 export const PUT = withAuth(async (request: Request, { params }: RouteContext) => {

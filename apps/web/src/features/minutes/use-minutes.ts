@@ -2,11 +2,13 @@
 
 import type { MinutesContent, MinutesLang } from "@recap/core";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import { fetchMinutes, generateMinutes, saveMinutes } from "@/lib/api-minutes";
-import type { MinutesDto } from "@/lib/api-types";
+import { fetchMinutes, fetchMinutesRun, saveMinutes, startMinutesRun } from "@/lib/api-minutes";
+import type { MinutesDto, MinutesRunDto } from "@/lib/api-types";
 import { EMPTY_CONTENT, editReducer, type EditAction } from "./edit-reducer";
 import { describeMinutesError, type MinutesAction } from "./error-copy";
 import { prepareForSave } from "./prepare-save";
+import { hasUnresolvedFailure, isActiveRun } from "./run-progress";
+import { useRunPolling } from "./use-run-polling";
 
 export type MinutesPhase = "loading" | "empty" | "generating" | "ready" | "load-error";
 
@@ -25,6 +27,7 @@ export function useMinutes(meetingId: string, lang: MinutesLang) {
   const [content, dispatch] = useReducer(editReducer, EMPTY_CONTENT);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [run, setRun] = useState<MinutesRunDto | null>(null);
 
   const apply = useCallback((dto: MinutesDto) => {
     setSaved(dto);
@@ -32,27 +35,23 @@ export function useMinutes(meetingId: string, lang: MinutesLang) {
     setPhase("ready");
   }, []);
 
-  useLoadMinutes({ meetingId, lang, attempt }, { apply, setPhase, setFailure });
+  const sinks = { apply, setPhase, setFailure, setRun };
+  useLoadMinutes({ meetingId, lang, attempt }, sinks);
+  useRunWatcher({ meetingId, lang, run, hasSaved: saved !== null }, sinks);
 
   const reload = () => {
     setFailure(null);
     setPhase("loading");
     setAttempt((n) => n + 1);
   };
-  const actions = useMinutesActions(
-    { meetingId, lang, content, hasSaved: saved !== null },
-    {
-      apply,
-      setPhase,
-      setFailure,
-    },
-  );
+  const actions = useMinutesActions({ meetingId, lang, content, hasSaved: saved !== null }, sinks);
   const dirty = useDirty(phase, saved?.content ?? null, content);
   useUnsavedGuard(dirty);
 
   return {
     phase,
     saved,
+    run,
     content,
     edit: dispatch as (action: EditAction) => void,
     dirty,
@@ -74,23 +73,25 @@ interface ActionSinks {
   apply: (dto: MinutesDto) => void;
   setPhase: (phase: MinutesPhase) => void;
   setFailure: (failure: Failure | null) => void;
+  setRun: (run: MinutesRunDto | null) => void;
 }
 
 function useMinutesActions(ctx: ActionContext, sinks: ActionSinks) {
   const { meetingId, lang, content, hasSaved } = ctx;
-  const { apply, setPhase, setFailure } = sinks;
+  const { apply, setPhase, setFailure, setRun } = sinks;
   const [saving, setSaving] = useState(false);
 
+  // Starts a background run; the watcher polls it and applies the minutes when it is done.
   const generate = useCallback(async () => {
     setPhase("generating");
     setFailure(null);
     try {
-      apply(await generateMinutes(meetingId, lang));
+      setRun(await startMinutesRun(meetingId, lang));
     } catch (error) {
       setFailure({ action: "generate", message: describeMinutesError("generate", error) });
       setPhase(hasSaved ? "ready" : "empty");
     }
-  }, [meetingId, lang, hasSaved, apply, setPhase, setFailure]);
+  }, [meetingId, lang, hasSaved, setPhase, setFailure, setRun]);
 
   const save = useCallback(async () => {
     const prepared = prepareForSave(content);
@@ -136,23 +137,75 @@ interface LoadKey {
   attempt: number;
 }
 
+const RUN_FAILED_FALLBACK = "Không tạo được biên bản. Hãy thử lại.";
+
+const runFailure = (run: MinutesRunDto): Failure => ({
+  action: "generate",
+  message: run.error ?? RUN_FAILED_FALLBACK,
+});
+
 function useLoadMinutes({ meetingId, lang, attempt }: LoadKey, sinks: ActionSinks) {
-  const { apply, setPhase, setFailure } = sinks;
+  const { apply, setPhase, setFailure, setRun } = sinks;
   useEffect(() => {
     let cancelled = false;
-    fetchMinutes(meetingId, lang)
-      .then((dto) => {
-        if (cancelled) return;
-        if (dto) apply(dto);
-        else setPhase("empty");
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setFailure({ action: "load", message: describeMinutesError("load", error) });
-        setPhase("load-error");
-      });
+    const load = async () => {
+      const dto = await fetchMinutes(meetingId, lang);
+      // A failing run lookup must not hide minutes that exist.
+      const latest = await fetchMinutesRun(meetingId, lang).catch(() => null);
+      if (cancelled) return;
+      if (dto) apply(dto);
+      setRun(latest);
+      if (isActiveRun(latest)) return setPhase("generating");
+      if (!dto) setPhase("empty");
+      if (latest && hasUnresolvedFailure(latest, dto?.generatedAt ?? null)) {
+        setFailure(runFailure(latest));
+      }
+    };
+    load().catch((error: unknown) => {
+      if (cancelled) return;
+      setFailure({ action: "load", message: describeMinutesError("load", error) });
+      setPhase("load-error");
+    });
     return () => {
       cancelled = true;
     };
-  }, [meetingId, lang, attempt, apply, setPhase, setFailure]);
+  }, [meetingId, lang, attempt, apply, setPhase, setFailure, setRun]);
+}
+
+interface WatchKey {
+  meetingId: string;
+  lang: MinutesLang;
+  run: MinutesRunDto | null;
+  hasSaved: boolean;
+}
+
+/**
+ * While a run is active, polls its state from the server (the DB is the truth, so this also
+ * resumes after a page reload). On done it takes the stored minutes; on failure it reports the
+ * safe error and falls back to what was there before.
+ */
+function useRunWatcher({ meetingId, lang, run, hasSaved }: WatchKey, sinks: ActionSinks) {
+  const { apply, setPhase, setFailure, setRun } = sinks;
+  useRunPolling(isActiveRun(run), async () => {
+    let latest: MinutesRunDto | null;
+    try {
+      latest = await fetchMinutesRun(meetingId, lang);
+    } catch {
+      return; // transient: keep polling
+    }
+    setRun(latest);
+    if (isActiveRun(latest)) return;
+    if (latest && latest.status !== "done") {
+      setFailure(runFailure(latest));
+      return setPhase(hasSaved ? "ready" : "empty");
+    }
+    try {
+      const dto = await fetchMinutes(meetingId, lang);
+      if (dto) apply(dto);
+      else setPhase("empty");
+    } catch (error) {
+      setFailure({ action: "load", message: describeMinutesError("load", error) });
+      setPhase("load-error");
+    }
+  });
 }

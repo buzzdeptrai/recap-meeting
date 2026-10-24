@@ -88,4 +88,45 @@ describe("minutes repository", () => {
     repos.meetings.remove(meeting.id);
     expect(db.prepare("SELECT COUNT(*) FROM minutes").pluck().get()).toBe(0);
   });
+
+  it("stores prompt version and marks fingerprint on ai versions and keeps them on edits", () => {
+    const { repos } = setup();
+    const meeting = repos.meetings.create({ title: "m" });
+    const first = repos.minutes.upsert({
+      meetingId: meeting.id,
+      lang: "vi",
+      content,
+      source: "ai",
+      model: "gpt-x",
+      promptVersion: "2",
+      marksFingerprint: "fp",
+    });
+    expect(first).toMatchObject({ promptVersion: "2", marksFingerprint: "fp" });
+    const edited = repos.minutes.upsert({
+      meetingId: meeting.id,
+      lang: "vi",
+      content: { ...content, summary: "Sửa" },
+      source: "edited",
+    });
+    expect(edited).toMatchObject({ promptVersion: "2", marksFingerprint: "fp" });
+    const again = repos.minutes.upsert({
+      meetingId: meeting.id,
+      lang: "vi",
+      content,
+      source: "ai",
+    });
+    expect(again).toMatchObject({ promptVersion: null, marksFingerprint: null });
+  });
+
+  it("reads NULL version fields for rows written without them", () => {
+    const { repos } = setup();
+    const meeting = repos.meetings.create({ title: "m" });
+    const saved = repos.minutes.upsert({
+      meetingId: meeting.id,
+      lang: "vi",
+      content,
+      source: "ai",
+    });
+    expect(saved).toMatchObject({ promptVersion: null, marksFingerprint: null });
+  });
 });

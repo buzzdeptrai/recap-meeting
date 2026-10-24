@@ -4,6 +4,7 @@ import { createGlossaryRepository } from "./glossary";
 import { createMarksRepository } from "./marks";
 import { createMeetingsRepository } from "./meetings";
 import { createMinutesRepository } from "./minutes";
+import { createMinutesRunsRepository } from "./minutes-runs";
 import { createSegmentsRepository } from "./segments";
 import { createSessionsRepository } from "./sessions";
 import { createTranslationsRepository } from "./translations";
@@ -29,6 +30,7 @@ export function createRepositories(db: Db, options: RepositoryOptions = {}) {
     marks: createMarksRepository(context),
     glossary: createGlossaryRepository(context),
     minutes: createMinutesRepository(context),
+    minutesRuns: createMinutesRunsRepository(context),
     usage: createUsageRepository(context),
     users: createUsersRepository(context),
     sessions: createSessionsRepository(context),
@@ -44,6 +46,7 @@ export * from "./meeting-list-query";
 export * from "./meeting-search";
 export * from "./meetings";
 export * from "./minutes";
+export * from "./minutes-runs";
 export * from "./minutes-staleness";
 export * from "./segment-pages";
 export * from "./segments";

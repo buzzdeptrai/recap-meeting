@@ -3,7 +3,9 @@
 import { SpinnerGap } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button, buttonVariants, Card, EmptyState, Skeleton } from "@recap/admin-ui";
+import { Button, buttonVariants, Card, EmptyState, ProgressBar, Skeleton } from "@recap/admin-ui";
+import type { MinutesRunDto } from "@/lib/api-types";
+import { runProgressView } from "./run-progress";
 
 interface EmptyMinutesProps {
   meetingId: string;
@@ -41,7 +43,7 @@ export function EmptyMinutes({ meetingId, ended, onGenerate }: EmptyMinutesProps
   );
 }
 
-/** Seconds since mount, so a 5-60 s wait does not look frozen. */
+/** Seconds since mount, so a long run does not look frozen. */
 function useSecondsElapsed(): number {
   const [seconds, setSeconds] = useState(0);
   useEffect(() => {
@@ -51,23 +53,33 @@ function useSecondsElapsed(): number {
   return seconds;
 }
 
-export function GeneratingMinutes() {
+/**
+ * Progress of a background run, read from the server (no cost or token numbers here).
+ * `run` is null for the instant between the click and the first answer.
+ */
+export function GeneratingMinutes({ run }: { run: MinutesRunDto | null }) {
   const seconds = useSecondsElapsed();
+  const { label, step, steps, percent } = runProgressView(run);
   return (
     <Card>
       <div role="status" className="mx-auto max-w-xl py-6">
         <div className="flex items-center gap-3">
           <SpinnerGap
             size={20}
-            className="animate-spin text-soft-purple motion-reduce:animate-none"
+            className="animate-spin text-soft-brand motion-reduce:animate-none"
           />
-          <h2 className="text-base font-bold">Đang lập biên bản</h2>
+          <h2 className="text-base font-bold">
+            Đang tạo biên bản · bước {step}/{steps}
+          </h2>
           <span className="font-soft-mono text-[13px] tabular-nums text-soft-muted">
             {seconds}s
           </span>
         </div>
-        <p className="mt-2 text-[13px] text-soft-muted">
-          Việc này thường mất từ 5 đến 60 giây tùy độ dài cuộc họp. Bạn có thể giữ trang này mở.
+        <ProgressBar value={percent} label={`Tiến độ tạo biên bản: ${label}`} className="mt-4" />
+        <p className="mt-2 text-[13px] font-semibold">{label}</p>
+        <p className="mt-1 text-[13px] text-soft-muted">
+          Cuộc họp dài được xử lý theo từng đoạn nên có thể mất vài phút. Bạn có thể rời trang, biên
+          bản vẫn được tạo và tiến độ sẽ hiện lại khi bạn quay về.
         </p>
       </div>
     </Card>

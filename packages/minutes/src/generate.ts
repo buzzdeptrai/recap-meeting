@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { marksFingerprint } from "@recap/db";
 import { DEFAULT_GENERATOR_CONFIG } from "./config";
 import { MinutesError } from "./errors";
 import type { LlmMinutes } from "./llm-schema";
 import { postProcess } from "./postprocess";
+import { PROMPT_VERSION } from "./prompt-version";
 import * as prompts from "./prompts";
 import { callStructured } from "./structured";
 import { formatBoundary, withTopicBoundaries, type TopicMarker } from "./topics";
@@ -20,6 +22,7 @@ import type {
   GeneratorConfig,
   MinutesDeps,
   MinutesLlm,
+  MinutesProgress,
 } from "./types";
 
 interface Plan {
@@ -30,6 +33,19 @@ interface Plan {
   lines: TranscriptLine[];
   marks: number[];
   topics: TopicMarker[];
+  report: (progress: MinutesProgress) => void;
+}
+
+/** Progress sinks are best effort: a failing one must never fail the generation. */
+function safeReporter(onProgress: MinutesDeps["onProgress"]): Plan["report"] {
+  return (progress) => {
+    if (!onProgress) return;
+    try {
+      onProgress({ ...progress });
+    } catch {
+      // ignored on purpose
+    }
+  };
 }
 
 const windowSpec = (plan: Plan) => ({
@@ -47,7 +63,8 @@ function windowsFor(plan: Plan, marks: number[]): prompts.MarkWindowText[] {
 
 async function singlePass(plan: Plan): Promise<LlmMinutes> {
   const text = plan.lines.map((l) => l.text);
-  return callStructured(plan.llm, {
+  plan.report({ phase: "map", done: 0, total: 1 });
+  const result = await callStructured(plan.llm, {
     system: prompts.singlePassSystem(
       plan.lang,
       plan.marks.length > 0 ? windowSpec(plan) : null,
@@ -55,6 +72,8 @@ async function singlePass(plan: Plan): Promise<LlmMinutes> {
     ),
     user: prompts.transcriptPrompt(plan.ctx, text, windowsFor(plan, plan.marks)),
   });
+  plan.report({ phase: "finalize", done: 1, total: 1 });
+  return result;
 }
 
 /** Marks belong to the chunk that contains their moment (the last chunk takes the tail). */
@@ -66,7 +85,9 @@ function marksOfChunk(chunks: TranscriptLine[][], index: number, marks: number[]
 
 async function mapReduce(plan: Plan): Promise<LlmMinutes> {
   const chunks = splitIntoChunks(plan.lines, plan.config.chunkTokens);
+  const total = chunks.length;
   const parts: string[] = [];
+  plan.report({ phase: "map", done: 0, total });
   for (const [index, chunk] of chunks.entries()) {
     const marks = marksOfChunk(chunks, index, plan.marks);
     const part = await callStructured(plan.llm, {
@@ -82,8 +103,10 @@ async function mapReduce(plan: Plan): Promise<LlmMinutes> {
       ),
     });
     parts.push(JSON.stringify(part));
+    plan.report({ phase: "map", done: index + 1, total });
   }
-  return callStructured(plan.llm, {
+  plan.report({ phase: "reduce", done: total, total });
+  const reduced = await callStructured(plan.llm, {
     system: prompts.reduceSystem(plan.lang, plan.topics.length > 0),
     user: prompts.reducePrompt(
       plan.ctx,
@@ -92,6 +115,8 @@ async function mapReduce(plan: Plan): Promise<LlmMinutes> {
       plan.topics.map(formatBoundary),
     ),
   });
+  plan.report({ phase: "finalize", done: total, total });
+  return reduced;
 }
 
 function glossaryLines(deps: MinutesDeps, config: GeneratorConfig): string[] {
@@ -102,6 +127,20 @@ function glossaryLines(deps: MinutesDeps, config: GeneratorConfig): string[] {
       if (t.doNotTranslate) return `${t.term} (${t.lang}): keep as is`;
       return t.translation ? `${t.term} (${t.lang}) = ${t.translation}` : `${t.term} (${t.lang})`;
     });
+}
+
+/** Everything the model may legitimately quote; owners and dates are checked against it. */
+function groundingText(
+  meeting: { title: string; agenda: string | null },
+  segments: ReadonlyArray<{ text: string }>,
+  lines: ReadonlyArray<TranscriptLine>,
+): string {
+  return [
+    meeting.title,
+    meeting.agenda ?? "",
+    ...segments.map((s) => s.text),
+    ...lines.map((l) => l.text),
+  ].join("\n");
 }
 
 /** Builds the minutes of an ended meeting. Reads via `deps.repos`; does not store the result. */
@@ -132,18 +171,14 @@ export async function generateMinutes(
     agenda: meeting.agenda,
     glossary: glossaryLines(deps, config),
   };
-  const plan: Plan = { llm: deps.llm, lang, config, ctx, lines, marks, topics };
+  const report = safeReporter(deps.onProgress);
+  const plan: Plan = { llm: deps.llm, lang, config, ctx, lines, marks, topics, report };
 
   const raw =
     totalTokens(lines) > config.singlePassMaxTokens
       ? await mapReduce(plan)
       : await singlePass(plan);
-  const sourceText = [
-    meeting.title,
-    meeting.agenda ?? "",
-    ...segments.map((s) => s.text),
-    ...lines.map((l) => l.text),
-  ].join("\n");
+  const sourceText = groundingText(meeting, segments, lines);
   const { content, unmatchedMarks } = postProcess(raw, {
     marks,
     window: { beforeMs: config.markWindowBeforeMs, afterMs: config.markWindowAfterMs },
@@ -152,5 +187,11 @@ export async function generateMinutes(
     newId: deps.newId ?? randomUUID,
     sourceText,
   });
-  return { content, model: deps.llm.model, unmatchedMarks };
+  return {
+    content,
+    model: deps.llm.model,
+    unmatchedMarks,
+    promptVersion: PROMPT_VERSION,
+    marksFingerprint: marksFingerprint(storedMarks),
+  };
 }
