@@ -27,20 +27,28 @@ interface TranscriptSearchProps {
   onClose: () => void;
 }
 
+/** Enter / arrows step through the hits (Shift+Enter and ArrowUp go back). */
+function stepOnKey(
+  event: KeyboardEvent<HTMLInputElement>,
+  dispatch: TranscriptSearchApi["dispatch"],
+) {
+  if (event.key !== "Enter" && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+  event.preventDefault();
+  const back = event.key === "ArrowUp" || (event.key === "Enter" && event.shiftKey);
+  dispatch({ type: "step", delta: back ? -1 : 1 });
+}
+
 export function TranscriptSearch({ api, inputRef, onClose }: TranscriptSearchProps) {
   const { state, dispatch } = api;
   const hasHits = state.hits.length > 0;
 
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" || event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      const back = event.key === "ArrowUp" || (event.key === "Enter" && event.shiftKey);
-      dispatch({ type: "step", delta: back ? -1 : 1 });
-    }
-  };
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => stepOnKey(event, dispatch);
 
   return (
-    <div role="search" className="border-b border-line bg-surface px-4 py-2">
+    <div
+      role="search"
+      className="mx-3 mt-3 shrink-0 rounded-soft-inner bg-soft-inset px-3 py-2 sm:mx-4 sm:mt-4"
+    >
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <MagnifyingGlass

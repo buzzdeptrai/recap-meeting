@@ -13,9 +13,10 @@ export function LatestPill({ onClick, label }: { onClick: () => void; label: str
     <Button
       size="sm"
       variant="outline"
+      shape="pill"
       icon={<ArrowDown size={16} />}
       onClick={onClick}
-      className="animate-fade-in absolute bottom-4 left-1/2 -translate-x-1/2 shadow-soft-pop"
+      className="animate-fade-in absolute bottom-[116px] left-1/2 -translate-x-1/2 rounded-full shadow-soft-pop"
     >
       {label}
     </Button>

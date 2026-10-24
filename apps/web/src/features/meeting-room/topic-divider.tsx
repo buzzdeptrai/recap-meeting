@@ -1,4 +1,5 @@
 import { Flag } from "@phosphor-icons/react";
+import { Chip } from "@recap/admin-ui";
 import type { Mark } from "@recap/core";
 import { formatClock } from "@/lib/format";
 
@@ -7,23 +8,31 @@ interface TopicDividerProps {
   name: string;
 }
 
-/** Hard boundary between topics in the transcript. */
+/** Hard boundary between topics: a pill with the time and name between two dotted rules. */
 export function TopicDivider({ mark, name }: TopicDividerProps) {
   return (
     <div
       id={`topic-${mark.id}`}
       role="separator"
       aria-label={`Chủ đề: ${name}`}
-      className="mt-3 grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-3 border-t border-line py-2.5 pr-4 pl-3 sm:grid-cols-[72px_minmax(0,1fr)]"
+      className="flex items-center gap-3.5 px-4 pt-5 pb-2 sm:px-8"
     >
-      <span className="font-mono text-meta text-accent">{formatClock(mark.atMs)}</span>
-      <span className="flex min-w-0 items-center gap-2">
-        <Flag size={14} weight="fill" className="shrink-0 text-accent" aria-hidden />
-        <span className="text-label font-bold uppercase tracking-[0.08em] text-fg-muted">
-          Chủ đề
+      <span
+        aria-hidden
+        className="h-0 w-6 shrink-0 border-t-2 border-dotted border-soft-line-strong"
+      />
+      <Chip
+        tone="info"
+        size="lg"
+        icon={<Flag weight="regular" />}
+        className="min-w-0 font-semibold"
+      >
+        <span className="font-soft-mono text-[12px] font-medium opacity-80">
+          {formatClock(mark.atMs)}
         </span>
-        <span className="truncate text-base font-semibold text-fg">{name}</span>
-      </span>
+        <span className="truncate">{name}</span>
+      </Chip>
+      <span aria-hidden className="h-0 flex-1 border-t-2 border-dotted border-soft-line-strong" />
     </div>
   );
 }

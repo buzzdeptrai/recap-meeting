@@ -58,7 +58,7 @@ export function ViewToggle({
   return (
     <SegmentedControl<ViewMode>
       ariaLabel="Kiểu hiển thị"
-      variant="tabs"
+      variant="soft"
       size="sm"
       options={OPTIONS}
       value={mode}

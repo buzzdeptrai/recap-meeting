@@ -47,7 +47,7 @@ function ActionBanner({
   return (
     <Banner
       tone={tone}
-      layout="bar"
+      radius="lg"
       icon={tone === "error" ? <WarningOctagon /> : <WarningCircle />}
       action={
         <Button size="sm" variant="outline" onClick={onAction}>
@@ -60,7 +60,29 @@ function ActionBanner({
   );
 }
 
-/** Stacked under the top bar; each one says what went wrong and offers the fix. */
+function SttBanners({ kind }: { kind: ReturnType<typeof selectSttBanner> }) {
+  if (kind === "reconnecting") {
+    return (
+      <Banner tone="warn" radius="lg" icon={<WarningCircle />}>
+        {STT_RECONNECTING}
+      </Banner>
+    );
+  }
+  if (kind === "failed") {
+    return (
+      <Banner tone="error" radius="lg" icon={<WarningOctagon />}>
+        {STT_FAILED}
+      </Banner>
+    );
+  }
+  return null;
+}
+
+/**
+ * Rounded cards under the header; each says what went wrong and offers the fix. Only the one-off
+ * server error can be dismissed: every other banner mirrors a live condition (it disappears when
+ * the condition clears and would be wrong to hide while it still holds).
+ */
 export function RoomBanners(props: RoomBannersProps) {
   const recording = props.phase === "running";
   const sttBanner = selectSttBanner({
@@ -71,7 +93,7 @@ export function RoomBanners(props: RoomBannersProps) {
   return (
     <>
       {props.captureError && (
-        <Banner tone="warn" layout="bar" icon={<WarningCircle />}>
+        <Banner tone="warn" radius="lg" icon={<WarningCircle />}>
           {props.captureError}
         </Banner>
       )}
@@ -81,7 +103,7 @@ export function RoomBanners(props: RoomBannersProps) {
         </ActionBanner>
       )}
       {recording && props.sources.mic !== "ok" && (
-        <Banner tone="warn" layout="bar" icon={<WarningCircle />}>
+        <Banner tone="warn" radius="lg" icon={<WarningCircle />}>
           {MIC_BLOCKED}
         </Banner>
       )}
@@ -90,20 +112,17 @@ export function RoomBanners(props: RoomBannersProps) {
           {SERVER_DOWN}
         </ActionBanner>
       )}
-      {sttBanner === "reconnecting" && (
-        <Banner tone="warn" layout="bar" icon={<WarningCircle />}>
-          {STT_RECONNECTING}
-        </Banner>
-      )}
-      {sttBanner === "failed" && (
-        <Banner tone="error" layout="bar" icon={<WarningOctagon />}>
-          {STT_FAILED}
-        </Banner>
-      )}
+      <SttBanners kind={sttBanner} />
       {props.serverError && (
-        <ActionBanner tone="warn" actionLabel="Đóng" onAction={props.onDismissError}>
+        <Banner
+          tone="warn"
+          radius="lg"
+          icon={<WarningCircle />}
+          onDismiss={props.onDismissError}
+          dismissLabel="Đóng"
+        >
           {describeServerError(props.serverError)}
-        </ActionBanner>
+        </Banner>
       )}
     </>
   );

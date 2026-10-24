@@ -9,8 +9,8 @@ import {
   ActionGroup,
   Banner,
   Button,
-  Card,
   Field,
+  FloatCard,
   Input,
   SegmentedControl,
   Textarea,
@@ -56,7 +56,7 @@ function useNewMeetingForm() {
 export function NewMeetingForm() {
   const { values, set, titleError, failure, submitting, onSubmit } = useNewMeetingForm();
   return (
-    <Card as="section" aria-labelledby="h-new-meeting" padding="none" className="p-6 sm:p-8">
+    <FloatCard as="section" aria-labelledby="h-new-meeting" padding="lg">
       <h2 id="h-new-meeting" className="text-base font-bold text-soft-ink">
         Thông tin cuộc họp
       </h2>
@@ -65,7 +65,7 @@ export function NewMeetingForm() {
       </p>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
         {failure && (
-          <Banner tone="error" icon={<WarningCircle />}>
+          <Banner tone="error" radius="lg" icon={<WarningCircle />}>
             {failure}
           </Banner>
         )}
@@ -86,15 +86,15 @@ export function NewMeetingForm() {
         />
         <AgendaField value={values.agenda} onChange={set.setAgenda} />
         <ActionGroup placement="start" className="border-t border-soft-line pt-6">
-          <Button type="submit" size="lg" loading={submitting}>
+          <Button type="submit" size="lg" shape="pill" loading={submitting}>
             {submitting ? "Đang tạo" : "Tạo và vào phòng họp"}
           </Button>
-          <Button asChild variant="ghost" size="lg">
+          <Button asChild variant="ghost" size="lg" shape="pill">
             <Link href="/meetings">Hủy</Link>
           </Button>
         </ActionGroup>
       </form>
-    </Card>
+    </FloatCard>
   );
 }
 
@@ -126,7 +126,7 @@ function LanguageFields({ sourceLang, targetLang, onSource, onTarget }: Language
       >
         <SegmentedControl
           ariaLabel="Ngôn ngữ nói"
-          variant="tabs"
+          variant="soft"
           fill
           options={SOURCE_LANG_OPTIONS}
           value={sourceLang}
@@ -136,7 +136,7 @@ function LanguageFields({ sourceLang, targetLang, onSource, onTarget }: Language
       <GroupField label="Dịch sang">
         <SegmentedControl
           ariaLabel="Dịch sang"
-          variant="tabs"
+          variant="soft"
           fill
           options={TARGET_LANG_OPTIONS}
           value={targetLang}

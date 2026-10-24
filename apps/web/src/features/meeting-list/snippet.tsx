@@ -31,7 +31,7 @@ export function Snippet({ snippet }: { snippet: string }): ReactNode {
         part.match ? (
           <mark
             key={index}
-            className="rounded-[3px] bg-[#f3e8fd] px-0.5 font-semibold text-soft-ink"
+            className="rounded-[3px] bg-soft-accent-soft px-0.5 font-semibold text-soft-ink"
           >
             {part.text}
           </mark>

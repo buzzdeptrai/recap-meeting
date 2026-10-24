@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Plus } from "@phosphor-icons/react/dist/ssr";
-import { buttonVariants, PageHeader } from "@recap/admin-ui";
 import { MeetingBrowser } from "@/features/meeting-list/meeting-browser";
 import { PAGE_SIZE, parseListState } from "@/lib/list-query";
 import { listMeetings, serverNow } from "@/server/meetings-service";
@@ -30,18 +27,8 @@ export default async function MeetingListPage({
     now,
   });
   return (
-    <>
-      <PageHeader
-        breadcrumb={["Làm việc", "Cuộc họp"]}
-        title="Cuộc họp"
-        actions={
-          <Link href="/meetings/new" className={buttonVariants({ variant: "primary", size: "md" })}>
-            <Plus size={16} weight="bold" />
-            Cuộc họp mới
-          </Link>
-        }
-      />
+    <div data-page-tint="">
       <MeetingBrowser initial={initial} initialState={state} now={now} />
-    </>
+    </div>
   );
 }

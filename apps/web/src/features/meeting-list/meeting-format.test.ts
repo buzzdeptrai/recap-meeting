@@ -3,11 +3,13 @@ import type { MeetingListItemDto } from "@/lib/api-types";
 import { MINUTES_STALE_STATUS } from "@/lib/status";
 import {
   durationLabel,
-  exportAvailability,
-  exportHref,
+  chipToneFor,
   formatTotalDuration,
+  listCountLabel,
   minutesAction,
+  minutesAvailability,
   minutesChips,
+  quickAction,
   subLine,
   wallClockRange,
 } from "./meeting-format";
@@ -79,15 +81,46 @@ describe("meeting-format", () => {
     });
   });
 
-  it("decides export availability and the minutes action", () => {
-    expect(exportAvailability(meeting())).toEqual({ vi: false, en: false, both: false });
+  it("decides the minutes action and which languages have minutes", () => {
+    expect(minutesAvailability(meeting())).toEqual({ vi: false, en: false });
     const both = meeting({
       minutes: { vi: { source: "ai", stale: false }, en: { source: "ai", stale: false } },
     });
-    expect(exportAvailability(both)).toEqual({ vi: true, en: true, both: true });
+    expect(minutesAvailability(both)).toEqual({ vi: true, en: true });
     expect(minutesAction(both)).toBe("open");
     expect(minutesAction(meeting())).toBe("create");
     expect(minutesAction(meeting({ status: "live" }))).toBe("unavailable");
-    expect(exportHref("a b", "both")).toBe("/api/meetings/a%20b/export?lang=both");
+  });
+
+  it("picks exactly one quick action: minutes when they exist, else the room", () => {
+    const withMinutes = meeting({ minutes: { vi: { source: "ai", stale: false } } });
+    expect(quickAction(withMinutes)).toEqual({
+      kind: "minutes",
+      label: "Biên bản",
+      href: "/meetings/m1/minutes",
+    });
+    expect(quickAction(meeting())).toEqual({
+      kind: "room",
+      label: "Mở phòng",
+      href: "/meetings/m1",
+    });
+    expect(quickAction(meeting({ status: "live" })).kind).toBe("room");
+    expect(quickAction(meeting({ status: "draft" })).kind).toBe("room");
+  });
+
+  it("maps status tones onto chip tones (amber only for conclusions)", () => {
+    expect(chipToneFor("ok")).toBe("ok");
+    expect(chipToneFor("warn")).toBe("warn");
+    expect(chipToneFor("error")).toBe("danger");
+    expect(chipToneFor("conclusion")).toBe("decision");
+    expect(chipToneFor("purple")).toBe("info");
+    expect(chipToneFor("neutral")).toBe("neutral");
+    expect(chipToneFor("warn")).not.toBe("decision");
+  });
+
+  it("words the count line", () => {
+    expect(listCountLabel(12, false)).toBe("12 cuộc họp");
+    expect(listCountLabel(3, true)).toBe("3 cuộc họp phù hợp");
+    expect(listCountLabel(0, true)).toBe("Không có cuộc họp nào phù hợp");
   });
 });

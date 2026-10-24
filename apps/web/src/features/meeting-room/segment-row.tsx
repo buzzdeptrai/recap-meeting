@@ -1,74 +1,43 @@
+import { Bubble } from "@recap/admin-ui";
 import clsx from "clsx";
 import { memo, type ReactNode } from "react";
 import type { Channel, Segment } from "@recap/core";
 import { formatClock } from "@/lib/format";
-import { splitByTerms } from "@/lib/text-match";
+import {
+  bubbleTone,
+  ChannelAvatar,
+  ChannelMeta,
+  DecisionTag,
+  LangTag,
+  Marked,
+  TypingDots,
+} from "./row-parts";
 import type { InterimLine, TranslationView } from "./state";
 
 export type ViewMode = "both" | "source" | "translation";
 
-const CHANNEL_STYLE: Record<Channel, { label: string; color: string }> = {
-  0: { label: "Tôi", color: "text-accent" },
-  1: { label: "Người khác", color: "text-others" },
-};
-
-function ChannelLabel({ channel }: { channel: Channel }) {
-  const { label, color } = CHANNEL_STYLE[channel];
-  return (
-    <span className={clsx("text-label font-bold uppercase tracking-[0.08em]", color)}>{label}</span>
-  );
-}
-
-function DecisionTag() {
-  return (
-    <span className="rounded-[3px] bg-decision-bg px-1.5 text-label font-bold uppercase tracking-[0.08em] text-decision">
-      Kết luận
-    </span>
-  );
-}
-
-function LangTag({ lang }: { lang: string }) {
-  return (
-    <span className="mr-2 inline-block rounded-[3px] border border-line px-1 align-[1px] text-label font-bold uppercase text-fg-muted">
-      {lang}
-    </span>
-  );
-}
-
-/** Text with the words matching the active search wrapped in <mark>. */
-function Marked({ text, terms }: { text: string; terms: readonly string[] | undefined }) {
-  if (!terms || terms.length === 0) return text;
-  return splitByTerms(text, terms).map((part, index) =>
-    part.hit ? (
-      <mark key={index} className="rounded-[3px] bg-accent/20 px-px text-inherit">
-        {part.text}
-      </mark>
-    ) : (
-      part.text
-    ),
-  );
-}
-
 interface RowFrameProps {
   startMs: number;
   channel: Channel;
-  decision?: boolean;
   animate?: boolean;
   highlight?: boolean;
   id?: string;
   /** Focusable by script (arrow keys move between rows), not part of the tab order. */
   navigable?: boolean;
+  /** Rendered under the bubble (conclusion chip). */
+  footer?: ReactNode;
   children: ReactNode;
 }
 
+/** Avatar gutter + (name, time, bubble). The vertical gap between rows lives in the padding. */
 function RowFrame({
   startMs,
   channel,
-  decision = false,
   animate = false,
   highlight = false,
   id,
   navigable = false,
+  footer,
   children,
 }: RowFrameProps) {
   return (
@@ -77,20 +46,18 @@ function RowFrame({
       tabIndex={navigable ? -1 : undefined}
       data-seg-row={navigable ? "" : undefined}
       className={clsx(
-        "outline-none focus-visible:bg-surface-2 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-        "grid grid-cols-[64px_minmax(0,1fr)] gap-x-3 border-l-2 py-2.5 pr-4 pl-3 sm:grid-cols-[72px_minmax(0,1fr)]",
-        decision ? "border-decision" : "border-transparent",
+        "px-4 py-[9px] outline-none focus-visible:bg-soft-inset focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset sm:px-8",
+        highlight && "bg-soft-inset",
         animate && "animate-segment-in",
-        highlight && "bg-surface-2",
       )}
     >
-      <span className="pt-[3px] font-mono text-meta text-fg-muted">{formatClock(startMs)}</span>
-      <div className="max-w-[72ch] min-w-0">
-        <div className="flex items-center gap-2">
-          <ChannelLabel channel={channel} />
-          {decision && <DecisionTag />}
+      <div className="mx-auto grid max-w-[840px] grid-cols-[34px_minmax(0,1fr)] gap-x-2.5 sm:gap-x-3.5">
+        <ChannelAvatar channel={channel} />
+        <div className="max-w-[74ch] min-w-0">
+          <ChannelMeta channel={channel} time={formatClock(startMs)} />
+          {children}
+          {footer}
         </div>
-        {children}
       </div>
     </div>
   );
@@ -106,7 +73,7 @@ function TranslationLine(props: {
     <p
       className={clsx(
         "leading-relaxed",
-        view === "translation" ? "text-transcript text-fg" : "mt-0.5 text-[14px] text-fg-muted",
+        view === "translation" ? "text-transcript text-fg" : "mt-1 text-[14px] text-fg-muted",
       )}
     >
       <LangTag lang={translation.lang} />
@@ -148,36 +115,41 @@ function SegmentRowBase({
       id={`seg-${segment.id}`}
       startMs={segment.startMs}
       channel={segment.channel}
-      decision={decision}
       animate={animate}
       highlight={highlight}
       navigable
+      footer={decision ? <DecisionTag /> : undefined}
     >
-      {view === "translation" ? (
-        <>
-          {translated ?? (
+      <Bubble tone={bubbleTone(segment.channel)} emphasis={decision ? "decision" : undefined}>
+        {view === "translation" ? (
+          (translated ?? (
             <p className="text-transcript text-fg-muted">
               <Marked text={segment.text} terms={terms} />
             </p>
-          )}
-        </>
-      ) : (
-        <>
-          {original}
-          {view === "both" && translated}
-        </>
-      )}
+          ))
+        ) : (
+          <>
+            {original}
+            {view === "both" && translated}
+          </>
+        )}
+      </Bubble>
     </RowFrame>
   );
 }
 
 export const SegmentRow = memo(SegmentRowBase);
 
-/** Lighter, italic, not yet final. */
+/** Not yet final: dashed bubble, italic text, typing dots. */
 export function InterimRow({ channel, line }: { channel: Channel; line: InterimLine }) {
   return (
     <RowFrame startMs={line.startMs} channel={channel}>
-      <p className="text-transcript text-fg-muted italic">{line.text}</p>
+      <Bubble tone="dashed">
+        <p className="text-transcript text-fg-muted italic">
+          {line.text}
+          <TypingDots />
+        </p>
+      </Bubble>
     </RowFrame>
   );
 }

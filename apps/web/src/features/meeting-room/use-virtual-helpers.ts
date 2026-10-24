@@ -6,7 +6,6 @@ import { isAtTail, type RoomWindow } from "./paging";
 import {
   estimatedStart,
   estimateRowHeight,
-  NARROW_PX,
   pickAnchor,
   type EstimateContext,
   type ScrollAnchor,
@@ -19,9 +18,12 @@ export const PREFETCH_ROWS = 60;
 /** Distance from the bottom (px) still counted as "at the latest line". */
 const BOTTOM_THRESHOLD_PX = 64;
 export const PADDING_PX = 8;
+/** Room under the last row so the floating mark bar never covers text. */
+export const PADDING_END_PX = 104;
 export const SSR_VIEWPORT = { width: 900, height: 800 };
-const COMPACT_WIDTH = 400;
-const WIDE_WIDTH = 1000;
+/** Widths are bucketed so a drag-resize does not re-measure every row on each pixel. */
+const WIDTH_BUCKET_PX = 40;
+const SSR_WIDTH = 1000;
 
 export type RowVirtualizer = Virtualizer<HTMLDivElement, Element>;
 
@@ -52,15 +54,17 @@ export const prefersReducedMotion = () =>
   typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function useScrollerWidth(scroller: RefObject<HTMLDivElement | null>) {
-  const [compact, setCompact] = useState(false);
+  const [width, setWidth] = useState(SSR_WIDTH);
   useEffect(() => {
     const el = scroller.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => setCompact(el.clientWidth < NARROW_PX));
+    const observer = new ResizeObserver(() =>
+      setWidth(Math.round(el.clientWidth / WIDTH_BUCKET_PX) * WIDTH_BUCKET_PX),
+    );
     observer.observe(el);
     return () => observer.disconnect();
   }, [scroller]);
-  return compact ? COMPACT_WIDTH : WIDE_WIDTH;
+  return width;
 }
 
 interface RowVirtualizerInput {
@@ -80,7 +84,7 @@ export function useRowVirtualizer(input: RowVirtualizerInput): RowVirtualizer {
     getItemKey: (index) => rows[index]?.key ?? index,
     overscan: OVERSCAN_ROWS,
     paddingStart: PADDING_PX,
-    paddingEnd: PADDING_PX,
+    paddingEnd: PADDING_END_PX,
     initialRect: SSR_VIEWPORT,
     initialOffset,
     onChange: (_instance, isScrolling) => onChange(isScrolling),

@@ -1,16 +1,15 @@
 "use client";
 
 import { WarningCircle } from "@phosphor-icons/react";
-import { Banner, Button } from "@recap/admin-ui";
+import { Button, FloatCard, IconBadge } from "@recap/admin-ui";
 import { useRef } from "react";
 import type { MeetingListDto } from "@/lib/api-types";
 import { isFiltered, type ListState } from "@/lib/list-query";
 import { EmptyMeetings, NoResults } from "./empty-meetings";
-import { FilterBar } from "./filter-bar";
+import { FilterBar, PlainHeader } from "./filter-bar";
 import { useSlashFocus } from "./filter-controls";
 import { MeetingListView } from "./meeting-list-view";
 import { MeetingSkeleton } from "./meeting-skeleton";
-import { SummaryStrip } from "./summary-strip";
 import { useCopyLink } from "./use-copy-link";
 import { useMeetingList, type MeetingListController } from "./use-meeting-list";
 import { ViewToggle, useViewMode } from "./view-mode";
@@ -31,13 +30,20 @@ export function MeetingBrowser({ initial, initialState, now }: MeetingBrowserPro
   const { state, counts, totals, total, error } = list;
   const nothingAtAll = counts.all === 0 && !isFiltered(state) && !list.busy;
 
-  if (nothingAtAll && !error) return <EmptyMeetings />;
+  if (nothingAtAll && !error) {
+    return (
+      <>
+        <PlainHeader />
+        <EmptyMeetings />
+      </>
+    );
+  }
   return (
     <>
-      <SummaryStrip state={state} totals={totals} now={now} onApply={list.replace} />
       <FilterBar
         state={state}
         counts={counts}
+        totals={totals}
         total={total}
         input={input}
         patch={list.patch}
@@ -56,18 +62,20 @@ export function MeetingBrowser({ initial, initialState, now }: MeetingBrowserPro
 
 function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <Banner
-      tone="error"
-      icon={<WarningCircle />}
+    <FloatCard
+      as="div"
+      role="alert"
       className="mb-4"
-      action={
-        <Button size="sm" variant="outline" onClick={onRetry}>
-          Thử lại
-        </Button>
-      }
+      bodyClassName="flex flex-wrap items-center gap-3 !py-3"
     >
-      {message}
-    </Banner>
+      <IconBadge tone="neutral" size="md" className="bg-soft-danger-bg text-soft-danger-ink">
+        <WarningCircle />
+      </IconBadge>
+      <p className="min-w-0 flex-1 text-[13px] text-soft-ink">{message}</p>
+      <Button size="sm" variant="outline" shape="pill" onClick={onRetry}>
+        Thử lại
+      </Button>
+    </FloatCard>
   );
 }
 
@@ -90,14 +98,7 @@ function Results({ list, mode, now, onCopy }: ResultsProps) {
       className={list.busy ? "opacity-70 transition-opacity" : "transition-opacity"}
       aria-busy={list.busy}
     >
-      <MeetingListView
-        meetings={items}
-        state={state}
-        mode={mode}
-        now={now}
-
-        onCopy={onCopy}
-      />
+      <MeetingListView meetings={items} state={state} mode={mode} now={now} onCopy={onCopy} />
     </div>
   );
 }
@@ -111,7 +112,13 @@ function Footer({ list }: { list: MeetingListController }) {
         Hiển thị <strong className="font-bold text-soft-ink">{items.length}</strong> / {total}
       </span>
       {items.length < total ? (
-        <Button size="sm" variant="outline" onClick={list.loadMore} loading={loadingMore}>
+        <Button
+          size="sm"
+          variant="outline"
+          shape="pill"
+          onClick={list.loadMore}
+          loading={loadingMore}
+        >
           {loadingMore ? "Đang tải" : "Tải thêm"}
         </Button>
       ) : null}

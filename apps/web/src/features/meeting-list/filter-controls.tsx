@@ -1,7 +1,7 @@
 "use client";
 
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
-import { Badge, IconButton, Input, Kbd, SegmentedControl, Select, cn } from "@recap/admin-ui";
+import { IconButton, Input, Kbd, SegmentedControl, Select, cn } from "@recap/admin-ui";
 import { useEffect, type RefObject } from "react";
 import type { MeetingListCounts } from "@/lib/api-types";
 import {
@@ -68,7 +68,7 @@ export function SearchBox({ state, patch, input, className }: SearchBoxProps) {
         autoComplete="off"
         onChange={(event) => patch({ q: event.target.value })}
         onKeyDown={(event) => event.key === "Escape" && patch({ q: "" })}
-        className="pr-10 pl-10 [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 rounded-soft-pill border-transparent bg-soft-inset pr-10 pl-10 text-[13px] shadow-none [&::-webkit-search-cancel-button]:hidden"
       />
       <span className="absolute top-1/2 right-2 -translate-y-1/2">
         {state.q ? (
@@ -79,7 +79,7 @@ export function SearchBox({ state, patch, input, className }: SearchBoxProps) {
               patch({ q: "" });
               input.current?.focus();
             }}
-            className="size-6 rounded-lg"
+            className="size-6 rounded-full"
           />
         ) : (
           <Kbd>/</Kbd>
@@ -101,19 +101,16 @@ export function StatusChips({ state, patch, counts, className }: StatusChipsProp
     label: (
       <>
         {option.label}
-        <Badge
-          shape="chip"
-          className="soft-tabular min-w-5 justify-center bg-soft-fill px-1.5 py-0 text-[11px] font-semibold text-soft-muted"
-        >
+        <span className="soft-tabular ml-1.5 text-[11px] font-medium text-soft-muted">
           {counts[option.value]}
-        </Badge>
+        </span>
       </>
     ),
   }));
   return (
     <SegmentedControl<StatusFilter>
       ariaLabel="Lọc theo trạng thái"
-      variant="tabs"
+      variant="soft"
       size="sm"
       options={options}
       value={state.status}
@@ -123,7 +120,7 @@ export function StatusChips({ state, patch, counts, className }: StatusChipsProp
   );
 }
 
-const ACTIVE = "ring-2 ring-soft-purple/40 text-soft-purple";
+const ACTIVE = "ring-2 ring-soft-brand/40 text-soft-brand";
 
 interface FilterSelectsProps extends ControlProps {
   /** Dialog layout: full-width selects with visible captions. */

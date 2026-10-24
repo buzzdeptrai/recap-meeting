@@ -1,56 +1,36 @@
-import Link from "next/link";
-import { CalendarBlank, MagnifyingGlass, Plus, X } from "@phosphor-icons/react/dist/ssr";
-import { Button, buttonVariants, Card, EmptyState } from "@recap/admin-ui";
+import { CalendarBlank, MagnifyingGlass, X } from "@phosphor-icons/react/dist/ssr";
+import { Button, EmptyState, FloatCard } from "@recap/admin-ui";
+import { NewMeetingButton } from "./filter-bar";
 
-const STEPS = [
-  "Mở cuộc họp Zoom hoặc Teams bằng trình duyệt Chrome hoặc Edge, rồi bấm Bắt đầu ghi và chọn đúng tab.",
-  "Lời nói được ghi và phiên âm ngay khi diễn ra, tách riêng phần của bạn và của người khác.",
-  "Bản dịch hiện ngay dưới từng câu. Bấm K để đánh dấu một kết luận.",
-];
-
-/** No meeting exists at all. */
+/** No meeting exists at all: one sentence, one button. */
 export function EmptyMeetings() {
   return (
-    <Card>
+    <FloatCard as="section" aria-label="Chưa có cuộc họp">
       <EmptyState
         icon={<CalendarBlank />}
         title="Chưa có cuộc họp nào"
-        description="Tạo cuộc họp đầu tiên để ghi lại và dịch Anh–Việt theo thời gian thực."
-        action={
-          <Link href="/meetings/new" className={buttonVariants({ variant: "primary" })}>
-            <Plus size={16} />
-            Cuộc họp mới
-          </Link>
-        }
+        description="Tạo cuộc họp đầu tiên để ghi lại và dịch Anh–Việt ngay khi đang họp."
+        action={<NewMeetingButton />}
       />
-      <ol className="mx-auto mb-4 flex max-w-xl list-decimal flex-col gap-2 border-t border-soft-line pt-5 pl-5 text-[13px] text-soft-muted marker:font-soft-mono marker:text-xs">
-        {STEPS.map((step) => (
-          <li key={step} className="pl-1">
-            {step}
-          </li>
-        ))}
-      </ol>
-    </Card>
+    </FloatCard>
   );
 }
 
 /** Filters or search matched nothing. */
 export function NoResults({ term, onClear }: { term: string; onClear: () => void }) {
   return (
-    <Card>
+    <FloatCard as="section" aria-label="Không có kết quả">
       <EmptyState
         icon={<MagnifyingGlass />}
         tone="blue"
-        title={
-          term ? `Không có cuộc họp nào khớp “${term}”` : "Không có cuộc họp nào phù hợp bộ lọc"
-        }
+        title={term ? `Không thấy cuộc họp nào khớp “${term}”` : "Không có cuộc họp nào phù hợp"}
         description="Thử từ khóa ngắn hơn hoặc bỏ bớt bộ lọc. Tìm kiếm không phân biệt dấu."
         action={
-          <Button variant="outline" onClick={onClear} icon={<X size={16} />}>
+          <Button variant="outline" shape="pill" onClick={onClear} icon={<X size={16} />}>
             Xóa bộ lọc
           </Button>
         }
       />
-    </Card>
+    </FloatCard>
   );
 }

@@ -70,16 +70,19 @@ export function neighbourSegmentIndex(rows: VirtualRow[], from: number, step: 1 
 /* ---- height estimates (only used until a row is measured) ---- */
 
 export const EDGE_ROW_PX = 44;
-const DIVIDER_PX = 56;
-const FRAME_PX = 37; // py-2.5 (20) + channel label line (17), measured
+const DIVIDER_PX = 58; // pt-5 + pb-2 + chip 30
+const FRAME_PX = 66.5; // py 18 + name/time line 25 + bubble padding 24 (measured)
 const BODY_LINE_PX = 26.4; // 16px * 1.65
 const TRANSLATION_LINE_PX = 22.75; // 14px * leading-relaxed
-const MAX_LINE_CHARS = 76;
-/** Horizontal space around the text column: time gutter, gaps, padding, border. */
-const GUTTER_PX = 118;
-const CHAR_PX = 8.4;
-/** Below this scroller width the text column is narrower than 72ch. */
-export const NARROW_PX = 700;
+const TRANSLATION_GAP_PX = 4;
+const CHAR_PX = 8.3;
+/** The text column stops growing here (bubble max width minus its padding). */
+const MAX_TEXT_PX = 664;
+/** Horizontal space around the text column: room padding, avatar + gap, bubble padding. */
+const GUTTER_WIDE_PX = 148;
+const GUTTER_PHONE_PX = 112;
+/** Below this scroller width the phone paddings apply (the `sm` breakpoint, 640px viewport). */
+export const PHONE_PX = 600;
 
 export interface EstimateContext {
   view: ViewMode;
@@ -90,12 +93,18 @@ export interface EstimateContext {
 
 const linesFor = (text: string, perLine: number) => Math.max(1, Math.ceil(text.length / perLine));
 
+/** Characters of body text per line for a scroller of this width. */
+const charsPerLine = (width: number): number => {
+  const gutter = width < PHONE_PX ? GUTTER_PHONE_PX : GUTTER_WIDE_PX;
+  return Math.max(20, Math.min(MAX_TEXT_PX, width - gutter) / CHAR_PX);
+};
+
 /** Rough pixel height of a row so the scroll bar and first paint are close to the final layout. */
 export function estimateRowHeight(row: VirtualRow | undefined, ctx: EstimateContext): number {
   if (!row) return 80;
   if (row.type === "edge") return EDGE_ROW_PX;
   if (row.type === "divider") return DIVIDER_PX;
-  const perLine = Math.max(20, Math.min(MAX_LINE_CHARS, (ctx.width - GUTTER_PX) / CHAR_PX));
+  const perLine = charsPerLine(ctx.width);
   if (row.type === "interim") return FRAME_PX + BODY_LINE_PX * linesFor(row.line.text, perLine);
   const { segment } = row;
   const translation = ctx.translations[segment.id];
@@ -104,7 +113,12 @@ export function estimateRowHeight(row: VirtualRow | undefined, ctx: EstimateCont
   if (ctx.view === "translation") {
     return FRAME_PX + BODY_LINE_PX * linesFor(translation.text, perLine);
   }
-  return FRAME_PX + original + 2 + TRANSLATION_LINE_PX * linesFor(translation.text, perLine * 1.2);
+  return (
+    FRAME_PX +
+    original +
+    TRANSLATION_GAP_PX +
+    TRANSLATION_LINE_PX * linesFor(translation.text, perLine * 1.2)
+  );
 }
 
 /* ---- scroll anchoring ---- */

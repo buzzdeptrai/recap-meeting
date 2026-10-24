@@ -1,7 +1,13 @@
 import type { MinutesLang } from "@recap/core";
 import type { MeetingListItemDto, MinutesBadgeDto } from "@/lib/api-types";
 import { formatClock } from "@/lib/format";
-import { MINUTES_SOURCE, MINUTES_STALE_STATUS, type StatusSpec } from "@/lib/status";
+import type { MinutesAvailability } from "@/features/minutes/export-options";
+import {
+  MINUTES_SOURCE,
+  MINUTES_STALE_STATUS,
+  type StatusSpec,
+  type StatusTone,
+} from "@/lib/status";
 import { formatVnTime } from "@/lib/vn-time";
 
 const MS_PER_MINUTE = 60_000;
@@ -61,19 +67,11 @@ export function minutesChips(meeting: Pick<MeetingListItemDto, "minutes">): Minu
 export const hasMinutes = (meeting: Pick<MeetingListItemDto, "minutes">) =>
   minutesChips(meeting).length > 0;
 
-export interface ExportAvailability {
-  vi: boolean;
-  en: boolean;
-  both: boolean;
-}
-
-/** Which Word exports exist; the bilingual one needs both languages. */
-export function exportAvailability(
+/** Which languages already have stored minutes (input of the shared export helper). */
+export function minutesAvailability(
   meeting: Pick<MeetingListItemDto, "minutes">,
-): ExportAvailability {
-  const vi = Boolean(meeting.minutes.vi);
-  const en = Boolean(meeting.minutes.en);
-  return { vi, en, both: vi && en };
+): MinutesAvailability {
+  return { vi: Boolean(meeting.minutes.vi), en: Boolean(meeting.minutes.en) };
 }
 
 /** "Tạo biên bản" only makes sense after the meeting ended. */
@@ -86,5 +84,38 @@ export function minutesAction(meeting: MeetingListItemDto): MinutesAction {
 
 export const roomHref = (id: string) => `/meetings/${encodeURIComponent(id)}`;
 export const minutesHref = (id: string) => `${roomHref(id)}/minutes`;
-export const exportHref = (id: string, lang: "vi" | "en" | "both") =>
-  `/api/meetings/${encodeURIComponent(id)}/export?lang=${lang}`;
+
+export interface QuickAction {
+  kind: "minutes" | "room";
+  label: string;
+  href: string;
+}
+
+/** The single action a row shows on hover/focus: the minutes when they exist, else the room. */
+export function quickAction(meeting: MeetingListItemDto): QuickAction {
+  if (hasMinutes(meeting)) {
+    return { kind: "minutes", label: "Biên bản", href: minutesHref(meeting.id) };
+  }
+  return { kind: "room", label: "Mở phòng", href: roomHref(meeting.id) };
+}
+
+export type ChipTone = "neutral" | "info" | "ok" | "warn" | "decision" | "danger";
+
+const CHIP_TONE: Record<StatusTone, ChipTone> = {
+  neutral: "neutral",
+  ok: "ok",
+  warn: "warn",
+  error: "danger",
+  rec: "danger",
+  purple: "info",
+  conclusion: "decision",
+};
+
+/** Maps a `lib/status.ts` tone onto the kit `Chip` tone. */
+export const chipToneFor = (tone: StatusTone): ChipTone => CHIP_TONE[tone];
+
+/** "12 cuộc họp", or "3 cuộc họp phù hợp" while a search or filter is on. */
+export function listCountLabel(total: number, filtered: boolean): string {
+  if (!filtered) return `${total} cuộc họp`;
+  return total === 0 ? "Không có cuộc họp nào phù hợp" : `${total} cuộc họp phù hợp`;
+}

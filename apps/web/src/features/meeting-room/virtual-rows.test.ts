@@ -125,6 +125,28 @@ describe("estimateRowHeight", () => {
     expect(estimateRowHeight(undefined, ctx)).toBeGreaterThan(0);
   });
 
+  it("matches heights measured in the browser (bubble layout, 2026-10-24)", () => {
+    const tr = (text: string) => ({ s1: { lang: "en" as const, text, provider: "p" } });
+    const source = { ...ctx, view: "source" as const };
+    expect(estimateRowHeight(row("x".repeat(55)), source)).toBeCloseTo(92.9, 0);
+    expect(estimateRowHeight(row("x".repeat(89)), source)).toBeCloseTo(119.3, 0);
+    expect(
+      estimateRowHeight(row("x".repeat(60)), { ...ctx, translations: tr("y".repeat(60)) }),
+    ).toBeCloseTo(119.6, 0);
+    expect(
+      estimateRowHeight(row("x".repeat(49)), { ...ctx, translations: tr("y".repeat(172)) }),
+    ).toBeCloseTo(142.4, 0);
+    // phone width (scroller 476px): a 54-character line already wraps
+    expect(estimateRowHeight(row("x".repeat(54)), { ...source, width: 476 })).toBeCloseTo(119.3, 0);
+  });
+
+  it("wraps earlier as the scroller gets narrower (sidebar present)", () => {
+    const text = "x".repeat(120);
+    const at = (width: number) => estimateRowHeight(row(text), { ...ctx, width });
+    expect(at(700)).toBeGreaterThanOrEqual(at(1000));
+    expect(at(560)).toBeGreaterThan(at(1000));
+  });
+
   it("sums estimates up to an index", () => {
     const rows = [row("a"), row("b"), row("c")];
     const one = estimateRowHeight(rows[0], ctx);

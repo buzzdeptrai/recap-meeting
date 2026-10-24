@@ -1,28 +1,27 @@
-import { Flag, ListBullets, TextAlignLeft } from "@phosphor-icons/react/dist/ssr";
-import { Badge, Tooltip, formatNumber } from "@recap/admin-ui";
+import {
+  FileText,
+  Flag,
+  ListBullets,
+  Microphone,
+  NotePencil,
+  TextAlignLeft,
+  Waveform,
+} from "@phosphor-icons/react/dist/ssr";
+import { Chip, IconBadge, Tooltip, formatNumber, type IconBadgeProps } from "@recap/admin-ui";
 import type { ReactNode } from "react";
-import { StatusBadge } from "@/components/status-badge";
 import type { MeetingListItemDto } from "@/lib/api-types";
 import { formatLangPair } from "@/lib/format";
 import { MEETING_STATUS, NO_MINUTES_LABEL } from "@/lib/status";
 import { Snippet } from "./snippet";
 import {
+  chipToneFor,
   durationLabel,
+  hasMinutes,
   minutesChips,
   subLine,
   wallClockRange,
   type MinutesChip,
 } from "./meeting-format";
-
-const BADGE_VARIANT = {
-  neutral: "neutral",
-  ok: "ok",
-  warn: "warn",
-  error: "error",
-  rec: "rec",
-  purple: "purple",
-  conclusion: "conclusion",
-} as const;
 
 /** `VI+EN → VI`: spoken language to translation target. */
 export function LangBadge({ meeting }: { meeting: MeetingListItemDto }) {
@@ -30,9 +29,9 @@ export function LangBadge({ meeting }: { meeting: MeetingListItemDto }) {
   if (pair === "—") return <span className="text-soft-muted">—</span>;
   return (
     <Tooltip content="Ngôn ngữ nói → ngôn ngữ dịch">
-      <Badge shape="chip" className="font-soft-mono text-[11px]">
+      <Chip tone="outline" size="sm" className="font-soft-mono">
         {pair.replace("AUTO", "Tự động")}
-      </Badge>
+      </Chip>
     </Tooltip>
   );
 }
@@ -74,10 +73,10 @@ export function Counters({ meeting }: { meeting: MeetingListItemDto }) {
 
 function MinutesChipBadge({ chip }: { chip: MinutesChip }) {
   return (
-    <Badge shape="chip" variant={BADGE_VARIANT[chip.spec.tone]} className="gap-1">
+    <Chip tone={chipToneFor(chip.spec.tone)} size="sm">
       {chip.lang.toUpperCase()}
-      <span className="font-semibold opacity-80">· {chip.spec.label}</span>
-    </Badge>
+      <span className="font-medium opacity-80">· {chip.spec.label}</span>
+    </Chip>
   );
 }
 
@@ -111,15 +110,34 @@ export function DurationCell({ meeting }: { meeting: MeetingListItemDto }) {
   );
 }
 
-/** Meeting status from the single mapping; the live dot pulses (unless reduced motion). */
-export function MeetingStatusBadge({ meeting }: { meeting: MeetingListItemDto }) {
+const ICON_PROPS = { size: 18, weight: "regular" } as const;
+
+/** Round leading icon: the kind of meeting at a glance (draft, live, with minutes, recorded). */
+export function MeetingIcon({ meeting }: { meeting: MeetingListItemDto }) {
+  const tone: NonNullable<IconBadgeProps["tone"]> =
+    meeting.status === "live" ? "tone-b" : hasMinutes(meeting) ? "tone-a" : "neutral";
   return (
-    <StatusBadge
-      status={MEETING_STATUS[meeting.status]}
-      className={
-        meeting.status === "live" ? "motion-safe:[&>span:first-child]:animate-pulse" : undefined
-      }
-    />
+    <IconBadge tone={tone} size="lg">
+      {meeting.status === "draft" ? <NotePencil {...ICON_PROPS} /> : null}
+      {meeting.status === "live" ? <Microphone {...ICON_PROPS} /> : null}
+      {meeting.status === "ended" && hasMinutes(meeting) ? <FileText {...ICON_PROPS} /> : null}
+      {meeting.status === "ended" && !hasMinutes(meeting) ? <Waveform {...ICON_PROPS} /> : null}
+    </IconBadge>
+  );
+}
+
+/** Meeting status as a pill chip: label and tone come from `lib/status.ts`; the live dot pulses (unless reduced motion). */
+export function MeetingStatusBadge({ meeting }: { meeting: MeetingListItemDto }) {
+  const spec = MEETING_STATUS[meeting.status];
+  const dotClass = meeting.status === "live" ? "motion-safe:animate-pulse" : undefined;
+  return (
+    <Chip
+      tone={chipToneFor(spec.tone)}
+      size="lg"
+      icon={<span className={`size-1.5 rounded-full bg-current ${dotClass ?? ""}`} />}
+    >
+      {spec.label}
+    </Chip>
   );
 }
 

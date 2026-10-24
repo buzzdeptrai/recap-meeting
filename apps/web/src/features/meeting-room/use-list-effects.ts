@@ -37,6 +37,15 @@ export function useRemeasureOnLayoutChange(
       return;
     }
     virtualizer.measure();
+    // `measure()` drops the cached sizes, and rows already on screen do not resize by themselves
+    // (they would keep the estimate and overlap). Once the virtualizer has re-rendered with the
+    // estimates, read the real height of every mounted row again.
+    const frame = requestAnimationFrame(() =>
+      virtualizer.scrollElement
+        ?.querySelectorAll("[data-index]")
+        .forEach((node) => virtualizer.measureElement(node)),
+    );
+    return () => cancelAnimationFrame(frame);
   }, [virtualizer, view, width]);
 }
 

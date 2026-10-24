@@ -1,4 +1,4 @@
-import { Card } from "@recap/admin-ui";
+import { FloatCard } from "@recap/admin-ui";
 import { Fragment } from "react";
 import type { MeetingListItemDto } from "@/lib/api-types";
 import type { ListState } from "@/lib/list-query";
@@ -24,9 +24,9 @@ export function isDateOrdered(state: ListState): boolean {
 
 function DayHeading({ heading, count }: { heading: string; count: number }) {
   return (
-    <h3 className="sticky top-0 z-20 flex items-center justify-between border-y border-soft-line bg-soft-surface/95 px-4 py-2 text-xs font-bold text-soft-muted backdrop-blur first:border-t-0 sm:px-5 max-[860px]:top-[72px]">
+    <h3 className="flex items-center justify-between px-4 pt-4 pb-1.5 text-xs font-semibold text-soft-muted first:pt-1 sm:px-5">
       <span>{heading}</span>
-      <span className="soft-tabular font-semibold">{count} cuộc họp</span>
+      <span className="soft-tabular font-medium">{count} cuộc họp</span>
     </h3>
   );
 }
@@ -40,12 +40,12 @@ export function MeetingListView({ meetings, state, mode, now, onCopy }: ListView
   const rowProps = { grouped, onCopy };
   if (mode === "cards") return <CardGrid groups={groups} rowProps={rowProps} />;
   return (
-    <Card as="section" padding="none" aria-label="Danh sách cuộc họp">
+    <FloatCard as="section" padding="none" bodyClassName="py-4" aria-label="Danh sách cuộc họp">
       <TableHead />
       {groups.map((group) => (
         <Fragment key={group.key}>
           {group.heading ? <DayHeading heading={group.heading} count={group.items.length} /> : null}
-          <ul className="divide-y divide-soft-line">
+          <ul className="divide-y divide-soft-line/70">
             {group.items.map((meeting) => (
               <li key={meeting.id}>
                 <MeetingRow meeting={meeting} {...rowProps} />
@@ -57,7 +57,7 @@ export function MeetingListView({ meetings, state, mode, now, onCopy }: ListView
           </ul>
         </Fragment>
       ))}
-    </Card>
+    </FloatCard>
   );
 }
 
@@ -72,7 +72,7 @@ function CardGrid({ groups, rowProps }: GridProps) {
       {groups.map((group) => (
         <div key={group.key}>
           {group.heading ? (
-            <h3 className="mb-2 px-1 text-xs font-bold text-soft-muted">{group.heading}</h3>
+            <h3 className="mb-2 px-1 text-xs font-semibold text-soft-muted">{group.heading}</h3>
           ) : null}
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 min-[1700px]:grid-cols-4">
             {group.items.map((meeting) => (

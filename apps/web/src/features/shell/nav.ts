@@ -33,8 +33,8 @@ export const NAV_SPEC: readonly NavGroupSpec[] = [
 const ROOM_PATH = /^\/meetings\/(?!new(?:\/|$))[^/]+\/?$/;
 
 /**
- * The live room brings its own full-width top bar and two-pane layout, so it is rendered without
- * the sidebar frame ("bare" mode). Every other page sits inside the shell.
+ * The live room sits inside the same shell as every other page; this only marks it so the page
+ * background can be tinted behind its floating cards.
  */
 export function isRoomPath(pathname: string | null | undefined): boolean {
   return typeof pathname === "string" && ROOM_PATH.test(pathname);
