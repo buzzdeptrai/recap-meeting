@@ -19,7 +19,11 @@ const topic = (id: string, atMs: number, label: string | null = null): Mark => (
 });
 
 const shape = (rows: ReturnType<typeof buildTranscriptRows>) =>
-  rows.map((r) => (r.type === "divider" ? `D:${r.name}` : r.segment.id));
+  rows.map((r) => {
+    if (r.type === "divider") return `D:${r.name}`;
+    if (r.type === "conclusion") return `C:${r.mark.id}`;
+    return r.segment.id;
+  });
 
 describe("buildTranscriptRows", () => {
   const segments = [seg(0), seg(1), seg(2)];
@@ -48,9 +52,8 @@ describe("buildTranscriptRows", () => {
     expect(shape(rows)).toEqual(["D:Mở đầu", "s0", "s1", "D:Chủ đề 2", "s2", "D:Chủ đề 3"]);
   });
 
-  it("ignores conclusion marks and returns plain segments without topics", () => {
-    const conclusion: Mark = { id: "k", kind: "conclusion", atMs: 5_000, label: null };
-    expect(shape(buildTranscriptRows(segments, [conclusion]))).toEqual(["s0", "s1", "s2"]);
+  it("returns plain segments when there are no marks", () => {
+    expect(shape(buildTranscriptRows(segments, []))).toEqual(["s0", "s1", "s2"]);
   });
 });
 
@@ -84,5 +87,56 @@ describe("buildTranscriptRows over a window of the meeting", () => {
 
   it("keeps the whole-meeting behaviour by default", () => {
     expect(shape(buildTranscriptRows(segments, marks)).at(-1)).toBe("D:Chủ đề 3");
+  });
+});
+
+describe("conclusion rows", () => {
+  const conclusion = (id: string, atMs: number, label: string | null = null): Mark => ({
+    id,
+    kind: "conclusion",
+    atMs,
+    label,
+  });
+  const segments = [seg(0), seg(1), seg(2)];
+
+  it("is one row after the segment that spans the mark, not a tag on every nearby segment", () => {
+    const rows = buildTranscriptRows(segments, [conclusion("k", 12_000)]);
+    expect(shape(rows)).toEqual(["s0", "s1", "C:k", "s2"]);
+  });
+
+  it("puts a topic before a conclusion at the same instant, whatever the input order", () => {
+    const marks = [conclusion("k", 10_000), topic("t", 10_000, "Giá")];
+    expect(shape(buildTranscriptRows(segments, marks))).toEqual(["s0", "D:Giá", "C:k", "s1", "s2"]);
+  });
+
+  it("keeps several conclusions near one segment in time order", () => {
+    const marks = [conclusion("k2", 13_000), conclusion("k1", 11_000), conclusion("k3", 13_000)];
+    expect(shape(buildTranscriptRows(segments, marks))).toEqual([
+      "s0",
+      "s1",
+      "C:k1",
+      "C:k2",
+      "C:k3",
+      "s2",
+    ]);
+  });
+
+  it("puts a conclusion after the last segment at the end", () => {
+    expect(shape(buildTranscriptRows(segments, [conclusion("k", 900_000)])).at(-1)).toBe("C:k");
+  });
+
+  it("leaves out conclusions whose anchor neighbourhood is not loaded", () => {
+    const loaded = [seg(5), seg(6), seg(7)];
+    const marks = [
+      conclusion("before", 20_000),
+      conclusion("mid", 62_000),
+      conclusion("after", 900_000),
+    ];
+    expect(shape(buildTranscriptRows(loaded, marks, { hasPrev: true, hasNext: true }))).toEqual([
+      "s5",
+      "s6",
+      "C:mid",
+      "s7",
+    ]);
   });
 });

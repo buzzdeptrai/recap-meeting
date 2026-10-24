@@ -2,21 +2,32 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { Mark } from "@recap/core";
+import type { MarkTarget } from "./marks";
 import { isAtHead, isAtTail, type RoomWindow } from "./paging";
 import type { TranscriptPager } from "./use-transcript-pager";
 import type { AnchorBlock, ScrollOptions } from "./use-virtual-transcript";
-import { indexOfKey, type VirtualRow } from "./virtual-rows";
+import { conclusionRowKey, indexOfKey, topicRowKey, type VirtualRow } from "./virtual-rows";
 
 /** What the transcript can scroll to, wherever it is in the meeting. */
 export type JumpRequest =
   | { kind: "segment"; id: string; seq: number; atMs: number; highlight?: boolean }
   | { kind: "topic"; markId: string; atMs: number }
+  | { kind: "conclusion"; markId: string; segmentId: string; seq: number; atMs: number }
   | { kind: "edge"; edge: "start" | "end" };
 
 export const topicRequest = (mark: Mark): JumpRequest => ({
   kind: "topic",
   markId: mark.id,
   atMs: mark.atMs,
+});
+
+/** Lands on the conclusion divider; its anchor segment is the fallback (and gets the highlight). */
+export const conclusionRequest = (mark: Mark, target: MarkTarget): JumpRequest => ({
+  kind: "conclusion",
+  markId: mark.id,
+  segmentId: target.id,
+  seq: target.seq,
+  atMs: target.startMs,
 });
 
 /** Row to scroll to for `request` in the currently loaded rows, or -1 when it is not loaded. */
@@ -30,7 +41,11 @@ export function resolveJumpIndex(
     if (request.edge === "start") return isAtHead(window) ? 0 : -1;
     return isAtTail(window) ? rows.length - 1 : -1;
   }
-  const divider = indexOfKey(rows, `topic-${request.markId}`);
+  if (request.kind === "conclusion") {
+    const divider = indexOfKey(rows, conclusionRowKey(request.markId));
+    return divider >= 0 ? divider : indexOfKey(rows, request.segmentId);
+  }
+  const divider = indexOfKey(rows, topicRowKey(request.markId));
   if (divider >= 0) return divider;
   // No divider in view: land on the first segment at or after the marker, if it is in the run.
   const segments = rows.flatMap((row) => (row.type === "segment" ? [row.segment] : []));
@@ -70,6 +85,7 @@ export function useTranscriptJump(input: JumpInput) {
   const land = useCallback(
     (request: JumpRequest, index: number, smooth: boolean) => {
       if (request.kind === "segment" && request.highlight) setHighlightId(request.id);
+      if (request.kind === "conclusion") setHighlightId(request.segmentId);
       landOn({ request, index, smooth, scrollToRow, resumeFollowing });
     },
     [scrollToRow, resumeFollowing],
@@ -131,5 +147,6 @@ async function loadFor(pager: TranscriptPager, request: JumpRequest): Promise<vo
   if (request.kind === "edge") {
     return request.edge === "start" ? pager.loadHead() : pager.loadTail();
   }
-  await pager.jumpTo(request.kind === "segment" ? { seq: request.seq } : { atMs: request.atMs });
+  const bySeq = request.kind === "segment" || request.kind === "conclusion";
+  await pager.jumpTo(bySeq ? { seq: request.seq } : { atMs: request.atMs });
 }

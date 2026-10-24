@@ -1,31 +1,23 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-  type Dispatch,
-  type KeyboardEvent,
-  type ReactNode,
-  type Ref,
-} from "react";
-import { nearestSegmentId } from "./marks";
+import { useImperativeHandle, useMemo, type Dispatch, type ReactNode, type Ref } from "react";
+import type { TargetLang } from "@recap/core";
+import type { Density } from "./density";
 import { isAtTail } from "./paging";
 import type { ViewMode } from "./segment-row";
 import type { RoomAction, RoomState } from "./state";
 import { LatestPill, VirtualRowView, type RowViewContext } from "./transcript-parts";
+import {
+  useFollowOnRecord,
+  useListKeys,
+  useOpenOnFocus,
+  useOpeningFocus,
+  useSettledSeq,
+} from "./use-transcript-helpers";
 import { useTranscriptJump, type JumpRequest } from "./use-transcript-jump";
 import { useTranscriptPager } from "./use-transcript-pager";
 import { useAnchorBlock, useVirtualTranscript } from "./use-virtual-transcript";
-import {
-  buildVirtualRows,
-  indexOfKey,
-  neighbourSegmentIndex,
-  type VirtualRow,
-} from "./virtual-rows";
+import { buildVirtualRows, indexOfKey, type VirtualRow } from "./virtual-rows";
 
 export interface TranscriptHandle {
   jump: (request: JumpRequest) => void;
@@ -38,6 +30,9 @@ interface TranscriptProps {
   room: RoomState;
   dispatch: Dispatch<RoomAction>;
   view: ViewMode;
+  density: Density;
+  /** Language the meeting translates into. */
+  targetLang: TargetLang;
   /** Shown instead of the list while there is nothing to read yet. */
   empty: ReactNode;
   ended: boolean;
@@ -72,7 +67,7 @@ function useRows(room: RoomState, ended: boolean, recording: boolean) {
 
 /** Everything the transcript needs: rows, pager, virtualizer, jumps, and the row context. */
 function useTranscriptModel(props: TranscriptProps) {
-  const { room, dispatch, view, ended, recording, focusMs = null, searchTerms } = props;
+  const { room, dispatch, view, density, ended, recording, focusMs = null, searchTerms } = props;
   const rows = useRows(room, ended, recording);
   const pager = useTranscriptPager(props.meetingId, room.window, dispatch);
   const anchorBlock = useAnchorBlock();
@@ -80,6 +75,7 @@ function useTranscriptModel(props: TranscriptProps) {
   const list = useVirtualTranscript({
     rows,
     view,
+    density,
     translations: room.translations,
     window: room.window,
     pager,
@@ -108,7 +104,8 @@ function useTranscriptModel(props: TranscriptProps) {
   const ctx: RowViewContext = {
     room,
     view,
-    marks: room.marks,
+    density,
+    targetLang: props.targetLang,
     highlightId: jumper.highlightId,
     terms: searchTerms,
     liveFromSeq: room.liveFromSeq,
@@ -201,101 +198,4 @@ function VirtualList({ rows, list, ctx, total }: VirtualListProps) {
       })}
     </div>
   );
-}
-
-/** Segment nearest to `focusMs` in the opening page (ended room only). */
-function useOpeningFocus(room: RoomState, focusMs: number | null, ended: boolean) {
-  const [initial] = useState(() =>
-    ended && focusMs !== null ? nearestSegmentId(room.segments, focusMs) : null,
-  );
-  return initial;
-}
-
-/** Exact centring on the deep-linked row once rows are measured (the server render only estimated). */
-function useOpenOnFocus(
-  focusId: string | null,
-  rows: VirtualRow[],
-  scrollToRow: (index: number, options?: { align?: "center" }) => void,
-) {
-  const done = useRef(false);
-  useEffect(() => {
-    if (done.current || focusId === null) return;
-    const index = indexOfKey(rows, focusId);
-    if (index < 0) return;
-    done.current = true;
-    scrollToRow(index, { align: "center" });
-  }, [focusId, rows, scrollToRow]);
-}
-
-/** Starting to record: show the live tail and follow it (loading it when we are elsewhere). */
-function useFollowOnRecord(
-  recording: boolean,
-  room: RoomState,
-  jump: (request: JumpRequest) => void,
-  resumeFollowing: () => void,
-) {
-  const wasRecording = useRef(recording);
-  useEffect(() => {
-    const started = recording && !wasRecording.current;
-    wasRecording.current = recording;
-    if (!started) return;
-    if (isAtTail(room.window)) resumeFollowing();
-    else jump({ kind: "edge", edge: "end" });
-  }, [recording, room.window, jump, resumeFollowing]);
-}
-
-const SETTLE_MS = 400;
-
-/**
- * Highest live seq whose fade-in has had time to play. Rows at or below it never animate again
- * (e.g. when scrolled out and back in); newer live rows animate once.
- */
-function useSettledSeq(rows: VirtualRow[]): number {
-  const [settled, setSettled] = useState(-1);
-  const last = rows.findLast((row) => row.type === "segment");
-  const lastSeq = last?.type === "segment" ? last.segment.seq : -1;
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(lastSeq), SETTLE_MS);
-    return () => clearTimeout(timer);
-  }, [lastSeq]);
-  return settled;
-}
-
-/** Home / End jump to the very start / end of the meeting; arrows move between rows. */
-function useListKeys(
-  rows: VirtualRow[],
-  list: ReturnType<typeof useVirtualTranscript>,
-  jump: (request: JumpRequest) => void,
-) {
-  return useCallback(
-    (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
-      if (event.key === "Home" || event.key === "End") {
-        event.preventDefault();
-        jump({ kind: "edge", edge: event.key === "Home" ? "start" : "end" });
-        return;
-      }
-      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-      const current = rowIndexOf(event.target);
-      if (current === null) return;
-      const target = neighbourSegmentIndex(rows, current, event.key === "ArrowDown" ? 1 : -1);
-      if (target < 0) return;
-      event.preventDefault();
-      list.scrollToRow(target, { align: "auto" });
-      requestAnimationFrame(() => focusRow(event.currentTarget, target));
-    },
-    [rows, list, jump],
-  );
-}
-
-function rowIndexOf(target: EventTarget): number | null {
-  if (!(target instanceof HTMLElement) || !target.hasAttribute("data-seg-row")) return null;
-  const index = target.closest("[data-index]")?.getAttribute("data-index");
-  return index === null || index === undefined ? null : Number(index);
-}
-
-function focusRow(scroller: HTMLElement, index: number) {
-  scroller.querySelector<HTMLElement>(`[data-index="${index}"] [data-seg-row]`)?.focus({
-    preventScroll: true,
-  });
 }

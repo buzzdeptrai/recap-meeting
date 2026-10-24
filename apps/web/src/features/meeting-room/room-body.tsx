@@ -2,7 +2,8 @@
 
 import { FloatCard } from "@recap/admin-ui";
 import type { ReactNode, RefObject } from "react";
-import type { Mark } from "@recap/core";
+import type { Mark, TargetLang } from "@recap/core";
+import type { Density } from "./density";
 import type { MarkTarget } from "./marks";
 import { MarkBar } from "./mark-bar";
 import { RightRail } from "./right-rail";
@@ -10,7 +11,7 @@ import type { ViewMode } from "./segment-row";
 import { SetupChecklist } from "./setup-checklist";
 import { Transcript, type TranscriptHandle } from "./transcript";
 import { TranscriptSearch } from "./transcript-search";
-import { topicRequest } from "./use-transcript-jump";
+import { conclusionRequest, topicRequest } from "./use-transcript-jump";
 import type { useRoomController } from "./use-room-controller";
 import type { useRoomSearch } from "./use-room-search";
 
@@ -18,20 +19,17 @@ interface RoomBodyProps {
   controller: ReturnType<typeof useRoomController>;
   meetingId: string;
   view: ViewMode;
+  density: Density;
+  targetLang: TargetLang;
   focusMs: number | null;
   transcript: RefObject<TranscriptHandle | null>;
   search: ReturnType<typeof useRoomSearch>;
 }
 
-/** Jump callbacks for the side panel (segment from a conclusion, boundary from a topic). */
+/** Jump callbacks for the side panel (divider from a conclusion, boundary from a topic). */
 function useJumps(transcript: RefObject<TranscriptHandle | null>) {
-  const jumpToSegment = (target: MarkTarget) =>
-    transcript.current?.jump({
-      kind: "segment",
-      id: target.id,
-      seq: target.seq,
-      atMs: target.startMs,
-    });
+  const jumpToSegment = (mark: Mark, target: MarkTarget) =>
+    transcript.current?.jump(conclusionRequest(mark, target));
   const jumpToTopic = (mark: Mark) => transcript.current?.jump(topicRequest(mark));
   return { jumpToSegment, jumpToTopic };
 }
@@ -40,6 +38,8 @@ function TranscriptCard({
   controller,
   meetingId,
   view,
+  density,
+  targetLang,
   focusMs,
   transcript,
   search,
@@ -63,6 +63,8 @@ function TranscriptCard({
         room={socket.room}
         dispatch={socket.dispatch}
         view={view}
+        density={density}
+        targetLang={targetLang}
         empty={emptyContent({ ended, recording })}
         ended={ended}
         recording={recording}
@@ -84,6 +86,8 @@ export function RoomBody({
   controller,
   meetingId,
   view,
+  density,
+  targetLang,
   focusMs,
   transcript,
   search,
@@ -96,6 +100,8 @@ export function RoomBody({
         controller={controller}
         meetingId={meetingId}
         view={view}
+        density={density}
+        targetLang={targetLang}
         focusMs={focusMs}
         transcript={transcript}
         search={search}

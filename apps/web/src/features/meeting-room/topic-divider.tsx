@@ -1,21 +1,24 @@
+import clsx from "clsx";
 import { Flag } from "@phosphor-icons/react";
 import { Chip } from "@recap/admin-ui";
 import type { Mark } from "@recap/core";
 import { formatClock } from "@/lib/format";
+import { rowStyle, type Density } from "./density";
 
 interface TopicDividerProps {
   mark: Mark;
   name: string;
+  density: Density;
 }
 
 /** Hard boundary between topics: a pill with the time and name between two dotted rules. */
-export function TopicDivider({ mark, name }: TopicDividerProps) {
+export function TopicDivider({ mark, name, density }: TopicDividerProps) {
   return (
     <div
       id={`topic-${mark.id}`}
       role="separator"
       aria-label={`Chủ đề: ${name}`}
-      className="flex items-center gap-3.5 px-4 pt-5 pb-2 sm:px-8"
+      className={clsx("flex items-center gap-3.5", rowStyle(density).divider)}
     >
       <span
         aria-hidden

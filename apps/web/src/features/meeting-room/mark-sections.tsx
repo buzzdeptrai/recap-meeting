@@ -141,7 +141,7 @@ interface ConclusionListProps {
   marks: Mark[];
   segments: Segment[];
   anchors: Record<string, MarkTarget | undefined>;
-  onJump: (target: MarkTarget) => void;
+  onJump: (mark: Mark, target: MarkTarget) => void;
   onRemove: (id: string) => void;
 }
 
@@ -179,7 +179,7 @@ export function ConclusionList({
 interface ConclusionItemProps {
   mark: Mark;
   target: MarkTarget | undefined;
-  onJump: (target: MarkTarget) => void;
+  onJump: (mark: Mark, target: MarkTarget) => void;
   onRemove: (id: string) => void;
 }
 
@@ -201,7 +201,7 @@ function ConclusionItem({ mark, target, onJump, onRemove }: ConclusionItemProps)
       <button
         type="button"
         disabled={!target}
-        onClick={() => target && onJump(target)}
+        onClick={() => target && onJump(mark, target)}
         className="soft-focus mt-1 block w-full rounded-md text-left disabled:pointer-events-none"
       >
         <span className="line-clamp-3 block text-small text-soft-ink">{target?.text ?? "—"}</span>

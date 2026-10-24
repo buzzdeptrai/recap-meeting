@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import type { MeetingDto } from "@/lib/api-types";
 import { Banner, ConfirmDialog } from "@recap/admin-ui";
 import { RESUME_HINT } from "./session-phase";
+import { useDensity } from "./use-density";
 import { RoomBanners } from "./room-banners";
 import { RoomBody } from "./room-body";
 import { RoomHeader } from "./room-header";
@@ -24,6 +25,7 @@ interface MeetingRoomProps {
 /** Floating cards on the tinted page: header, banners, transcript + side panel (16px gaps). */
 export function MeetingRoom({ meeting, initial, focusMs = null }: MeetingRoomProps) {
   const [view, setView] = useState<ViewMode>("both");
+  const [density, setDensity] = useDensity();
   const [stopOpen, setStopOpen] = useState(false);
   const controller = useRoomController(meeting, initial, () => setStopOpen(false));
   const { socket, capture, recording, ended } = controller;
@@ -41,6 +43,8 @@ export function MeetingRoom({ meeting, initial, focusMs = null }: MeetingRoomPro
         controller={controller}
         view={view}
         onViewChange={setView}
+        density={density}
+        onDensityChange={setDensity}
         search={search}
         onStop={() => setStopOpen(true)}
       />
@@ -60,6 +64,8 @@ export function MeetingRoom({ meeting, initial, focusMs = null }: MeetingRoomPro
         controller={controller}
         meetingId={meeting.id}
         view={view}
+        density={density}
+        targetLang={meeting.targetLang ?? "vi"}
         focusMs={focusMs}
         transcript={transcript}
         search={search}

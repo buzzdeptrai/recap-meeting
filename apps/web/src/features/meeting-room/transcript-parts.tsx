@@ -1,9 +1,10 @@
 import { ArrowDown } from "@phosphor-icons/react";
 import { Button } from "@recap/admin-ui";
-import type { Mark } from "@recap/core";
-import { isNearMark } from "./marks";
+import type { TargetLang } from "@recap/core";
+import type { Density } from "./density";
 import { InterimRow, SegmentRow, type ViewMode } from "./segment-row";
 import type { RoomState } from "./state";
+import { ConclusionDivider } from "./conclusion-divider";
 import { TopicDivider } from "./topic-divider";
 import type { EdgeState } from "./use-transcript-pager";
 import { EDGE_ROW_PX, type VirtualRow } from "./virtual-rows";
@@ -50,7 +51,9 @@ export function EdgeRow({ side, state, onRetry }: EdgeRowProps) {
 export interface RowViewContext {
   room: RoomState;
   view: ViewMode;
-  marks: Mark[];
+  density: Density;
+  /** Language the meeting translates into (rows tag only other languages). */
+  targetLang: TargetLang;
   highlightId: string | null;
   terms: readonly string[] | undefined;
   /** First live seq (those fade in) and the newest one whose fade already played. */
@@ -71,9 +74,18 @@ export function VirtualRowView({ row, ctx }: { row: VirtualRow; ctx: RowViewCont
         />
       );
     case "divider":
-      return <TopicDivider mark={row.mark} name={row.name} />;
+      return <TopicDivider mark={row.mark} name={row.name} density={ctx.density} />;
+    case "conclusion":
+      return <ConclusionDivider mark={row.mark} density={ctx.density} />;
     case "interim":
-      return <InterimRow channel={row.channel} line={row.line} />;
+      return (
+        <InterimRow
+          channel={row.channel}
+          line={row.line}
+          density={ctx.density}
+          showHeader={row.showHeader}
+        />
+      );
     case "segment": {
       const { segment } = row;
       return (
@@ -81,7 +93,9 @@ export function VirtualRowView({ row, ctx }: { row: VirtualRow; ctx: RowViewCont
           segment={segment}
           translation={ctx.room.translations[segment.id]}
           view={ctx.view}
-          decision={isNearMark(segment, ctx.marks)}
+          density={ctx.density}
+          targetLang={ctx.targetLang}
+          showHeader={row.showHeader}
           animate={
             ctx.liveFromSeq !== null &&
             segment.seq >= ctx.liveFromSeq &&

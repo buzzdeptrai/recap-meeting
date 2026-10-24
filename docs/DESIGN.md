@@ -68,7 +68,7 @@ Narrow form (max 560px): Tiêu đề, Ngôn ngữ nói (Tự động / Tiếng V
 └───────────────────────────────────────────────────────────────────────────────┴──────────────────────┘
 ```
 - Segment row: timestamp (mono, muted) | channel label (11px mono uppercase, colored `--accent` / `--others`) | original (fg) with translation directly below (fg-muted, slightly smaller), small `EN`/`VI` tag.
-- A segment within ±10 s of a conclusion mark gets a thin `--decision` left rule + tiny "Kết luận" tag.
+- A conclusion mark is one amber divider row (chip "Kết luận" + time + rule) in the transcript, not a mark on each nearby segment.
 - Before start: the transcript area shows a real setup checklist (genuine sequence → numbered):
   1. Mở Zoom/Teams bằng trình duyệt Chrome/Edge 2. Bấm Bắt đầu, chọn đúng tab cuộc họp 3. Tích "Chia sẻ âm thanh tab" 4. Đeo tai nghe để tránh lặp tiếng.
 - Missing tab audio → `--warn` banner under top bar: "Chưa nhận được âm thanh cuộc họp. Hãy chia sẻ lại và tích 'Chia sẻ âm thanh tab'." with "Chia sẻ lại" button.
@@ -157,3 +157,14 @@ Kit 0.2.0 (`packages/admin-ui/CHANGELOG.md`) holds everything the approved room 
 - Marking: one `FloatingActionBar` at the bottom centre of the transcript card, outline pill buttons with `Kbd` hints (hints hidden below 640px); disabled buttons say why.
 - Amber (`decision` chip, `emphasis="decision"` ring, `countTone="decision"`) only for conclusions; all other warnings use olive `warn`.
 - Still no money/token numbers in the room, no emoji, no gradients except the Soft signature ones.
+
+### Contrast and selected states (kit 0.2.2, 2026-10-24)
+
+Owner found white-on-grey buttons/tabs/active menu hard to read. Rules now: secondary (`outline`/`tonal`) buttons are blue-tinted with brand ink; `plain` (white, hairline) only when a tint would compete. Selected = solid brand fill + white bold text (PillTabs, SegmentedControl `soft`/`tabs`, Tabs); inactive = transparent on a tinted inset track. Active nav = tonal background + bold brand ink + 3px left bar. Cards/FloatCards carry a `line-strong` hairline on a deeper bluish page (`--soft-bg #eef2f9`, `--soft-page #e5ebf6`); inputs/search/neutral chips are inset-tinted with a hairline. Never use `bg-soft-surface` + `shadow-soft-sm` for an interactive control or a selected state; use the kit variants. Details and ratios: `packages/admin-ui/CHANGELOG.md` 0.2.2.
+
+## Transcript rows: turns and density (2026-10-24)
+
+- **Turns.** A row shows icon + speaker + time only when it opens a turn: channel differs from the row above, the pause since the previous line ended is over `TURN_GAP_MS` (30 s), or the row above is a topic divider / edge loader (first row of a loaded page window). Continuation rows show no header; their time appears in the left gutter on hover/focus (always on touch, `@media (hover: none)`) and a visually hidden "speaker, time" keeps the accessible name.
+- **Density** (`Gọn` default | `Thoải mái`, stored in localStorage `recap.transcript-density`; control beside the source strip). Compact: left-aligned, `px-3 sm:px-4`, 28px gutter with 20px icon, bubble `px-3 py-1.5`, text column `max-w-[80ch]` (80ch of the 14px UI font = ~757px, ~88 characters per line; one notch above the 72ch rule because rows are no longer centred). Comfortable: previous centred 840px frame, 34px icon, roomy bubbles. All numbers live in `features/meeting-room/density.ts`; the height estimate uses the same metrics (pinned in `virtual-rows.test.ts`).
+- **Translation** has no per-row language chip; the target language is stated once (tooltip/label of the view control). A chip appears only when a row's translation language differs from the meeting target.
+- **Conclusion** = a divider row like a topic, placed at the mark time (after the segment spanning it, or before the one starting exactly then): amber `Kết luận` chip, full `hh:mm:ss`, optional label, thin amber rule to the right; one line, 32px (Gọn) / 40px (Thoải mái). No per-segment tint, bar or tag (the 90 s / 15 s window is only for minutes generation). The divider breaks the speaker turn (next row shows its header); the right-rail "Kết luận" jump lands on it and highlights the anchor segment.

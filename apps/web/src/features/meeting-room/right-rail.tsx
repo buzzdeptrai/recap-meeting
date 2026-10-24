@@ -11,7 +11,7 @@ import type { RoomState } from "./state";
 
 interface RightRailProps extends MarkEditing {
   room: RoomState;
-  onJump: (target: MarkTarget) => void;
+  onJump: (mark: Mark, target: MarkTarget) => void;
   onJumpTopic: (mark: Mark) => void;
 }
 

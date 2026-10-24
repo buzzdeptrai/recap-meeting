@@ -1,20 +1,4 @@
-import { MARK_WINDOW_AFTER_MS, MARK_WINDOW_BEFORE_MS, type Mark, type Segment } from "@recap/core";
-
-/**
- * A segment overlapping [mark - before, mark + after] of a conclusion mark is flagged as part of
- * the decision. Same constants as the minutes generator's default window (`@recap/core`), so
- * the highlight mirrors what the minutes consider; the server env override is not applied here.
- */
-export { MARK_WINDOW_BEFORE_MS, MARK_WINDOW_AFTER_MS };
-
-export function isNearMark(segment: Pick<Segment, "startMs" | "endMs">, marks: Mark[]): boolean {
-  return marks.some(
-    (mark) =>
-      mark.kind === "conclusion" &&
-      segment.startMs <= mark.atMs + MARK_WINDOW_AFTER_MS &&
-      segment.endMs >= mark.atMs - MARK_WINDOW_BEFORE_MS,
-  );
-}
+import type { Mark, Segment } from "@recap/core";
 
 /** Words in a transcript — used for the session stats. */
 export function countWords(text: string): number {

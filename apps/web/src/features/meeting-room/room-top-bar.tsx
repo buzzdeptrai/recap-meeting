@@ -3,11 +3,19 @@
 import { ArrowLeft, Columns, MagnifyingGlass, Rows, Translate } from "@phosphor-icons/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { iconButtonVariants, Kbd, SegmentedControl, type SegmentOption } from "@recap/admin-ui";
+import type { TargetLang } from "@recap/core";
+import {
+  iconButtonVariants,
+  Kbd,
+  SegmentedControl,
+  Tooltip,
+  type SegmentOption,
+} from "@recap/admin-ui";
 import { StatusBadge } from "@/components/status-badge";
 import { formatClock } from "@/lib/format";
 import { MEETING_STATUS, RECORDING_STATUS } from "@/lib/status";
 import { EditableTitle } from "./editable-title";
+import { LANG_NAME } from "./row-parts";
 import type { ViewMode } from "./segment-row";
 
 const VIEW_OPTIONS: ReadonlyArray<SegmentOption<ViewMode>> = [
@@ -66,7 +74,7 @@ function SearchPill({ open, onClick }: SearchPillProps) {
       aria-label="Tìm trong bản ghi (Ctrl+F)"
       aria-pressed={open}
       onClick={onClick}
-      className="soft-focus inline-flex h-10 min-w-0 max-[1559px]:w-10 max-[1559px]:justify-center max-[1559px]:px-0 cursor-pointer items-center gap-2 rounded-soft-pill bg-soft-inset px-3.5 text-[13px] text-soft-muted hover:text-soft-ink aria-pressed:bg-soft-accent-soft aria-pressed:text-soft-accent-ink"
+      className="soft-focus inline-flex h-10 min-w-0 max-[1559px]:w-10 max-[1559px]:justify-center max-[1559px]:px-0 cursor-pointer items-center gap-2 rounded-soft-pill bg-soft-inset px-3.5 text-[13px] text-soft-muted shadow-[inset_0_0_0_1px_var(--soft-line-strong)] hover:bg-soft-inset-2 hover:text-soft-ink aria-pressed:bg-soft-tonal-bg aria-pressed:font-semibold aria-pressed:text-soft-tonal-ink"
     >
       <MagnifyingGlass size={16} aria-hidden />
       <span className="max-[1559px]:hidden">Tìm trong bản ghi</span>
@@ -83,6 +91,8 @@ interface RoomTopBarProps {
   durationMs: number | null;
   view: ViewMode;
   onViewChange: (view: ViewMode) => void;
+  /** The language translations are shown in (stated once here, not on every row). */
+  targetLang: TargetLang;
   /** Opens the in-transcript search (also Ctrl/Cmd+F). */
   onSearch: () => void;
   searchOpen: boolean;
@@ -102,16 +112,34 @@ export function RoomTopBar(props: RoomTopBarProps) {
       </div>
       <RecIndicator state={props.rec} elapsedMs={props.elapsedMs} durationMs={props.durationMs} />
       <SearchPill open={props.searchOpen} onClick={props.onSearch} />
-      <SegmentedControl
-        ariaLabel="Chế độ hiển thị"
-        options={VIEW_OPTIONS}
-        value={props.view}
-        onValueChange={props.onViewChange}
-        size="sm"
-        variant="soft"
-        className="max-[639px]:order-last max-[639px]:w-full max-[639px]:[&>*]:flex-1"
-      />
+      <ViewModeControl view={props.view} onChange={props.onViewChange} target={props.targetLang} />
       {props.action}
     </div>
+  );
+}
+
+interface ViewModeControlProps {
+  view: ViewMode;
+  onChange: (view: ViewMode) => void;
+  target: TargetLang;
+}
+
+/** Source / translation switch; the language translations are in is stated here, once. */
+function ViewModeControl({ view, onChange, target }: ViewModeControlProps) {
+  const name = LANG_NAME[target] ?? target;
+  return (
+    <Tooltip content={`Dịch sang ${name}`}>
+      <div className="max-[639px]:order-last max-[639px]:w-full">
+        <SegmentedControl
+          ariaLabel={`Chế độ hiển thị, dịch sang ${name}`}
+          options={VIEW_OPTIONS}
+          value={view}
+          onValueChange={onChange}
+          size="sm"
+          variant="soft"
+          className="max-[639px]:w-full max-[639px]:[&>*]:flex-1"
+        />
+      </div>
+    </Tooltip>
   );
 }

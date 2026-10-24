@@ -1,6 +1,6 @@
 import type { Segment, ServerMessage } from "@recap/core";
 import { describe, expect, it } from "vitest";
-import { MARK_WINDOW_AFTER_MS, MARK_WINDOW_BEFORE_MS, isNearMark, segmentAtMark } from "./marks";
+import { segmentAtMark } from "./marks";
 import { averageLatencyMs, initialRoomState, roomReducer, type RoomState } from "./state";
 
 const seg = (seq: number, overrides: Partial<Segment> = {}): Segment => ({
@@ -259,21 +259,6 @@ describe("marks: unmark, rename and timeline origin", () => {
 });
 
 describe("helpers", () => {
-  it("flags segments from MARK_WINDOW_BEFORE_MS before to MARK_WINDOW_AFTER_MS after a conclusion mark", () => {
-    expect([MARK_WINDOW_BEFORE_MS, MARK_WINDOW_AFTER_MS]).toEqual([90_000, 15_000]);
-    const marks = [{ id: "m", kind: "conclusion" as const, atMs: 120_000, label: null }];
-    expect(isNearMark({ startMs: 135_001, endMs: 137_000 }, marks)).toBe(false);
-    expect(isNearMark({ startMs: 134_000, endMs: 137_000 }, marks)).toBe(true);
-    expect(isNearMark({ startMs: 31_000, endMs: 32_000 }, marks)).toBe(true);
-    expect(isNearMark({ startMs: 20_000, endMs: 29_999 }, marks)).toBe(false);
-    expect(isNearMark({ startMs: 20_000, endMs: 30_000 }, marks)).toBe(true);
-  });
-
-  it("ignores topic markers for the conclusion highlight", () => {
-    const marks = [{ id: "t", kind: "topic" as const, atMs: 30_000, label: "A" }];
-    expect(isNearMark({ startMs: 29_000, endMs: 31_000 }, marks)).toBe(false);
-  });
-
   it("averages latency", () => {
     expect(averageLatencyMs([])).toBeNull();
     expect(averageLatencyMs([800, 1000])).toBe(900);

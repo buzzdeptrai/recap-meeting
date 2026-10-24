@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import type { Density } from "./density";
 import { isAtTail, type RoomWindow } from "./paging";
 import type { ViewMode } from "./segment-row";
 import type { TranscriptPager } from "./use-transcript-pager";
@@ -24,10 +25,26 @@ export function useStickWhileFollowing(
   }, [followingRef, following, contentVersion, window, stickToEnd]);
 }
 
-/** Cached row heights are stale after the view mode (translation shown or not) or width changes. */
+/**
+ * Writes the real height of every mounted row into the virtualizer. `measureElement` is not enough
+ * here: while the list is scrolling (also by scroll anchoring) it skips measuring and waits for a
+ * resize observer that never fires for rows whose size did not change since it last looked.
+ */
+function measureMountedRows(virtualizer: RowVirtualizer) {
+  virtualizer.scrollElement?.querySelectorAll("[data-index]").forEach((node) => {
+    const index = Number(node.getAttribute("data-index"));
+    virtualizer.resizeItem(index, virtualizer.options.measureElement(node, undefined, virtualizer));
+  });
+}
+
+/**
+ * Cached row heights are stale after the view mode (translation shown or not), the density or the
+ * width changes.
+ */
 export function useRemeasureOnLayoutChange(
   virtualizer: RowVirtualizer,
   view: ViewMode,
+  density: Density,
   width: number,
 ) {
   const first = useRef(true);
@@ -40,13 +57,9 @@ export function useRemeasureOnLayoutChange(
     // `measure()` drops the cached sizes, and rows already on screen do not resize by themselves
     // (they would keep the estimate and overlap). Once the virtualizer has re-rendered with the
     // estimates, read the real height of every mounted row again.
-    const frame = requestAnimationFrame(() =>
-      virtualizer.scrollElement
-        ?.querySelectorAll("[data-index]")
-        .forEach((node) => virtualizer.measureElement(node)),
-    );
+    const frame = requestAnimationFrame(() => measureMountedRows(virtualizer));
     return () => cancelAnimationFrame(frame);
-  }, [virtualizer, view, width]);
+  }, [virtualizer, view, density, width]);
 }
 
 /** When rows appear above (older page, or the top loader going away) keep the viewport still. */
@@ -113,6 +126,7 @@ export function usePrefetch({
 interface ListEffectsInput {
   rows: VirtualRow[];
   view: ViewMode;
+  density: Density;
   width: number;
   window: RoomWindow;
   pager: TranscriptPager;
@@ -127,11 +141,11 @@ interface ListEffectsInput {
 
 /** Side effects of the list: stick to the newest row, re-measure, hold position, prefetch. */
 export function useListEffects(input: ListEffectsInput) {
-  const { rows, view, width, window, pager, virtualizer, scroller, follow } = input;
+  const { rows, view, density, width, window, pager, virtualizer, scroller, follow } = input;
   const { followingRef, following, stickToEnd } = follow;
   const items = virtualizer.getVirtualItems();
   useStickWhileFollowing(followingRef, following, input.contentVersion, window, stickToEnd);
-  useRemeasureOnLayoutChange(virtualizer, view, width);
+  useRemeasureOnLayoutChange(virtualizer, view, density, width);
   usePrependAnchoring(rows, virtualizer, scroller, input.anchorRef, input.anchorBlock);
   usePrefetch({
     firstIndex: items[0]?.index ?? 0,

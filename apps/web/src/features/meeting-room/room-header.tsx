@@ -3,8 +3,10 @@
 import { ArrowClockwise, FileText, Record, Stop } from "@phosphor-icons/react";
 import Link from "next/link";
 import { Button, buttonVariants, FloatCard } from "@recap/admin-ui";
+import type { Density } from "./density";
 import type { MeetingDto } from "@/lib/api-types";
 import { roomActions } from "./session-phase";
+import { DensityControl } from "./density-control";
 import { RoomTopBar, type RecState } from "./room-top-bar";
 import type { ViewMode } from "./segment-row";
 import { SourceStrip } from "./source-strip";
@@ -16,6 +18,8 @@ interface RoomHeaderProps {
   controller: ReturnType<typeof useRoomController>;
   view: ViewMode;
   onViewChange: (view: ViewMode) => void;
+  density: Density;
+  onDensityChange: (density: Density) => void;
   search: ReturnType<typeof useRoomSearch>;
   onStop: () => void;
 }
@@ -32,6 +36,8 @@ export function RoomHeader({
   controller,
   view,
   onViewChange,
+  density,
+  onDensityChange,
   search,
   onStop,
 }: RoomHeaderProps) {
@@ -46,6 +52,7 @@ export function RoomHeader({
         durationMs={controller.stopped ? controller.elapsedMs : meeting.durationMs}
         view={view}
         onViewChange={onViewChange}
+        targetLang={meeting.targetLang ?? "vi"}
         onSearch={search.open ? search.close : search.openSearch}
         searchOpen={search.open}
         action={
@@ -59,12 +66,17 @@ export function RoomHeader({
           />
         }
       />
-      <SourceStrip
-        active={recording}
-        sources={capture.sources}
-        levels={capture.levels}
-        room={socket.room}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <SourceStrip
+            active={recording}
+            sources={capture.sources}
+            levels={capture.levels}
+            room={socket.room}
+          />
+        </div>
+        <DensityControl density={density} onChange={onDensityChange} />
+      </div>
     </FloatCard>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import type { Density } from "./density";
 import type { RoomWindow } from "./paging";
 import type { RoomState } from "./state";
 import type { ViewMode } from "./segment-row";
@@ -23,6 +24,7 @@ export { useAnchorBlock, type AnchorBlock, type ScrollOptions } from "./use-virt
 export interface VirtualTranscriptInput {
   rows: VirtualRow[];
   view: ViewMode;
+  density: Density;
   translations: RoomState["translations"];
   window: RoomWindow;
   pager: TranscriptPager;
@@ -38,18 +40,17 @@ export interface VirtualTranscriptInput {
 
 /** Virtualizer + follow-the-latest + page prefetch + scroll anchoring for the transcript list. */
 export function useVirtualTranscript(input: VirtualTranscriptInput) {
-  const { rows, view, translations, window, pager, contentVersion, anchorBlock } = input;
+  const { rows, view, density, translations, window, pager, contentVersion, anchorBlock } = input;
   const scroller = useRef<HTMLDivElement>(null);
   const width = useScrollerWidth(scroller);
   const estimate = useMemo<EstimateContext>(
-    () => ({ view, width, translations }),
-    [view, width, translations],
+    () => ({ view, density, width, translations }),
+    [view, density, width, translations],
   );
   const [initialOffset] = useState(() => openingOffset(rows, input, estimate));
   const follow = useFollowState(scroller, input.initialFollow);
   const { following, nearBottom, followingRef, stickToEnd } = follow;
   const anchorRef = useRef<ScrollAnchor | null>(null);
-
   const virtualizer = useRowVirtualizer({
     rows,
     estimate,
@@ -61,12 +62,12 @@ export function useVirtualTranscript(input: VirtualTranscriptInput) {
     },
   });
 
-  const items = virtualizer.getVirtualItems();
   const handlers = useScrollHandlers({ scroller, virtualizer, anchorRef, window, follow });
 
   useListEffects({
     rows,
     view,
+    density,
     width,
     window,
     pager,
@@ -82,7 +83,7 @@ export function useVirtualTranscript(input: VirtualTranscriptInput) {
   return {
     scroller,
     virtualizer,
-    items,
+    items: virtualizer.getVirtualItems(),
     following,
     nearBottom,
     onScroll: handlers.onScroll,

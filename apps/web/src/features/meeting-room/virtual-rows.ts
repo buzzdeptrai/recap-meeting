@@ -1,13 +1,19 @@
 import type { Channel, Mark, Segment } from "@recap/core";
 import type { InterimLine, TranslationView } from "./state";
 import type { ViewMode } from "./segment-row";
-import { buildTranscriptRows, type RowEdges } from "./topics";
+import { rowMetrics, type Density } from "./density";
+import { buildTranscriptRows, type RowEdges, type TranscriptRow } from "./topics";
+import { startsTurn, type TurnPoint } from "./turns";
 
 export type VirtualRow =
   | { type: "edge"; side: "top" | "bottom"; key: string }
   | { type: "divider"; mark: Mark; name: string; key: string }
-  | { type: "segment"; segment: Segment; key: string }
-  | { type: "interim"; channel: Channel; line: InterimLine; key: string };
+  | { type: "conclusion"; mark: Mark; key: string }
+  | { type: "segment"; segment: Segment; key: string; showHeader: boolean }
+  | { type: "interim"; channel: Channel; line: InterimLine; key: string; showHeader: boolean };
+
+export const topicRowKey = (markId: string) => `topic-${markId}`;
+export const conclusionRowKey = (markId: string) => `conclusion-${markId}`;
 
 export type InterimLines = Record<Channel, InterimLine | null>;
 
@@ -31,22 +37,47 @@ export function buildVirtualRows({
   const rows: VirtualRow[] = [];
   if (edges.hasPrev) rows.push({ type: "edge", side: "top", key: "edge-top" });
   for (const row of buildTranscriptRows(segments, marks, edges)) {
-    rows.push(
-      row.type === "divider"
-        ? { ...row, key: `topic-${row.mark.id}` }
-        : { ...row, key: row.segment.id },
-    );
+    rows.push(keyedRow(row));
   }
   if (showInterim && !edges.hasNext) rows.push(...interimRows(interim));
   if (edges.hasNext) rows.push({ type: "edge", side: "bottom", key: "edge-bottom" });
-  return rows;
+  return withTurnHeaders(rows);
+}
+
+function keyedRow(row: TranscriptRow): VirtualRow {
+  if (row.type === "divider") return { ...row, key: topicRowKey(row.mark.id) };
+  if (row.type === "conclusion") return { ...row, key: conclusionRowKey(row.mark.id) };
+  return { ...row, key: row.segment.id, showHeader: true };
+}
+
+/** Speech timing of a row, or null for rows that are not speech (edge, divider, nothing). */
+function turnPoint(row: VirtualRow | undefined): TurnPoint | null {
+  if (row?.type === "segment") return row.segment;
+  if (row?.type === "interim") return { channel: row.channel, ...row.line };
+  return null;
+}
+
+/**
+ * Sets `showHeader` on every speech row: true when it opens a turn. A row after a divider, an edge
+ * loader or the list start has no known predecessor, so it keeps its header (also true for the
+ * first row of a loaded page window, whose real predecessor is not loaded).
+ */
+function withTurnHeaders(rows: VirtualRow[]): VirtualRow[] {
+  return rows.map((row, index) => {
+    const point = turnPoint(row);
+    if (point === null || (row.type !== "segment" && row.type !== "interim")) return row;
+    const showHeader = startsTurn(turnPoint(rows[index - 1]), point);
+    return row.showHeader === showHeader ? row : { ...row, showHeader };
+  });
 }
 
 function interimRows(interim: InterimLines): VirtualRow[] {
   return ([0, 1] as const)
     .flatMap((channel) => {
       const line = interim[channel];
-      return line ? [{ type: "interim" as const, channel, line, key: `interim-${channel}` }] : [];
+      return line
+        ? [{ type: "interim" as const, channel, line, key: `interim-${channel}`, showHeader: true }]
+        : [];
     })
     .sort((a, b) => (a.line.startMs ?? 0) - (b.line.startMs ?? 0));
 }
@@ -59,7 +90,7 @@ export function indexOfSeq(rows: VirtualRow[], seq: number): number {
   return rows.findIndex((row) => row.type === "segment" && row.segment.seq === seq);
 }
 
-/** Row index of the next/previous segment row from `from`, skipping dividers and edges. */
+/** Row index of the next/previous segment row from `from`, skipping dividers, conclusions and edges. */
 export function neighbourSegmentIndex(rows: VirtualRow[], from: number, step: 1 | -1): number {
   for (let i = from + step; i >= 0 && i < rows.length; i += step) {
     if (rows[i]?.type === "segment") return i;
@@ -70,22 +101,17 @@ export function neighbourSegmentIndex(rows: VirtualRow[], from: number, step: 1 
 /* ---- height estimates (only used until a row is measured) ---- */
 
 export const EDGE_ROW_PX = 44;
-const DIVIDER_PX = 58; // pt-5 + pb-2 + chip 30
-const FRAME_PX = 66.5; // py 18 + name/time line 25 + bubble padding 24 (measured)
 const BODY_LINE_PX = 26.4; // 16px * 1.65
 const TRANSLATION_LINE_PX = 22.75; // 14px * leading-relaxed
-const TRANSLATION_GAP_PX = 4;
 const CHAR_PX = 8.3;
-/** The text column stops growing here (bubble max width minus its padding). */
-const MAX_TEXT_PX = 664;
-/** Horizontal space around the text column: room padding, avatar + gap, bubble padding. */
-const GUTTER_WIDE_PX = 148;
-const GUTTER_PHONE_PX = 112;
+const MIN_CHARS_PER_LINE = 20;
+const FALLBACK_ROW_PX = 80;
 /** Below this scroller width the phone paddings apply (the `sm` breakpoint, 640px viewport). */
 export const PHONE_PX = 600;
 
 export interface EstimateContext {
   view: ViewMode;
+  density: Density;
   /** Width of the scroller; defaults to a desktop value (also used during server render). */
   width: number;
   translations: Record<string, TranslationView | undefined>;
@@ -94,29 +120,38 @@ export interface EstimateContext {
 const linesFor = (text: string, perLine: number) => Math.max(1, Math.ceil(text.length / perLine));
 
 /** Characters of body text per line for a scroller of this width. */
-const charsPerLine = (width: number): number => {
-  const gutter = width < PHONE_PX ? GUTTER_PHONE_PX : GUTTER_WIDE_PX;
-  return Math.max(20, Math.min(MAX_TEXT_PX, width - gutter) / CHAR_PX);
-};
+function charsPerLine(width: number, density: Density): number {
+  const metrics = rowMetrics(density);
+  const gutter = width < PHONE_PX ? metrics.gutterPhonePx : metrics.gutterWidePx;
+  return Math.max(MIN_CHARS_PER_LINE, Math.min(metrics.maxTextPx, width - gutter) / CHAR_PX);
+}
+
+/** Height of a speech row without its text: row padding, speaker line (turn start), bubble padding. */
+function frameHeight(density: Density, showHeader: boolean): number {
+  const metrics = rowMetrics(density);
+  return showHeader
+    ? metrics.headerPadding + metrics.metaHeight + metrics.bubblePadding
+    : metrics.continuationPadding + metrics.bubblePadding;
+}
 
 /** Rough pixel height of a row so the scroll bar and first paint are close to the final layout. */
 export function estimateRowHeight(row: VirtualRow | undefined, ctx: EstimateContext): number {
-  if (!row) return 80;
+  if (!row) return FALLBACK_ROW_PX;
   if (row.type === "edge") return EDGE_ROW_PX;
-  if (row.type === "divider") return DIVIDER_PX;
-  const perLine = charsPerLine(ctx.width);
-  if (row.type === "interim") return FRAME_PX + BODY_LINE_PX * linesFor(row.line.text, perLine);
+  if (row.type === "divider") return rowMetrics(ctx.density).dividerHeight;
+  if (row.type === "conclusion") return rowMetrics(ctx.density).conclusionHeight;
+  const perLine = charsPerLine(ctx.width, ctx.density);
+  const frame = frameHeight(ctx.density, row.showHeader);
+  if (row.type === "interim") return frame + BODY_LINE_PX * linesFor(row.line.text, perLine);
   const { segment } = row;
   const translation = ctx.translations[segment.id];
   const original = BODY_LINE_PX * linesFor(segment.text, perLine);
-  if (ctx.view === "source" || !translation) return FRAME_PX + original;
-  if (ctx.view === "translation") {
-    return FRAME_PX + BODY_LINE_PX * linesFor(translation.text, perLine);
-  }
+  if (ctx.view === "source" || !translation) return frame + original;
+  if (ctx.view === "translation") return frame + BODY_LINE_PX * linesFor(translation.text, perLine);
   return (
-    FRAME_PX +
+    frame +
     original +
-    TRANSLATION_GAP_PX +
+    rowMetrics(ctx.density).translationGap +
     TRANSLATION_LINE_PX * linesFor(translation.text, perLine * 1.2)
   );
 }

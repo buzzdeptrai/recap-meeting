@@ -13,7 +13,28 @@ export function topicName(mark: Mark, topics: Mark[]): string {
 }
 
 export type TranscriptRow =
-  { type: "divider"; mark: Mark; name: string } | { type: "segment"; segment: Segment };
+  | { type: "divider"; mark: Mark; name: string }
+  | { type: "conclusion"; mark: Mark }
+  | { type: "segment"; segment: Segment };
+
+/**
+ * Topic and conclusion marks in reading order: by time, and a topic before a conclusion at the same
+ * instant (the conclusion belongs to the topic that is just starting). Equal kinds keep their order.
+ */
+export function dividerMarks(marks: Mark[]): Mark[] {
+  const rank = (mark: Mark) => (mark.kind === "topic" ? 0 : 1);
+  return marks
+    .filter((m) => m.kind === "topic" || m.kind === "conclusion")
+    .map((mark, index) => ({ mark, index }))
+    .sort((a, b) => a.mark.atMs - b.mark.atMs || rank(a.mark) - rank(b.mark) || a.index - b.index)
+    .map(({ mark }) => mark);
+}
+
+function dividerRow(mark: Mark, topics: Mark[]): TranscriptRow {
+  return mark.kind === "topic"
+    ? { type: "divider", mark, name: topicName(mark, topics) }
+    : { type: "conclusion", mark };
+}
 
 /** Which sides of the loaded run have more segments beyond them. */
 export interface RowEdges {
@@ -22,10 +43,11 @@ export interface RowEdges {
 }
 
 /**
- * Transcript rows in reading order: a topic divider sits before the first segment whose
- * `startMs >= mark.atMs`; dividers with no later segment go at the end. When the run is only a
- * window of the meeting, dividers that would sit outside it are left out: their neighbouring
- * segment is not loaded, so their position is unknown.
+ * Transcript rows in reading order: a topic or conclusion divider sits before the first segment
+ * whose `startMs >= mark.atMs` (so a conclusion lands right after the segment that spans or
+ * precedes it, which is the server's mark anchor); dividers with no later segment go at the end.
+ * When the run is only a window of the meeting, dividers that would sit outside it are left out:
+ * their neighbouring segment is not loaded, so their position is unknown.
  */
 export function buildTranscriptRows(
   segments: Segment[],
@@ -33,12 +55,13 @@ export function buildTranscriptRows(
   edges: RowEdges = { hasPrev: false, hasNext: false },
 ): TranscriptRow[] {
   const topics = topicMarks(marks);
+  const dividers = dividerMarks(marks);
   const rows: TranscriptRow[] = [];
   let next = 0;
   const flushUpTo = (startMs: number, visible: boolean) => {
-    while (next < topics.length && (topics[next] as Mark).atMs <= startMs) {
-      const mark = topics[next] as Mark;
-      if (visible) rows.push({ type: "divider", mark, name: topicName(mark, topics) });
+    while (next < dividers.length && (dividers[next] as Mark).atMs <= startMs) {
+      const mark = dividers[next] as Mark;
+      if (visible) rows.push(dividerRow(mark, topics));
       next += 1;
     }
   };
