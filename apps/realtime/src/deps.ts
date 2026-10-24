@@ -87,6 +87,7 @@ export function buildSttConfig(env: Env, request: SttRequest): SttProviderConfig
       keyterms: request.keyterms,
       minTurnSilenceMs: env.ASSEMBLYAI_MIN_TURN_SILENCE_MS,
       maxTurnSilenceMs: env.ASSEMBLYAI_MAX_TURN_SILENCE_MS,
+      idleAfterMs: env.STT_IDLE_AFTER_MS,
     };
   }
   return {

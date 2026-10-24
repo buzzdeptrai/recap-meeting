@@ -22,6 +22,7 @@ describe("meetings repository", () => {
       startedAt: null,
       endedAt: null,
       durationMs: null,
+      deletedAt: null,
     });
     expect(repos.meetings.get("id-1")).toEqual(meeting);
     expect(repos.meetings.get("missing")).toBeUndefined();

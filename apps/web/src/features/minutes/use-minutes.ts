@@ -2,7 +2,13 @@
 
 import type { MinutesContent, MinutesLang } from "@recap/core";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import { fetchMinutes, fetchMinutesRun, saveMinutes, startMinutesRun } from "@/lib/api-minutes";
+import {
+  fetchMinutes,
+  fetchMinutesRun,
+  saveMinutes,
+  startMinutesRun,
+  startMinutesTranslation,
+} from "@/lib/api-minutes";
 import type { MinutesDto, MinutesRunDto } from "@/lib/api-types";
 import { EMPTY_CONTENT, editReducer, type EditAction } from "./edit-reducer";
 import { describeMinutesError, type MinutesAction } from "./error-copy";
@@ -18,10 +24,16 @@ interface Failure {
 }
 
 /**
- * Loads, generates, edits and saves the minutes of one meeting in one language.
+ * Loads, generates, translates, edits and saves the minutes of one meeting in one language.
  * The caller remounts it (via `key`) when the language changes, so state never mixes languages.
+ * `onStartedIn` is called when a generation was started for ANOTHER source language (the caller
+ * then shows that language, where the run is watched).
  */
-export function useMinutes(meetingId: string, lang: MinutesLang) {
+export function useMinutes(
+  meetingId: string,
+  lang: MinutesLang,
+  onStartedIn: (lang: MinutesLang) => void,
+) {
   const [phase, setPhase] = useState<MinutesPhase>("loading");
   const [saved, setSaved] = useState<MinutesDto | null>(null);
   const [content, dispatch] = useReducer(editReducer, EMPTY_CONTENT);
@@ -44,7 +56,10 @@ export function useMinutes(meetingId: string, lang: MinutesLang) {
     setPhase("loading");
     setAttempt((n) => n + 1);
   };
-  const actions = useMinutesActions({ meetingId, lang, content, hasSaved: saved !== null }, sinks);
+  const actions = useMinutesActions(
+    { meetingId, lang, content, hasSaved: saved !== null, onStartedIn },
+    sinks,
+  );
   const dirty = useDirty(phase, saved?.content ?? null, content);
   useUnsavedGuard(dirty);
 
@@ -67,6 +82,7 @@ interface ActionContext {
   lang: MinutesLang;
   content: MinutesContent;
   hasSaved: boolean;
+  onStartedIn: (lang: MinutesLang) => void;
 }
 
 interface ActionSinks {
@@ -77,21 +93,43 @@ interface ActionSinks {
 }
 
 function useMinutesActions(ctx: ActionContext, sinks: ActionSinks) {
-  const { meetingId, lang, content, hasSaved } = ctx;
+  const { meetingId, lang, content, hasSaved, onStartedIn } = ctx;
   const { apply, setPhase, setFailure, setRun } = sinks;
   const [saving, setSaving] = useState(false);
 
   // Starts a background run; the watcher polls it and applies the minutes when it is done.
-  const generate = useCallback(async () => {
-    setPhase("generating");
-    setFailure(null);
-    try {
-      setRun(await startMinutesRun(meetingId, lang));
-    } catch (error) {
-      setFailure({ action: "generate", message: describeMinutesError("generate", error) });
-      setPhase(hasSaved ? "ready" : "empty");
-    }
-  }, [meetingId, lang, hasSaved, setPhase, setFailure, setRun]);
+  // `sourceLang` is the language the minutes are generated in; the other one is translated.
+  const generate = useCallback(
+    async (sourceLang: MinutesLang = lang) => {
+      const here = sourceLang === lang;
+      if (here) setPhase("generating");
+      setFailure(null);
+      try {
+        const started = await startMinutesRun(meetingId, sourceLang);
+        if (here) setRun(started);
+        else onStartedIn(sourceLang);
+      } catch (error) {
+        setFailure({ action: "generate", message: describeMinutesError("generate", error) });
+        if (here) setPhase(hasSaved ? "ready" : "empty");
+      }
+    },
+    [meetingId, lang, hasSaved, onStartedIn, setPhase, setFailure, setRun],
+  );
+
+  // (Re-)translates this language from the other one. `confirmOverwrite` replaces hand edits.
+  const translate = useCallback(
+    async (confirmOverwrite = false) => {
+      setPhase("generating");
+      setFailure(null);
+      try {
+        setRun(await startMinutesTranslation(meetingId, lang, confirmOverwrite));
+      } catch (error) {
+        setFailure({ action: "translate", message: describeMinutesError("translate", error) });
+        setPhase(hasSaved ? "ready" : "empty");
+      }
+    },
+    [meetingId, lang, hasSaved, setPhase, setFailure, setRun],
+  );
 
   const save = useCallback(async () => {
     const prepared = prepareForSave(content);
@@ -107,7 +145,7 @@ function useMinutesActions(ctx: ActionContext, sinks: ActionSinks) {
     }
   }, [content, meetingId, lang, apply, setFailure]);
 
-  return { generate, save, saving };
+  return { generate, translate, save, saving };
 }
 
 function useDirty(phase: MinutesPhase, saved: MinutesContent | null, content: MinutesContent) {
@@ -140,7 +178,7 @@ interface LoadKey {
 const RUN_FAILED_FALLBACK = "Không tạo được biên bản. Hãy thử lại.";
 
 const runFailure = (run: MinutesRunDto): Failure => ({
-  action: "generate",
+  action: run.kind === "translate" ? "translate" : "generate",
   message: run.error ?? RUN_FAILED_FALLBACK,
 });
 

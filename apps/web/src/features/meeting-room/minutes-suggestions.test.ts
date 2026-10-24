@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEDUPE_WINDOW_MS,
   extractSuggestions,
+  hiddenCounts,
   visibleSuggestions,
   type MinutesSuggestions,
 } from "./minutes-suggestions";
@@ -112,5 +113,13 @@ describe("visibleSuggestions", () => {
   it("hides a conclusion near a conclusion mark", () => {
     const out = visibleSuggestions(all, [mark("m", "conclusion", 210_000)]);
     expect(out.conclusions.map((c) => c.id)).toEqual(["c2"]);
+  });
+});
+
+describe("hiddenCounts", () => {
+  it("counts candidates hidden by a nearby hand mark", () => {
+    const all = extractSuggestions(content([topic("a", [100_000]), topic("b", [300_000])]));
+    const shown = visibleSuggestions(all, [mark("m1", "topic", 100_000 + DEDUPE_WINDOW_MS - 1)]);
+    expect(hiddenCounts(all, shown)).toEqual({ topics: 1, conclusions: 0 });
   });
 });

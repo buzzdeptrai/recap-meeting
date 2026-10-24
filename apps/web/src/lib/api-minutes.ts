@@ -42,12 +42,26 @@ export async function fetchMinutes(
   return (await response.json()) as MinutesDto;
 }
 
-/** Starts (or joins) a background generation; resolves with the run to poll. */
+/** Starts (or joins) a background generation; `lang` is the SOURCE language. Resolves with the run to poll. */
 export async function startMinutesRun(
   meetingId: string,
   lang: MinutesLang,
 ): Promise<MinutesRunDto> {
   const response = await call(base(meetingId), jsonInit("POST", { lang }));
+  if (!response.ok) throw await failure(response);
+  return (await response.json()) as MinutesRunDto;
+}
+
+/** Starts a (re-)translation into `lang` from the other language; resolves with the run to poll. */
+export async function startMinutesTranslation(
+  meetingId: string,
+  lang: MinutesLang,
+  confirmOverwrite = false,
+): Promise<MinutesRunDto> {
+  const response = await call(
+    `${base(meetingId)}/translate`,
+    jsonInit("POST", { lang, confirmOverwrite }),
+  );
   if (!response.ok) throw await failure(response);
   return (await response.json()) as MinutesRunDto;
 }

@@ -5,7 +5,7 @@ export type ParsedMessage =
   | { kind: "result"; isFinal: boolean; result: SttResult }
   | { kind: "speech_started"; timestampMs: number }
   | { kind: "termination" }
-  | { kind: "error"; message: string; retryable: boolean }
+  | { kind: "error"; message: string; retryable: boolean; rateLimited: boolean }
   | { kind: "ignored" };
 
 interface RawWord {
@@ -77,6 +77,7 @@ function parseError(raw: RawMessage): ParsedMessage {
     kind: "error",
     message: `AssemblyAI error ${raw.error_code ?? ""}: ${text}`.trim(),
     retryable: !unauthorized,
+    rateLimited,
   };
 }
 

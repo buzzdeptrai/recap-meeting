@@ -133,6 +133,20 @@ describe("marks.countByKind", () => {
     expect(repos.marks.countByKind("conclusion", from, last)).toBe(1);
     expect(repos.marks.countByKind("topic", from, last)).toBe(1);
   });
+
+  it("excludes marks of soft-deleted meetings", () => {
+    const { repos, meeting } = seed();
+    const a = meeting("A");
+    const b = meeting("B");
+    repos.marks.insert({ meetingId: a.id, kind: "conclusion", atMs: 1 });
+    repos.marks.insert({ meetingId: b.id, kind: "conclusion", atMs: 2 });
+    const all = () => repos.marks.countByKind("conclusion", "0000", "9999");
+    expect(all()).toBe(2);
+    repos.meetings.softDelete(b.id);
+    expect(all()).toBe(1);
+    repos.meetings.restore(b.id);
+    expect(all()).toBe(2);
+  });
 });
 
 describe("per-meeting extras", () => {

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { marksFingerprint } from "@recap/db";
 import { DEFAULT_GENERATOR_CONFIG } from "./config";
 import { MinutesError } from "./errors";
+import { glossaryLines } from "./glossary-lines";
 import type { LlmMinutes } from "./llm-schema";
 import { postProcess } from "./postprocess";
 import { PROMPT_VERSION } from "./prompt-version";
@@ -119,16 +120,6 @@ async function mapReduce(plan: Plan): Promise<LlmMinutes> {
   return reduced;
 }
 
-function glossaryLines(deps: MinutesDeps, config: GeneratorConfig): string[] {
-  return deps.repos.glossary
-    .list()
-    .slice(0, config.maxGlossaryTerms)
-    .map((t) => {
-      if (t.doNotTranslate) return `${t.term} (${t.lang}): keep as is`;
-      return t.translation ? `${t.term} (${t.lang}) = ${t.translation}` : `${t.term} (${t.lang})`;
-    });
-}
-
 /** Everything the model may legitimately quote; owners and dates are checked against it. */
 function groundingText(
   meeting: { title: string; agenda: string | null },
@@ -169,7 +160,7 @@ export async function generateMinutes(
   const ctx = {
     title: meeting.title,
     agenda: meeting.agenda,
-    glossary: glossaryLines(deps, config),
+    glossary: glossaryLines(deps.repos, config.maxGlossaryTerms),
   };
   const report = safeReporter(deps.onProgress);
   const plan: Plan = { llm: deps.llm, lang, config, ctx, lines, marks, topics, report };

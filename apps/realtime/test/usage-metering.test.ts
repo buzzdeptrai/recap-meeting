@@ -111,3 +111,20 @@ describe("toUsageEvent", () => {
     ).toMatchObject({ vendor: "openai", service: "translate", status: "fallback", meetingId: "m" });
   });
 });
+
+describe("SttUsageMeter channel frames", () => {
+  it("bills mono channel-frames as sent and reports the per-channel average", () => {
+    const events: UsageEventInput[] = [];
+    const meter = new SttUsageMeter({
+      meetingId: "m",
+      sink: (e) => events.push(e),
+      vendor: "assemblyai",
+      model: "m",
+      language: "vi",
+    });
+    meter.addFrame(10); // 1 s on both channels = 2 channel-seconds
+    meter.addChannelFrames(10); // 1 more channel-second (the other channel was parked)
+    meter.stop();
+    expect(events[0]).toMatchObject({ audioSeconds: 3, meta: { perChannelSeconds: 1.5 } });
+  });
+});

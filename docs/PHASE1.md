@@ -48,6 +48,9 @@ model TEXT, generated_at TEXT, updated_at TEXT, PRIMARY KEY(meeting_id, lang))` 
 - OpenAI structured output (JSON schema derived from the zod schema), model from env `OPENAI_MINUTES_MODEL`
   (default `gpt-4.1`), temperature low. Never invent owners/dates not in the transcript (null instead).
 - LLM behind an interface `MinutesLlm` with a `FakeMinutesLlm` for tests.
+- One language per generation: `lang` of a generate request is the SOURCE language (default `en`, the owner may pick `vi`).
+  The other language is translated automatically right after (see ARCHITECTURE "Minutes translation"); a derived row has
+  `derivedFromLang` set and goes stale (`source_edited`) when its source changes.
 
 ## Tasks
 | Id | What | Depends |
@@ -60,8 +63,10 @@ model TEXT, generated_at TEXT, updated_at TEXT, PRIMARY KEY(meeting_id, lang))` 
 | T12 | Post-meeting re-transcription of saved WAV (Deepgram pre-recorded, replaces segments, regenerates minutes) | T7 |
 
 ## REST (apps/web route handlers, same-origin guard like existing ones)
-- `POST /api/meetings/:id/minutes` body `{ lang: "vi"|"en" }` → generate (or regenerate) and store, returns content.
-- `GET /api/meetings/:id/minutes?lang=` → `{ content, source, generatedAt, updatedAt } | 404`.
+- `POST /api/meetings/:id/minutes` body `{ lang: "vi"|"en" }` (the SOURCE language) → 202 + queued run `{runId, kind, lang, status, ...}`; a translation into the other language is queued automatically afterwards.
+- `POST /api/meetings/:id/minutes/translate` body `{ lang, confirmOverwrite? }` (`lang` = language to translate INTO) → 202 + run with `kind: "translate"`; 409 `SOURCE_MISSING` / `DERIVED_EDITED` / `RUN_BUSY`.
+- `GET .../minutes/run?lang=` → latest run of that language (`kind` says generate or translate).
+- `GET /api/meetings/:id/minutes?lang=` → `{ content, source, derivedFromLang, generatedAt, updatedAt, stale, staleReasons } | 404`.
 - `PUT /api/meetings/:id/minutes` body `{ lang, content }` → validate with zod, store as `source: "edited"`.
 - `GET /api/meetings/:id/export?lang=vi|en|both` → `.docx` download.
 - `GET /api/meetings?q=&status=` → search.

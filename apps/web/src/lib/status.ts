@@ -83,6 +83,9 @@ export const MINUTES_SOURCE: Record<MinutesSource, StatusSpec> = {
   edited: { label: "Đã chỉnh sửa", tone: "neutral" },
 };
 
+/** A minutes version translated from the other language (the badge text names the source language). */
+export const MINUTES_DERIVED: StatusSpec = { label: "Bản dịch", tone: "purple" };
+
 export const UNSAVED_STATUS: StatusSpec = { label: "Chưa lưu", tone: "warn" };
 
 /** Minutes whose transcript/marks changed after generation. Yellow `warn` (amber is for conclusions). */

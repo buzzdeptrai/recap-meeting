@@ -25,6 +25,7 @@ const meeting = (over: Partial<MeetingListItemDto> = {}): MeetingListItemDto => 
   startedAt: "2026-10-22T05:00:00.000Z",
   endedAt: "2026-10-22T05:02:06.000Z",
   durationMs: 126_000,
+  deletedAt: null,
   minutesLangs: [],
   minutes: {},
   topicCount: 0,

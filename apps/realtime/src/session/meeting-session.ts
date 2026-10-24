@@ -5,56 +5,32 @@ import {
   type Segment,
   type ServerMessage,
 } from "@recap/core";
-import type { Meeting, Repositories } from "@recap/db";
 import {
   Segmenter,
-  type Clock,
   type RawSegment,
-  type SegmenterConfig,
-  type SttProvider,
   type SttResult,
   type SttStatus,
   type TimeRange,
-  type VariantEntry,
 } from "@recap/stt";
-import type { AudioWriter } from "../audio/audio-writer";
 import { waitBounded } from "./drain";
-import { SttRetry, type SttRetryOptions } from "./stt-retry";
-import { SttUsageMeter, type SttUsageMeterOptions } from "./stt-usage-meter";
+import { meterAcceptedFrame } from "./frame-metering";
+import { runMarkAction } from "./mark-action";
+import { log, safely, safelySync } from "./safe";
+import type { MeetingSessionOptions } from "./session-options";
+import { SttRetry } from "./stt-retry";
+import { SttUsageMeter } from "./stt-usage-meter";
 import { TranscriptRecorder } from "./transcript-recorder";
 import type {
   SessionHooks,
   SessionLanguages,
-  SessionSink,
   StopReason,
   TranslateStatus,
   TranslationInput,
 } from "./types";
 
-export interface MeetingSessionOptions extends SessionLanguages {
-  meeting: Meeting;
-  repos: Repositories;
-  stt: SttProvider;
-  audio: AudioWriter;
-  sink: SessionSink;
-  /** Session audio timeline → meeting timeline offset (non-zero when resuming). */
-  baseMs: number;
-  variants?: readonly VariantEntry[];
-  hooks?: SessionHooks;
-  segmenterConfig?: Partial<SegmenterConfig>;
-  clock?: Clock;
-  /** Enables Deepgram usage metering for this session. */
-  usage?: Omit<SttUsageMeterOptions, "meetingId">;
-  /** Overrides for the manual STT retry guard (tests). */
-  sttRetry?: SttRetryOptions;
-  /** Invoked once at the very end of `stop()` (e.g. to release the registry slot). */
-  onEnded?: () => void;
-}
+export type { MeetingSessionOptions };
 
 type SessionState = "created" | "live" | "stopping" | "stopped";
-
-const log = (message: string, error?: unknown) =>
-  console.error(`[session] ${message}`, error instanceof Error ? error.message : (error ?? ""));
 
 /** One live meeting: STT in, segments out, audio + transcript persisted. */
 export class MeetingSession {
@@ -188,8 +164,7 @@ export class MeetingSession {
       log("audio write failed", error);
     }
     this.options.stt.sendAudio(frame);
-    if (this.retry.isRunning) this.retry.countFrame();
-    else if (this.sttStatus !== "closed") this.usageMeter?.addFrame();
+    meterAcceptedFrame(this.options.stt, this.retry, this.usageMeter, this.sttStatus);
     return true;
   }
 
@@ -209,7 +184,7 @@ export class MeetingSession {
   }
 
   addMark(kind: MarkKind, atMs: number, label?: string): void {
-    this.markAction("save mark", () => ({
+    runMarkAction(this.sendEvent.bind(this), "save mark", () => ({
       type: "mark",
       mark: this.recorder.addMark(kind, atMs, label),
     }));
@@ -217,28 +192,16 @@ export class MeetingSession {
 
   /** Renames a mark and echoes it as a `mark` event (same id = upsert on the client). */
   renameMark(id: string, label: string): void {
-    this.markAction("rename mark", () => {
+    runMarkAction(this.sendEvent.bind(this), "rename mark", () => {
       const mark = this.recorder.setMarkLabel(id, label);
       return mark ? { type: "mark", mark } : null;
     });
   }
 
   removeMark(id: string): void {
-    this.markAction("delete mark", () =>
+    runMarkAction(this.sendEvent.bind(this), "delete mark", () =>
       this.recorder.removeMark(id) ? { type: "unmark", id } : null,
     );
-  }
-
-  /** Runs a mark edit; `null` = unknown mark, a throw = persistence failure. */
-  private markAction(failure: string, action: () => ServerMessage | null): void {
-    try {
-      const event = action();
-      if (event) this.sendEvent(event);
-      else this.sendError("BAD_MESSAGE", "Unknown mark");
-    } catch (error) {
-      log(`failed to ${failure}`, error);
-      this.sendError("INTERNAL", `Could not ${failure}`);
-    }
   }
 
   /** Flushes transcripts, closes audio, ends the meeting. Idempotent. */
@@ -249,18 +212,18 @@ export class MeetingSession {
 
   private async runStop(reason: StopReason): Promise<void> {
     this.state = "stopping";
-    await this.safely("close STT", () => this.options.stt.close());
-    this.safelySync("record STT usage", () => this.usageMeter?.stop());
+    await safely("close STT", () => this.options.stt.close());
+    safelySync("record STT usage", () => this.usageMeter?.stop());
     for (const segmenter of this.segmenters) {
-      this.safelySync("flush segmenter", () => segmenter.flush());
+      safelySync("flush segmenter", () => segmenter.flush());
       segmenter.dispose();
     }
-    await this.safely("drain hooks", () => waitBounded(this.hooks.onDrain?.(this)));
-    this.safelySync("close audio", () => this.options.audio.close());
-    this.safelySync("end meeting", () => this.endMeeting());
+    await safely("drain hooks", () => waitBounded(this.hooks.onDrain?.(this)));
+    safelySync("close audio", () => this.options.audio.close());
+    safelySync("end meeting", () => this.endMeeting());
     this.state = "stopped";
     if (reason === "client") this.sendEvent({ type: "stopped", meetingId: this.meetingId });
-    this.safelySync("onStopped hook", () => this.hooks.onStopped?.(this));
+    safelySync("onStopped hook", () => this.hooks.onStopped?.(this));
     this.options.onEnded?.();
     if (this.framesRejected > 0)
       log(`${this.framesRejected} bad frames dropped in ${this.meetingId}`);
@@ -296,6 +259,7 @@ export class MeetingSession {
       this.sttStatus = status;
       if (this.state === "live") this.sendStatus();
     });
+    stt.on("activity", ({ channel, state }) => log(`${this.meetingId} STT ch${channel} ${state}`));
     stt.on("error", (error) => {
       log(`STT error (fatal=${error.fatal})`, error.message);
       if (error.fatal) this.sendError("STT_UNAVAILABLE", "Speech recognition connection lost");
@@ -317,7 +281,7 @@ export class MeetingSession {
       return;
     }
     this.sendEvent({ type: "segment", segment });
-    this.safelySync("onFinalSegment hook", () => this.hooks.onFinalSegment?.(segment, this));
+    safelySync("onFinalSegment hook", () => this.hooks.onFinalSegment?.(segment, this));
   }
 
   private sendInterim(channel: 0 | 1, text: string, range: TimeRange): void {
@@ -328,21 +292,5 @@ export class MeetingSession {
 
   private sendStatus(): void {
     this.sendEvent({ type: "status", stt: this.sttStatus, translate: this.translateStatus });
-  }
-
-  private async safely(label: string, action: () => Promise<void>): Promise<void> {
-    try {
-      await action();
-    } catch (error) {
-      log(`failed to ${label}`, error);
-    }
-  }
-
-  private safelySync(label: string, action: () => void): void {
-    try {
-      action();
-    } catch (error) {
-      log(`failed: ${label}`, error);
-    }
   }
 }

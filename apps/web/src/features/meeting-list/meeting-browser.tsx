@@ -2,14 +2,19 @@
 
 import { WarningCircle } from "@phosphor-icons/react";
 import { Button, FloatCard, IconBadge } from "@recap/admin-ui";
-import { useRef } from "react";
-import type { MeetingListDto } from "@/lib/api-types";
+import { useRef, useState, type ReactNode } from "react";
+import type { MeetingListDto, MeetingListItemDto } from "@/lib/api-types";
 import { isFiltered, type ListState } from "@/lib/list-query";
+import { DeleteMeetingDialog } from "./delete-dialog";
+import { DeletedMeetings } from "./deleted-meetings";
 import { EmptyMeetings, NoResults } from "./empty-meetings";
 import { FilterBar, PlainHeader } from "./filter-bar";
 import { useSlashFocus } from "./filter-controls";
 import { MeetingListView } from "./meeting-list-view";
 import { MeetingSkeleton } from "./meeting-skeleton";
+import { TrashLink } from "./trash-link";
+import { UndoBar } from "./undo-bar";
+import { useTrash, type TrashController } from "./use-trash";
 import { useCopyLink } from "./use-copy-link";
 import { useMeetingList, type MeetingListController } from "./use-meeting-list";
 import { ViewToggle, useViewMode } from "./view-mode";
@@ -23,21 +28,56 @@ interface MeetingBrowserProps {
 
 export function MeetingBrowser({ initial, initialState, now }: MeetingBrowserProps) {
   const list = useMeetingList(initial, initialState);
+  const trash = useTrash(list.retry);
+  const [showTrash, setShowTrash] = useState(false);
+  if (showTrash) {
+    return <DeletedMeetings onBack={() => setShowTrash(false)} onRestored={list.retry} />;
+  }
+  const openTrash = () => {
+    trash.dismissUndo();
+    setShowTrash(true);
+  };
+  const undoBar = trash.undo ? (
+    <UndoBar
+      key={trash.undo.id}
+      meeting={trash.undo}
+      onRestored={list.retry}
+      onDismiss={trash.dismissUndo}
+    />
+  ) : null;
+  const nothingAtAll = list.counts.all === 0 && !isFiltered(list.state) && !list.busy;
+  if (nothingAtAll && !list.error) {
+    return (
+      <>
+        <PlainHeader />
+        {undoBar}
+        <EmptyMeetings />
+        <TrashLink onOpen={openTrash} />
+      </>
+    );
+  }
+  return (
+    <>
+      <ListContent list={list} trash={trash} now={now} undoBar={undoBar} />
+      <TrashLink onOpen={openTrash} />
+      <DeleteMeetingDialog trash={trash} />
+    </>
+  );
+}
+
+interface ListContentProps {
+  list: MeetingListController;
+  trash: TrashController;
+  now: number;
+  undoBar: ReactNode;
+}
+
+function ListContent({ list, trash, now, undoBar }: ListContentProps) {
   const input = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useViewMode();
   const { copy, notice } = useCopyLink();
   useSlashFocus(input);
   const { state, counts, totals, total, error } = list;
-  const nothingAtAll = counts.all === 0 && !isFiltered(state) && !list.busy;
-
-  if (nothingAtAll && !error) {
-    return (
-      <>
-        <PlainHeader />
-        <EmptyMeetings />
-      </>
-    );
-  }
   return (
     <>
       <FilterBar
@@ -52,8 +92,9 @@ export function MeetingBrowser({ initial, initialState, now }: MeetingBrowserPro
         onClear={list.clear}
         trailing={<ViewToggle mode={mode} onChange={setMode} />}
       />
+      {undoBar}
       {error ? <ErrorBanner message={error} onRetry={list.retry} /> : null}
-      <Results list={list} mode={mode} now={now} onCopy={copy} />
+      <Results list={list} mode={mode} now={now} onCopy={copy} onDelete={trash.ask} />
       <Footer list={list} />
       {notice}
     </>
@@ -84,9 +125,10 @@ interface ResultsProps {
   mode: "table" | "cards";
   now: number;
   onCopy: (id: string) => void;
+  onDelete: (meeting: MeetingListItemDto) => void;
 }
 
-function Results({ list, mode, now, onCopy }: ResultsProps) {
+function Results({ list, mode, now, onCopy, onDelete }: ResultsProps) {
   const { items, state, loading, error } = list;
   if (loading) return <MeetingSkeleton />;
   if (items.length === 0) {
@@ -98,7 +140,14 @@ function Results({ list, mode, now, onCopy }: ResultsProps) {
       className={list.busy ? "opacity-70 transition-opacity" : "transition-opacity"}
       aria-busy={list.busy}
     >
-      <MeetingListView meetings={items} state={state} mode={mode} now={now} onCopy={onCopy} />
+      <MeetingListView
+        meetings={items}
+        state={state}
+        mode={mode}
+        now={now}
+        onCopy={onCopy}
+        onDelete={onDelete}
+      />
     </div>
   );
 }

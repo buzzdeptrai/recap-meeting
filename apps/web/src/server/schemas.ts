@@ -28,7 +28,13 @@ export const createMeetingSchema = z.object({
 
 export const patchMeetingSchema = z.object({ title: titleSchema });
 
+/** `lang` is the SOURCE language of the run (the other language is translated from it). */
 export const generateMinutesSchema = z.object({ lang: minutesLangSchema });
+/** `lang` is the language to translate INTO; `confirmOverwrite` replaces a hand-edited version. */
+export const translateMinutesSchema = z.object({
+  lang: minutesLangSchema,
+  confirmOverwrite: z.boolean().optional(),
+});
 export const saveMinutesSchema = z.object({
   lang: minutesLangSchema,
   content: minutesContentSchema,
@@ -65,6 +71,8 @@ export const listMeetingsQuerySchema = z
       z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
     ),
     offset: z.preprocess(blankToUndefined, z.coerce.number().int().min(0).default(0)),
+    /** `deleted=1` lists soft-deleted meetings ("Đã xóa gần đây") instead of the normal list. */
+    deleted: optionalEnum(["1"] as const),
   })
   .refine((query) => !query.from || !query.to || query.from <= query.to, {
     message: "from: không được sau to",

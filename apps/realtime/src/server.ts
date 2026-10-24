@@ -1,4 +1,5 @@
 import { createRealtimeServer } from "./app";
+import { recoverInterruptedMeetings } from "./boot-recovery";
 import { createUpgradeAuth } from "./auth";
 import { createRealtimeDeps } from "./deps";
 import { EnvError, loadEnv } from "./env";
@@ -20,6 +21,7 @@ function loadEnvOrExit() {
 async function main(): Promise<void> {
   const env = loadEnvOrExit();
   const deps = createRealtimeDeps(env);
+  recoverInterruptedMeetings(deps.repos, deps.audioDir);
   const server = createRealtimeServer(deps, {
     allowedOrigins: env.REALTIME_ALLOWED_ORIGINS,
     authenticator: createUpgradeAuth(deps.repos, env.RECAP_SERVICE_TOKEN),

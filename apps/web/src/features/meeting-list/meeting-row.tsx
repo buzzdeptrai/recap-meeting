@@ -27,6 +27,7 @@ interface RowProps {
   /** Heading already shows the day, so the row only needs the time. */
   grouped: boolean;
   onCopy: (id: string) => void;
+  onDelete: (meeting: MeetingListItemDto) => void;
 }
 
 function TimeCell({ meeting, grouped }: Pick<RowProps, "meeting" | "grouped">) {
@@ -48,7 +49,7 @@ function TimeCell({ meeting, grouped }: Pick<RowProps, "meeting" | "grouped">) {
 }
 
 /** Table row (xl and up): the whole row is one stretched link; actions sit above it in the last column. */
-export function MeetingRow({ meeting, grouped, onCopy }: RowProps) {
+export function MeetingRow({ meeting, grouped, onCopy, onDelete }: RowProps) {
   return (
     <div
       className={`group relative hidden items-center gap-x-4 px-5 py-3 transition-colors duration-150 hover:bg-soft-inset xl:grid ${TABLE_COLUMNS} ${ROW_FOCUS}`}
@@ -69,7 +70,7 @@ export function MeetingRow({ meeting, grouped, onCopy }: RowProps) {
         <MeetingStatusBadge meeting={meeting} />
       </span>
       <span className="flex justify-end">
-        <RowActions meeting={meeting} onCopy={onCopy} />
+        <RowActions meeting={meeting} onCopy={onCopy} onDelete={onDelete} />
       </span>
     </div>
   );

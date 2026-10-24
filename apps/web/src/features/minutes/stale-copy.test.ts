@@ -17,6 +17,12 @@ describe("staleBannerText", () => {
     );
   });
 
+  it("offers a re-translation when the source changed", () => {
+    expect(staleBannerText(["source_edited"])).toBe(
+      "Bản gốc đã thay đổi sau lần dịch này. Dịch lại để cập nhật.",
+    );
+  });
+
   it("falls back to the generic copy without reasons", () => {
     expect(staleBannerText([])).toBe("Biên bản cũ hơn bản chép lời. Tạo lại để cập nhật.");
   });

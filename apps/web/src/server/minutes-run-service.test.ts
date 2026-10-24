@@ -65,6 +65,7 @@ describe("startMinutesRun (enqueue only)", () => {
     const id = endedMeeting();
     const run = startMinutesRun(id, "vi", deps());
     expect(run).toMatchObject({
+      kind: "generate",
       lang: "vi",
       status: "queued",
       phase: null,
@@ -76,6 +77,7 @@ describe("startMinutesRun (enqueue only)", () => {
     expect(Object.keys(run).sort()).toEqual(
       [
         "runId",
+        "kind",
         "lang",
         "status",
         "phase",

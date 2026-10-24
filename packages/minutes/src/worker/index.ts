@@ -1,4 +1,4 @@
-export { createOpenAiLlmFactory } from "./openai-factory";
+export { createOpenAiLlmFactory, createOpenAiTranslateLlmFactory } from "./openai-factory";
 export { createMinutesWorker } from "./minutes-worker";
 export {
   DEFAULT_QUEUED_CLAIM_TIMEOUT_MS,
@@ -10,6 +10,7 @@ export {
 export type { MinutesWorkerConfig } from "./config";
 export {
   GENERIC_RUN_ERROR,
+  GENERIC_TRANSLATE_ERROR,
   RESTART_RUN_ERROR,
   UNCLAIMED_RUN_ERROR,
   safeFailureMessage,

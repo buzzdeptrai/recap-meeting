@@ -35,10 +35,11 @@ function normalizeLabel(label: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-/** Marks of one kind created in [from, to) (ISO instants), across all meetings. */
+/** Marks of one kind created in [from, to) (ISO instants), across all non-deleted meetings. */
 function createMarkCounter({ db }: Pick<RepoContext, "db">) {
   const countStmt = db.prepare<[string, string, string], { n: number }>(
-    "SELECT COUNT(*) AS n FROM marks WHERE kind = ? AND created_at >= ? AND created_at < ?",
+    `SELECT COUNT(*) AS n FROM marks k JOIN meetings m ON m.id = k.meeting_id
+     WHERE k.kind = ? AND k.created_at >= ? AND k.created_at < ? AND m.deleted_at IS NULL`,
   );
   return {
     countByKind: (kind: MarkKind, from: string, to: string): number =>

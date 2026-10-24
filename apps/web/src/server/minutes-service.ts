@@ -1,5 +1,6 @@
 import type { MinutesContent, MinutesLang } from "@recap/core";
 import {
+  derivedStaleReasons,
   marksFingerprint,
   minutesStaleReasons,
   type Repositories,
@@ -32,6 +33,12 @@ export function minutesStaleReasonsOf(
   stored: StoredMinutes,
   currentModel: string | null,
 ): StaleReason[] {
+  if (stored.derivedFromLang) {
+    // A translation only goes stale when its source minutes change (the source row carries the
+    // transcript / marks / prompt reasons).
+    const source = repos.minutes.get(stored.meetingId, stored.derivedFromLang);
+    return derivedStaleReasons(stored.sourceHash, source?.content ?? null);
+  }
   return minutesStaleReasons({
     generatedAt: stored.generatedAt,
     latestSegmentAt: repos.segments.latestCreatedAt(stored.meetingId),
@@ -57,9 +64,10 @@ function toDto(stored: StoredMinutes, deps: ReadDeps): MinutesDto {
     stored,
     deps.currentModel ? deps.currentModel() : null,
   );
-  const { lang, content, source, generatedAt, updatedAt } = stored;
+  const { lang, content, source, generatedAt, updatedAt, derivedFromLang } = stored;
   return {
     lang,
+    derivedFromLang,
     content,
     source,
     generatedAt,

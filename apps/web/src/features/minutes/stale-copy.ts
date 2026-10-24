@@ -6,9 +6,11 @@ export const STALE_REASON_COPY: Record<StaleReason, string> = {
   marks_removed: "Đã xoá hoặc đổi dấu mốc sau khi tạo",
   prompt_updated: "Biên bản được tạo bằng phiên bản prompt cũ",
   model_changed: "Biên bản được tạo bằng mô hình khác với mô hình hiện tại",
+  source_edited: "Bản gốc đã thay đổi sau lần dịch này",
 };
 
 const CALL_TO_ACTION = "Tạo lại để cập nhật.";
+const TRANSLATE_CALL_TO_ACTION = "Dịch lại để cập nhật.";
 const GENERIC = `Biên bản cũ hơn bản chép lời. ${CALL_TO_ACTION}`;
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
@@ -19,5 +21,6 @@ export function staleBannerText(reasons: readonly StaleReason[]): string {
   const parts = reasons.map((reason, i) =>
     i === 0 ? STALE_REASON_COPY[reason] : lowerFirst(STALE_REASON_COPY[reason]),
   );
-  return `${parts.join("; ")}. ${CALL_TO_ACTION}`;
+  const action = reasons.includes("source_edited") ? TRANSLATE_CALL_TO_ACTION : CALL_TO_ACTION;
+  return `${parts.join("; ")}. ${action}`;
 }

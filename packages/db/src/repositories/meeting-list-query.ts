@@ -88,7 +88,7 @@ const ORDER: Record<MeetingSort, string> = {
 };
 
 function conditions(filters: MeetingFilters, withStatus: boolean): string[] {
-  const out: string[] = [];
+  const out: string[] = ["m.deleted_at IS NULL"];
   if (withStatus && filters.status) out.push("m.status = @status");
   if (filters.minutes) out.push(MINUTES_PREDICATE[filters.minutes]);
   if (filters.lang) out.push("m.source_lang = @lang");

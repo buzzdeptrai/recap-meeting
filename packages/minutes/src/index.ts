@@ -5,9 +5,13 @@ export {
   minutesConfigFromEnv,
   minutesModelFromEnv,
   generatorConfigFromEnv,
+  translateModelFromEnv,
   DEFAULT_GENERATOR_CONFIG,
 } from "./config";
 export { PROMPT_VERSION } from "./prompt-version";
+export { translateMinutes, otherLang } from "./translate";
+export { TRANSLATE_PROMPT_VERSION } from "./translate-prompts";
+export { extractText, mergeText, minutesTextSchema } from "./translate-schema";
 export type { OpenAiMinutesConfig } from "./config";
 export { OpenAiMinutesLlm } from "./llm/openai";
 export type { OpenAiClientLike } from "./llm/openai";

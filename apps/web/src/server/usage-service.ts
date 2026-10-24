@@ -162,7 +162,9 @@ export function getBreakdown(query: BreakdownQuery, deps: UsageServiceDeps = def
 }
 
 function meetingTitles(deps: UsageServiceDeps): Map<string, string> {
-  return new Map(deps.repos.meetings.list({ limit: 10_000 }).map((m) => [m.id, m.title]));
+  return new Map(
+    deps.repos.meetings.list({ limit: 10_000, includeDeleted: true }).map((m) => [m.id, m.title]),
+  );
 }
 
 export function getReliability(query: UsageRangeQuery, deps: UsageServiceDeps = defaultDeps()) {

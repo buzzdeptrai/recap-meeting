@@ -31,6 +31,8 @@ export interface Meeting {
   startedAt: string | null;
   endedAt: string | null;
   durationMs: number | null;
+  /** ISO time the meeting was soft-deleted; null for a normal meeting. */
+  deletedAt: string | null;
 }
 
 export interface StoredSegment {
@@ -92,16 +94,25 @@ export interface StoredMinutes {
   promptVersion: string | null;
   /** Fingerprint of the marks used at generation; null for rows from before versioning. */
   marksFingerprint: string | null;
+  /** Set when this row is a translation of the other language's minutes; null for a source row. */
+  derivedFromLang: MinutesLang | null;
+  /** Hash of the source content this translation was made from (null for source rows). */
+  sourceHash: string | null;
   generatedAt: string;
   updatedAt: string;
 }
 
+export type MinutesRunKind = "generate" | "translate";
 export type MinutesRunStatus = "queued" | "running" | "done" | "failed" | "cancelled";
 export type MinutesRunPhase = "map" | "reduce" | "finalize";
 
 export interface MinutesRun {
   id: string;
   meetingId: string;
+  /** `translate`: `lang` is the language being translated INTO. */
+  kind: MinutesRunKind;
+  /** The user confirmed replacing a hand-edited translation. */
+  overwrite: boolean;
   lang: MinutesLang;
   status: MinutesRunStatus;
   totalChunks: number;

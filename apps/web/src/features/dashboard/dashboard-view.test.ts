@@ -50,6 +50,7 @@ describe("DashboardView render", () => {
             endedAt: null,
             durationMs: 1,
             minutesLangs: [],
+            deletedAt: null,
             minutes: {},
             topicCount: 0,
             conclusionCount: 0,

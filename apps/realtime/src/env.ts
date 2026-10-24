@@ -8,6 +8,8 @@ const DEFAULT_PORT = 4001;
 const DEFAULT_TRANSLATE_DEADLINE_MS = 1500;
 const MAX_PORT = 65_535;
 const MIN_SERVICE_TOKEN_LENGTH = 16;
+const DEFAULT_IDLE_AFTER_MS = 30_000;
+const MAX_IDLE_AFTER_MS = 3_600_000;
 
 /** AssemblyAI clamps min_turn_silence to 50..10000 ms (docs); the max bound is our own sanity cap. */
 const MIN_TURN_SILENCE_RANGE = { min: 50, max: 10_000 };
@@ -38,6 +40,16 @@ const envSchema = z.object({
   /** Unset = language default in @recap/stt (vi/multi 1200/3500, en 800/2500). */
   ASSEMBLYAI_MIN_TURN_SILENCE_MS: optionalMs(MIN_TURN_SILENCE_RANGE),
   ASSEMBLYAI_MAX_TURN_SILENCE_MS: optionalMs(MAX_TURN_SILENCE_RANGE),
+  /**
+   * AssemblyAI only: close a channel's STT socket after this many ms of continuous silence and
+   * reopen it on speech (saves session-seconds). 0 = never. Deepgram ignores it (one stereo socket).
+   */
+  STT_IDLE_AFTER_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_IDLE_AFTER_MS)
+    .default(DEFAULT_IDLE_AFTER_MS),
   /** Optional bearer token that lets tools (stream-file) open the WebSocket without a login. */
   RECAP_SERVICE_TOKEN: optionalString.refine(
     (value) => value === undefined || value.length >= MIN_SERVICE_TOKEN_LENGTH,

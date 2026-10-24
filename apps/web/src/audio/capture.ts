@@ -1,12 +1,12 @@
 import { CHANNELS, FRAME_SAMPLES, SAMPLE_RATE } from "@recap/core";
 
-export type TabState = "ok" | "missing" | "ended";
-export type MicState = "ok" | "denied" | "ended";
+import { createLevelMonitor, type LevelMonitor } from "./level-monitor";
+import type { SourceStatus } from "./capture-types";
+import { createMicController } from "./mic-controller";
+import { openMicStream, stopStream } from "./mic-stream";
+import { createStatusPublisher, watchTrackMute, type SourceFlags } from "./source-monitor";
 
-export interface SourceStatus {
-  tab: TabState;
-  mic: MicState;
-}
+export type { MicState, SourceStatus, TabState } from "./capture-types";
 
 export interface CaptureEvents {
   /** One 100 ms interleaved stereo Int16 frame (FRAME_BYTES). */
@@ -20,6 +20,10 @@ export interface CaptureSession {
   stop: () => void;
   /** Ask for the tab again (after "Dừng chia sẻ" or when audio was not ticked). */
   reshareTab: () => Promise<void>;
+  /** Replace the microphone without stopping the session; false when the device could not be opened. */
+  switchMic: (deviceId: string) => Promise<boolean>;
+  /** Device id of the mic in use (null when unknown or no mic). */
+  micDeviceId: () => string | null;
 }
 
 export type CaptureErrorCode = "unsupported" | "share-cancelled" | "worklet-failed";
@@ -62,20 +66,12 @@ async function requestTabStream(): Promise<MediaStream> {
   }
 }
 
-async function requestMicStream(): Promise<MediaStream | null> {
-  try {
-    return await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
-    });
-  } catch {
-    return null;
-  }
-}
-
 interface Graph {
   context: AudioContext;
   merger: ChannelMergerNode;
   node: AudioWorkletNode;
+  /** Level tap, replaced by the session so silence detection sees every frame. */
+  onLevels: (mic: number, tab: number) => void;
 }
 
 async function buildGraph(events: CaptureEvents): Promise<Graph> {
@@ -98,18 +94,22 @@ async function buildGraph(events: CaptureEvents): Promise<Graph> {
     channelInterpretation: "discrete",
     processorOptions: { targetRate: SAMPLE_RATE, frameSamples: FRAME_SAMPLES },
   });
+  const graph: Graph = { context, merger, node, onLevels: events.onRms };
   node.port.onmessage = (event: MessageEvent<{ pcm: ArrayBuffer; levels: [number, number] }>) => {
     events.onFrame(event.data.pcm);
-    events.onRms(event.data.levels[MIC_CHANNEL] ?? 0, event.data.levels[TAB_CHANNEL] ?? 0);
+    graph.onLevels(event.data.levels[MIC_CHANNEL] ?? 0, event.data.levels[TAB_CHANNEL] ?? 0);
   };
   const mute = context.createGain();
   mute.gain.value = 0;
   merger.connect(node).connect(mute).connect(context.destination);
-  return { context, merger, node };
+  return graph;
 }
 
 /** Starts capture: tab (ch1) + mic (ch0) → worklet → frames. Must run inside a user gesture. */
-export async function startCapture(events: CaptureEvents): Promise<CaptureSession> {
+export async function startCapture(
+  events: CaptureEvents,
+  micDeviceId?: string | null,
+): Promise<CaptureSession> {
   if (!isSupported()) {
     throw new CaptureError(
       "unsupported",
@@ -117,20 +117,17 @@ export async function startCapture(events: CaptureEvents): Promise<CaptureSessio
     );
   }
   const tabStream = await requestTabStream();
-  const micStream = await requestMicStream();
+  const micStream = await openMicStream(micDeviceId);
   let graph: Graph;
   try {
     graph = await buildGraph(events);
   } catch (error) {
-    stopTracks(tabStream);
-    stopTracks(micStream);
+    stopStream(tabStream);
+    stopStream(micStream);
     throw error;
   }
   return createSession(graph, events, tabStream, micStream);
 }
-
-const stopTracks = (stream: MediaStream | null) =>
-  stream?.getTracks().forEach((track) => track.stop());
 
 interface TabController {
   attach: (stream: MediaStream) => void;
@@ -138,14 +135,22 @@ interface TabController {
 }
 
 /** Owns the meeting-tab stream: wiring into the merger, "ended" detection, and cleanup. */
-function createTabController(graph: Graph, status: SourceStatus, publish: () => void) {
+function createTabController(
+  graph: Graph,
+  status: SourceStatus,
+  setMuted: (muted: boolean) => void,
+  publish: () => void,
+) {
   let tabStream: MediaStream | null = null;
   let tabSource: MediaStreamAudioSourceNode | null = null;
+  let unwatchMute: (() => void) | null = null;
 
   const detach = () => {
+    unwatchMute?.();
+    unwatchMute = null;
     tabSource?.disconnect();
     tabSource = null;
-    stopTracks(tabStream);
+    stopStream(tabStream);
     tabStream = null;
   };
 
@@ -159,6 +164,8 @@ function createTabController(graph: Graph, status: SourceStatus, publish: () => 
     }
     tabSource = graph.context.createMediaStreamSource(new MediaStream([audio]));
     tabSource.connect(graph.merger, 0, TAB_CHANNEL);
+    unwatchMute = watchTrackMute(audio, setMuted);
+    setMuted(audio.muted);
     audio.addEventListener("ended", () => {
       if (tabStream !== stream) return;
       detach();
@@ -171,42 +178,67 @@ function createTabController(graph: Graph, status: SourceStatus, publish: () => 
   return { attach, detach } satisfies TabController;
 }
 
-function createSession(
+/** Routes every frame's levels to the meters and to the silence/echo monitor. */
+function wireLevels(
+  graph: Graph,
+  events: CaptureEvents,
+  monitor: LevelMonitor,
+  setFlags: (patch: Partial<SourceFlags>) => void,
+): void {
+  graph.onLevels = (mic, tab) => {
+    events.onRms(mic, tab);
+    setFlags(monitor.feed(mic, tab));
+  };
+}
+
+export function createSession(
   graph: Graph,
   events: CaptureEvents,
   initialTab: MediaStream,
   micStream: MediaStream | null,
 ): CaptureSession {
-  const status: SourceStatus = { tab: "missing", mic: micStream ? "ok" : "denied" };
+  const base: SourceStatus = { tab: "missing", mic: "denied" };
   let stopped = false;
-  const publish = () => events.onSourceChange({ ...status });
-  const tab = createTabController(graph, status, publish);
+  const monitor = createLevelMonitor();
+  const { publish, setFlags } = createStatusPublisher(base, events.onSourceChange);
+  wireLevels(graph, events, monitor, setFlags);
 
-  if (micStream) attachMic(graph, micStream, status, publish);
+  const tab = createTabController(
+    graph,
+    base,
+    (tabMuted) => {
+      monitor.resetTab();
+      setFlags({ tabMuted, tabSilent: false });
+    },
+    publish,
+  );
+  const mic = createMicController({
+    graph,
+    status: base,
+    setFlags,
+    publish,
+    resetSilence: monitor.resetMic,
+    isActive: () => !stopped,
+  });
+  mic.attach(micStream);
   tab.attach(initialTab);
   publish();
 
   return {
     stop() {
+      if (stopped) return; // idempotent: a second close() would reject on a closed context
       stopped = true;
       tab.detach();
-      stopTracks(micStream);
-      void graph.context.close();
+      mic.detach();
+      graph.context.close().catch(() => undefined);
     },
     async reshareTab() {
       const stream = await requestTabStream();
       // The picker may resolve after stop(): release the new tracks instead of using a closed context.
-      if (stopped) return stopTracks(stream);
+      if (stopped) return stopStream(stream);
       tab.attach(stream);
     },
+    switchMic: mic.switchTo,
+    micDeviceId: mic.activeDeviceId,
   };
-}
-
-function attachMic(graph: Graph, stream: MediaStream, status: SourceStatus, publish: () => void) {
-  const source = graph.context.createMediaStreamSource(stream);
-  source.connect(graph.merger, 0, MIC_CHANNEL);
-  stream.getAudioTracks()[0]?.addEventListener("ended", () => {
-    status.mic = "ended";
-    publish();
-  });
 }

@@ -1,4 +1,5 @@
 import { Info } from "@phosphor-icons/react";
+import { MicTestPanel } from "./mic-test-panel";
 
 const STEPS = [
   "Mở Zoom hoặc Teams bằng trình duyệt Chrome hoặc Edge.",
@@ -8,13 +9,14 @@ const STEPS = [
 ];
 
 /** The only numbered list in the app: these steps really are a sequence. */
-export function SetupChecklist() {
+export function SetupChecklist({ micTestEnabled }: { micTestEnabled: boolean }) {
   return (
     <div className="mx-auto max-w-[600px] px-5 py-10 sm:px-8 sm:py-14">
       <h2 className="text-[22px] font-bold">Chuẩn bị trước khi ghi</h2>
       <p className="mt-1 text-small text-soft-muted">
         Làm lần lượt bốn bước dưới đây, chừng một phút là xong.
       </p>
+      <MicTestPanel enabled={micTestEnabled} />
       <ol className="mt-6 flex flex-col gap-2.5">
         {STEPS.map((step, index) => (
           <li

@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { MinutesRunDto } from "@/lib/api-types";
-import { hasUnresolvedFailure, isActiveRun, runProgressView, shouldPoll } from "./run-progress";
+import {
+  hasUnresolvedFailure,
+  isActiveRun,
+  runProgressView,
+  shouldPoll,
+  translatedLangs,
+  translatingInto,
+} from "./run-progress";
 
 const run = (over: Partial<MinutesRunDto> = {}): MinutesRunDto => ({
   runId: "r1",
+  kind: "generate",
   lang: "vi",
   status: "running",
   phase: "map",
@@ -23,6 +31,18 @@ describe("isActiveRun", () => {
       expect(isActiveRun(run({ status }))).toBe(false);
     }
     expect(isActiveRun(null)).toBe(false);
+  });
+});
+
+describe("runProgressView for a translation", () => {
+  it("says which language it translates into, without chunk steps", () => {
+    const queued = runProgressView(
+      run({ kind: "translate", lang: "vi", status: "queued", phase: null, total: 0 }),
+    );
+    expect(queued).toMatchObject({ label: "Đang dịch sang tiếng Việt", steps: 1, percent: 0 });
+    const running = runProgressView(run({ kind: "translate", lang: "en", phase: null, total: 0 }));
+    expect(running.label).toBe("Đang dịch sang tiếng Anh");
+    expect(running.percent).toBeGreaterThan(0);
   });
 });
 
@@ -100,5 +120,24 @@ describe("hasUnresolvedFailure", () => {
     expect(hasUnresolvedFailure(failed, "2026-10-24T08:10:00.000Z")).toBe(false);
     expect(hasUnresolvedFailure(run({ status: "done" }), null)).toBe(false);
     expect(hasUnresolvedFailure(run({ status: "running" }), null)).toBe(false);
+  });
+});
+
+describe("translation overview", () => {
+  const none = { vi: null, en: null };
+
+  it("finds the language being translated into", () => {
+    expect(translatingInto(none)).toBeNull();
+    expect(translatingInto({ ...none, vi: run({ kind: "translate", lang: "vi" }) })).toBe("vi");
+    expect(translatingInto({ ...none, en: run({ kind: "generate", lang: "en" }) })).toBeNull();
+    expect(
+      translatingInto({ ...none, vi: run({ kind: "translate", lang: "vi", status: "done" }) }),
+    ).toBeNull();
+  });
+
+  it("lists finished translations", () => {
+    const done = run({ kind: "translate", lang: "vi", status: "done" });
+    expect(translatedLangs({ ...none, vi: done })).toEqual(["vi"]);
+    expect(translatedLangs({ ...none, vi: { ...done, status: "failed" } })).toEqual([]);
   });
 });

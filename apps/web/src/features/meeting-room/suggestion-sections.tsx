@@ -61,11 +61,23 @@ function SuggestionCard({ atMs, title, chips, onJump }: SuggestionCardProps) {
 
 interface SuggestionsProps<T> {
   items: T[];
+  /** Candidates hidden because they duplicate a hand mark (explained under the list). */
+  hidden?: number;
   onJump: (atMs: number) => void;
 }
 
+/** Tells the user why the list is shorter than the minutes ("1 mục trùng marker của bạn"). */
+function HiddenNote({ count, noun }: { count: number; noun: string }) {
+  if (count <= 0) return null;
+  return (
+    <p className="mt-2 px-1 text-meta text-fg-muted">
+      Đã ẩn {count} {noun} trùng với mốc bạn đã đánh dấu.
+    </p>
+  );
+}
+
 /** Topics proposed by the minutes (below the hand-made topic markers). Hidden when empty. */
-export function TopicSuggestions({ items, onJump }: SuggestionsProps<TopicSuggestion>) {
+export function TopicSuggestions({ items, hidden = 0, onJump }: SuggestionsProps<TopicSuggestion>) {
   if (items.length === 0) return null;
   return (
     <section className="mt-4" aria-label={SUGGESTIONS_HEADING}>
@@ -81,12 +93,17 @@ export function TopicSuggestions({ items, onJump }: SuggestionsProps<TopicSugges
           />
         ))}
       </ul>
+      <HiddenNote count={hidden} noun="chủ đề" />
     </section>
   );
 }
 
 /** Conclusions the AI proposed in the minutes (not hand-marked). Hidden when empty. */
-export function ConclusionSuggestions({ items, onJump }: SuggestionsProps<ConclusionSuggestion>) {
+export function ConclusionSuggestions({
+  items,
+  hidden = 0,
+  onJump,
+}: SuggestionsProps<ConclusionSuggestion>) {
   if (items.length === 0) return null;
   return (
     <section className="mt-4" aria-label={SUGGESTIONS_HEADING}>
@@ -102,6 +119,7 @@ export function ConclusionSuggestions({ items, onJump }: SuggestionsProps<Conclu
           />
         ))}
       </ul>
+      <HiddenNote count={hidden} noun="kết luận" />
     </section>
   );
 }

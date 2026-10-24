@@ -13,6 +13,7 @@ interface ListViewProps {
   mode: ViewMode;
   now: number;
   onCopy: (id: string) => void;
+  onDelete: (meeting: MeetingListItemDto) => void;
 }
 
 /** Day headings only make sense when rows run in date order. */
@@ -32,12 +33,12 @@ function DayHeading({ heading, count }: { heading: string; count: number }) {
 }
 
 /** Rows grouped by Vietnam calendar day (date sorts) or one flat list (relevance, duration, name). */
-export function MeetingListView({ meetings, state, mode, now, onCopy }: ListViewProps) {
+export function MeetingListView({ meetings, state, mode, now, onCopy, onDelete }: ListViewProps) {
   const grouped = isDateOrdered(state);
   const groups = grouped
     ? groupByDay(meetings, (m) => m.createdAt, now)
     : [{ key: "all", heading: "", items: meetings }];
-  const rowProps = { grouped, onCopy };
+  const rowProps = { grouped, onCopy, onDelete };
   if (mode === "cards") return <CardGrid groups={groups} rowProps={rowProps} />;
   return (
     <FloatCard as="section" padding="none" bodyClassName="py-4" aria-label="Danh sách cuộc họp">
@@ -63,7 +64,11 @@ export function MeetingListView({ meetings, state, mode, now, onCopy }: ListView
 
 interface GridProps {
   groups: ReturnType<typeof groupByDay<MeetingListItemDto>>;
-  rowProps: { grouped: boolean; onCopy: (id: string) => void };
+  rowProps: {
+    grouped: boolean;
+    onCopy: (id: string) => void;
+    onDelete: (meeting: MeetingListItemDto) => void;
+  };
 }
 
 function CardGrid({ groups, rowProps }: GridProps) {

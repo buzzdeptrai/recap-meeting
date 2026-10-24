@@ -8,6 +8,7 @@ import {
   FileText,
   LinkSimple,
   MagicWand,
+  Trash,
 } from "@phosphor-icons/react";
 import { DropdownMenu, IconButton, buttonVariants, type DropdownItem } from "@recap/admin-ui";
 import Link from "next/link";
@@ -25,6 +26,7 @@ import {
   quickAction,
   roomHref,
 } from "./meeting-format";
+import { deleteBlockedReason } from "./trash-logic";
 
 const FORMAT_NAME: Record<ExportFormat, string> = { docx: "Word", md: "Markdown" };
 const NO_MINUTES_REASON = "Chưa có biên bản";
@@ -94,7 +96,7 @@ function minutesItem(meeting: MeetingListItemDto): DropdownItem {
   };
 }
 
-/** Everything a row can do, in one place: open, minutes, exports, copy link. No delete yet. */
+/** Everything a row can do, in one place: open, minutes, exports, copy link. Delete has its own icon button. */
 export function menuItems(
   meeting: MeetingListItemDto,
   onCopy: (id: string) => void,
@@ -115,10 +117,25 @@ export function menuItems(
 interface ActionProps {
   meeting: MeetingListItemDto;
   onCopy: (id: string) => void;
+  onDelete: (meeting: MeetingListItemDto) => void;
+}
+
+/** Soft delete trigger; disabled (with the reason as tooltip) while the meeting is live. */
+function DeleteButton({ meeting, onDelete }: Pick<ActionProps, "meeting" | "onDelete">) {
+  const blocked = deleteBlockedReason(meeting);
+  return (
+    <IconButton
+      label={blocked ?? `Xóa cuộc họp “${meeting.title}”`}
+      icon={<Trash size={18} />}
+      disabled={blocked !== null}
+      onClick={() => onDelete(meeting)}
+      className="rounded-full hover:text-soft-danger-ink [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:transition-opacity [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:none)]:size-10"
+    />
+  );
 }
 
 /** One visible quick action (hover/focus on pointer devices, always on touch) plus the "⋯" menu. */
-export function RowActions({ meeting, onCopy }: ActionProps) {
+export function RowActions({ meeting, onCopy, onDelete }: ActionProps) {
   const quick = quickAction(meeting);
   return (
     <div className="relative z-10 flex items-center gap-1">
@@ -128,6 +145,7 @@ export function RowActions({ meeting, onCopy }: ActionProps) {
       >
         {quick.label}
       </Link>
+      <DeleteButton meeting={meeting} onDelete={onDelete} />
       <DropdownMenu
         items={menuItems(meeting, onCopy)}
         trigger={

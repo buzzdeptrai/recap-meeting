@@ -105,6 +105,7 @@ function ControllerBanners({ controller }: { controller: ReturnType<typeof useRo
       connection={socket.connection}
       room={socket.room}
       onReshare={capture.reshareTab}
+      onSwitchMic={capture.switchMic}
       onRetry={socket.retry}
       onRetryStt={socket.retryStt}
       onDismissError={socket.clearError}

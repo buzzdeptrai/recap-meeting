@@ -7,7 +7,13 @@ import type {
   SourceLang,
   TargetLang,
 } from "@recap/core";
-import type { Meeting, MinutesRunPhase, MinutesRunStatus, StaleReason } from "@recap/db";
+import type {
+  Meeting,
+  MinutesRunKind,
+  MinutesRunPhase,
+  MinutesRunStatus,
+  StaleReason,
+} from "@recap/db";
 
 /** Shapes returned by the REST route handlers (JSON over the wire). */
 export type MeetingDto = Meeting;
@@ -52,6 +58,12 @@ export interface MeetingListTotals {
   thisWeek: number;
   /** Ended meetings without minutes, or with minutes that went stale. */
   needMinutes: number;
+}
+
+/** `GET /api/meetings?deleted=1`: soft-deleted meetings, most recently deleted first. */
+export interface DeletedMeetingListDto {
+  meetings: MeetingDto[];
+  total: number;
 }
 
 export interface MeetingListDto {
@@ -147,6 +159,8 @@ export interface ApiErrorBody {
 /** Stored minutes of one meeting in one language (GET/POST/PUT `/api/meetings/:id/minutes`). */
 export interface MinutesDto {
   lang: MinutesLang;
+  /** Set when this is a translation of the other language's minutes; null for a source version. */
+  derivedFromLang: MinutesLang | null;
   content: MinutesContent;
   source: MinutesSource;
   generatedAt: string;
@@ -160,6 +174,8 @@ export interface MinutesDto {
 /** One generation run of the minutes (`POST .../minutes` starts it, `GET .../minutes/run` polls it). */
 export interface MinutesRunDto {
   runId: string;
+  /** `translate`: `lang` is the language being translated into. */
+  kind: MinutesRunKind;
   lang: MinutesLang;
   status: MinutesRunStatus;
   phase: MinutesRunPhase | null;

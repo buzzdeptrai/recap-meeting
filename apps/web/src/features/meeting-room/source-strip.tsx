@@ -25,6 +25,27 @@ const STT_LABEL: Record<SttState, string> = {
 
 const PROVIDER_NAME: Record<string, string> = { gemini: "Gemini", openai: "OpenAI" };
 
+const MIC_STATE_LABEL: Record<SourceStatus["mic"], string> = {
+  ok: "ổn",
+  denied: "bị chặn",
+  ended: "đã dừng",
+  silent: "không có tiếng",
+  lost: "mất thiết bị",
+};
+const TAB_STATE_LABEL: Record<SourceStatus["tab"], string> = {
+  ok: "ổn",
+  missing: "chưa có",
+  ended: "đã dừng",
+  silent: "không có tiếng",
+};
+
+const MIC_ECHO_LABEL = "thu lại tiếng loa";
+
+function micStateLabel(sources: SourceStatus): string {
+  if (sources.mic === "ok" && sources.echo) return MIC_ECHO_LABEL;
+  return MIC_STATE_LABEL[sources.mic];
+}
+
 const MIC_LABEL = "Micro";
 const TAB_LABEL = "Âm thanh tab";
 
@@ -69,9 +90,7 @@ function SourceMeters({
         tone="tone-a"
         level={mic}
         available={micOk}
-        state={
-          !active ? "chưa bật" : { ok: "ổn", denied: "bị chặn", ended: "đã dừng" }[sources.mic]
-        }
+        state={!active ? "chưa bật" : micStateLabel(sources)}
       />
       <MeterCell
         label={TAB_LABEL}
@@ -79,9 +98,7 @@ function SourceMeters({
         tone="tone-b"
         level={tab}
         available={tabOk}
-        state={
-          !active ? "chưa bật" : { ok: "ổn", missing: "chưa có", ended: "đã dừng" }[sources.tab]
-        }
+        state={!active ? "chưa bật" : TAB_STATE_LABEL[sources.tab]}
       />
     </div>
   );

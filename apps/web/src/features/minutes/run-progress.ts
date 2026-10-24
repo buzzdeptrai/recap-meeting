@@ -1,4 +1,6 @@
+import type { MinutesLang } from "@recap/core";
 import type { MinutesRunPhase } from "@recap/db";
+import { langName } from "./minutes-langs";
 import type { MinutesRunDto } from "@/lib/api-types";
 
 export const POLL_INTERVAL_MS = 2_000;
@@ -13,6 +15,8 @@ const PREPARING_LABEL = "Đang chuẩn bị";
 const WAITING_LABEL = "Đang chờ xử lý";
 /** Steps besides the chunks: the merge and the final pass. */
 const EXTRA_STEPS = 2;
+/** A translation call is running: more than nothing, less than done. */
+const TRANSLATE_RUNNING_PERCENT = 50;
 
 export const isActiveRun = (run: MinutesRunDto | null): boolean =>
   run !== null && (run.status === "queued" || run.status === "running");
@@ -37,8 +41,21 @@ function labelOf(run: MinutesRunDto | null): string {
   return run?.status === "queued" ? WAITING_LABEL : PREPARING_LABEL;
 }
 
+export const isTranslateRun = (run: MinutesRunDto | null): boolean => run?.kind === "translate";
+
+/** Translation is one call, so no steps: an indeterminate card that says where it translates to. */
+function translateView(run: MinutesRunDto): RunProgressView {
+  return {
+    label: `Đang dịch sang ${langName(run.lang)}`,
+    step: 1,
+    steps: 1,
+    percent: run.status === "queued" ? 0 : TRANSLATE_RUNNING_PERCENT,
+  };
+}
+
 /** What the progress card shows for a run (or for the moment before the first answer). */
 export function runProgressView(run: MinutesRunDto | null): RunProgressView {
+  if (run && isTranslateRun(run)) return translateView(run);
   const chunks = Math.max(run?.total ?? 0, 1);
   const steps = chunks + EXTRA_STEPS;
   const completed = run ? completedSteps(run, chunks) : 0;
@@ -64,4 +81,23 @@ export function hasUnresolvedFailure(
   if (run.status !== "failed" && run.status !== "cancelled") return false;
   if (minutesGeneratedAt === null || run.finishedAt === null) return true;
   return run.finishedAt > minutesGeneratedAt;
+}
+
+export type RunsByLang = Record<MinutesLang, MinutesRunDto | null>;
+
+/** The language a translation is currently running into (queued or running), if any. */
+export function translatingInto(runs: RunsByLang): MinutesLang | null {
+  for (const lang of ["vi", "en"] as const) {
+    const run = runs[lang];
+    if (run && isTranslateRun(run) && isActiveRun(run)) return lang;
+  }
+  return null;
+}
+
+/** Languages whose latest run is a finished translation (their minutes now exist). */
+export function translatedLangs(runs: RunsByLang): MinutesLang[] {
+  return (["vi", "en"] as const).filter((lang) => {
+    const run = runs[lang];
+    return run !== null && isTranslateRun(run) && run.status === "done";
+  });
 }

@@ -112,3 +112,17 @@ Done = T1–T6 in `docs/PLAN.md` ticked, `npm test` + `npm run typecheck` green,
 ## Ghi chú sau phiên live 2026-10-24 (sửa sau)
 - `.env` đang đặt `STT_PROVIDER=assemblyai` (mặc định code/tài liệu là deepgram) → phiên live thật chạy AssemblyAI `universal-3-6-pro`, 2 socket mono.
 - UNCONFIRMED: khi chuyển từ nói trong tab (EN) sang mic tiếng Việt có trễ nhẹ, vài câu đầu bị nhận sai ngôn ngữ ("Hello." → `it`, câu Việt → `en`). Cần đọc adapter AssemblyAI (cấu hình language_detection / gợi ý ngôn ngữ từng kênh) và benchmark bằng bản ghi thật; ý tưởng: chọn ngôn ngữ cho từng kênh (mic=vi, tab=en) khi tạo họp.
+
+## Cuối phiên 2026-10-24 (chuẩn bị sandbox 1 tuần)
+- Done (verify xanh: 157 file, 1264 test; CHƯA COMMIT, ~85 file sửa + ~79 file mới; giữ `ptg-meeting-note.jpg` ngoài git):
+  - [x] Phát hiện mic/tab im lặng + banner (60 s mic, 30 s tab, đóng được); nguyên nhân gốc: mic iPhone Continuity bị ngắt, tab Zoom bị mute.
+  - [x] Chọn mic + thanh mức âm thử + `switchMic` giữa chừng + gợi ý khi thiết bị ngắt; phát hiện vọng loa (ngưỡng là ĐOÁN).
+  - [x] Cổng im lặng STT theo kênh (chỉ AssemblyAI, `STT_IDLE_AFTER_MS`=30000, 0 tắt; ngưỡng 0.005/0.012 là ĐOÁN). Deepgram không đổi.
+  - [x] Xóa mềm meeting (migration 011, khôi phục, "Đã xóa gần đây"); dọn meeting kẹt `live` khi realtime khởi động; lỗi hot-reload `getRepositories()` đã sửa.
+  - [x] Biên bản song ngữ (migration 012): gốc mặc định tiếng Anh, chọn tay EN/VI, bản dịch tự chạy sau bản gốc (`gpt-4.1-mini`), stale `source_edited`.
+  - [x] Tester độc lập (Phase A+B): GO có điều kiện; 7 lỗi đã sửa. Favicon, textarea tóm tắt full width, ghi chú "Đã ẩn N chủ đề".
+- Next:
+  - [ ] Commit bằng `/commit`, chia theo chủ đề (mic/echo/silence, STT gate, xóa mềm + recovery, biên bản song ngữ).
+  - [ ] Sandbox 1 tuần: ổ đĩa ≥10 GB (WAV ~115 MB/giờ, KHÔNG tự xóa), backup DB hằng ngày, `AUTH_SECRET` nếu production, đeo tai nghe; khởi động realtime trước rồi web.
+  - [ ] Hiệu chỉnh ngưỡng im lặng/vọng bằng bản ghi thật; lọc bản lặp transcript (hoãn); Deepgram tiết kiệm theo kênh cần 2 socket mono; xóa vĩnh viễn + chính sách xóa WAV; lỗi #9 (thiếu vài frame tính tiền lúc stop).
+  - [ ] UNCONFIRMED: giao diện mới trên trình duyệt thật (mic picker, thùng rác, tab EN/VI), chất lượng dịch biên bản, giá model dịch.

@@ -19,10 +19,12 @@ export interface SttUsageMeterOptions {
  * per-channel seconds summed over both channels, which is the right billing unit for both vendors:
  * Deepgram bills each channel separately, and AssemblyAI (one mono socket per channel) bills each
  * connection's session seconds, i.e. socket-seconds. The per-channel figure is kept in `meta`.
- * Each flush records only the frames since the last one.
+ * Each flush records only the frames since the last one. Idle (silent, parked) channels send nothing
+ * and therefore add nothing; `perChannelSeconds` is then the average over the channels.
  */
 export class SttUsageMeter {
-  private frames = 0;
+  /** Mono channel-frames (FRAME_MS each) sent to the vendor; a stereo frame = CHANNELS of them. */
+  private channelFrames = 0;
   private flushes = 0;
   private timer: NodeJS.Timeout | null = null;
 
@@ -37,8 +39,14 @@ export class SttUsageMeter {
     this.timer.unref();
   }
 
+  /** Stereo frames sent on every channel (Deepgram, or any provider without silence gating). */
   addFrame(count = 1): void {
-    this.frames += count;
+    this.channelFrames += count * CHANNELS;
+  }
+
+  /** Mono channel-frames actually sent (providers that skip silent channels report these). */
+  addChannelFrames(count: number): void {
+    this.channelFrames += count;
   }
 
   /** Stops the timer and records what is left. Safe to call more than once. */
@@ -49,9 +57,10 @@ export class SttUsageMeter {
   }
 
   private flush(kind: "periodic" | "final"): void {
-    if (this.frames === 0) return;
-    const perChannelSeconds = (this.frames * FRAME_MS) / MS_PER_SECOND;
-    this.frames = 0;
+    if (this.channelFrames === 0) return;
+    const audioSeconds = (this.channelFrames * FRAME_MS) / MS_PER_SECOND;
+    const perChannelSeconds = audioSeconds / CHANNELS;
+    this.channelFrames = 0;
     this.flushes += 1;
     try {
       this.options.sink({
@@ -59,7 +68,7 @@ export class SttUsageMeter {
         vendor: this.options.vendor ?? "deepgram",
         service: "stt_live",
         model: this.options.model,
-        audioSeconds: perChannelSeconds * CHANNELS,
+        audioSeconds,
         requests: 1,
         status: "ok",
         meta: {

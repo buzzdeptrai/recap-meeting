@@ -29,7 +29,7 @@ export interface MinutesRunDeps {
   queuedClaimTimeoutMs?: number;
 }
 
-function defaultDeps(): MinutesRunDeps {
+export function defaultRunDeps(): MinutesRunDeps {
   return {
     repos: getRepositories(),
     requireModel: requireMinutesModel,
@@ -43,8 +43,9 @@ export function staleRunMsFromEnv(env: Record<string, string | undefined>): numb
   return Number.isInteger(value) && value > 0 ? value : DEFAULT_STALE_RUN_MS;
 }
 
-const toRunDto = (run: MinutesRun): MinutesRunDto => ({
+export const toRunDto = (run: MinutesRun): MinutesRunDto => ({
   runId: run.id,
+  kind: run.kind,
   lang: run.lang,
   status: run.status,
   phase: run.phase,
@@ -59,7 +60,7 @@ const cutoffIso = (deps: MinutesRunDeps, timeoutMs: number) =>
   new Date((deps.now ?? Date.now)() - timeoutMs).toISOString();
 
 /** Fails active runs that stopped updating, and queued runs no worker picked up. Idempotent. */
-function failAbandoned(deps: MinutesRunDeps, meetingId: string, lang: MinutesLang) {
+export function failAbandoned(deps: MinutesRunDeps, meetingId: string, lang: MinutesLang) {
   const { minutesRuns } = deps.repos;
   const staleMs = deps.staleRunMs ?? staleRunMsFromEnv(process.env);
   minutesRuns.failStale(meetingId, lang, cutoffIso(deps, staleMs), STALE_RUN_ERROR);
@@ -75,7 +76,7 @@ function failAbandoned(deps: MinutesRunDeps, meetingId: string, lang: MinutesLan
 export function startMinutesRun(
   meetingId: string,
   lang: MinutesLang,
-  deps: MinutesRunDeps = defaultDeps(),
+  deps: MinutesRunDeps = defaultRunDeps(),
 ): MinutesRunDto {
   requireEndedMeeting(deps.repos, meetingId);
   if (deps.repos.segments.latestCreatedAt(meetingId) === null) {
@@ -89,14 +90,18 @@ export function startMinutesRun(
     model,
     promptVersion: PROMPT_VERSION,
   });
+  if (run.kind !== "generate") throw runBusy();
   return toRunDto(run);
 }
+
+const runBusy = () =>
+  new ServiceError(409, "RUN_BUSY", "Biên bản ngôn ngữ này đang được dịch. Hãy đợi dịch xong.");
 
 /** Latest run of a meeting + language (undefined when none). Fails abandoned runs lazily. */
 export function getLatestRun(
   meetingId: string,
   lang: MinutesLang,
-  deps: MinutesRunDeps = defaultDeps(),
+  deps: MinutesRunDeps = defaultRunDeps(),
 ): MinutesRunDto | undefined {
   requireMeeting(deps.repos, meetingId);
   failAbandoned(deps, meetingId, lang);

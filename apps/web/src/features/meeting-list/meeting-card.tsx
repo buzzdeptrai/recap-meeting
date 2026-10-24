@@ -11,6 +11,7 @@ interface CardProps {
   meeting: MeetingListItemDto;
   grouped: boolean;
   onCopy: (id: string) => void;
+  onDelete: (meeting: MeetingListItemDto) => void;
   /** `list`: flat row inside the list card (below 1280px). `tile`: floating card in the grid. */
   layout: "list" | "tile";
 }
@@ -21,7 +22,7 @@ const LAYOUT = {
 } as const;
 
 /** Stacked card: icon + title + status, sub line, date / duration / language, minutes chips, actions. */
-export function MeetingCard({ meeting, grouped, onCopy, layout }: CardProps) {
+export function MeetingCard({ meeting, grouped, onCopy, onDelete, layout }: CardProps) {
   const when = grouped ? formatVnTime(meeting.createdAt) : formatDateTime(meeting.createdAt);
   return (
     <div className={`group relative flex flex-col gap-2.5 ${LAYOUT[layout]} ${ROW_FOCUS}`}>
@@ -52,7 +53,7 @@ export function MeetingCard({ meeting, grouped, onCopy, layout }: CardProps) {
       </div>
       <div className="flex min-h-10 items-center justify-between gap-2">
         {meeting.status === "ended" ? <MinutesPresence meeting={meeting} /> : <span />}
-        <RowActions meeting={meeting} onCopy={onCopy} />
+        <RowActions meeting={meeting} onCopy={onCopy} onDelete={onDelete} />
       </div>
     </div>
   );

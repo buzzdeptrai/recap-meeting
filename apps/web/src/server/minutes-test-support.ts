@@ -34,6 +34,7 @@ export async function generateNow(
   createLlm: LlmFactory,
 ): Promise<void> {
   repos.minutesRuns.start({ meetingId, lang });
+  // No translation model: tests of the source step stay single-run.
   const worker = testWorker(repos, createLlm);
   worker.tick();
   await worker.whenIdle();

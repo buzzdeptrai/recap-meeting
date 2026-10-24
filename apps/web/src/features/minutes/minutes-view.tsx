@@ -2,28 +2,25 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { MinutesLang, MinutesTopic } from "@recap/core";
-import { Info, WarningCircle } from "@phosphor-icons/react";
-import type { StaleReason } from "@recap/db";
-import { ActionGroup, Banner, Button, Card, ConfirmDialog, EmptyState } from "@recap/admin-ui";
+import { WarningCircle } from "@phosphor-icons/react";
+import { Button, Card, EmptyState } from "@recap/admin-ui";
 import { fetchMinutes } from "@/lib/api-minutes";
 import { NO_AVAILABILITY, withMinutes, type MinutesAvailability } from "./export-options";
 import { MinutesEditor } from "./minutes-editor";
+import { FailureBanner, StaleBanner, TranslatingBanner } from "./minutes-banners";
+import { MinutesConfirm } from "./minutes-dialogs";
+import { DEFAULT_SOURCE_LANG, otherMinutesLang } from "./minutes-langs";
 import { EmptyMinutes, GeneratingMinutes, LoadingMinutes } from "./minutes-states";
 import { MinutesTopBar, type MinutesMeetingInfo } from "./minutes-top-bar";
-import { staleBannerText } from "./stale-copy";
 import { useMinutes } from "./use-minutes";
-
-type Confirm =
-  | { kind: "regenerate" }
-  | { kind: "lang"; lang: MinutesLang }
-  | { kind: "topic"; topic: MinutesTopic };
-
-const hasBody = (topic: MinutesTopic) => topic.keyPoints.length > 0 || topic.conclusion !== null;
+import { usePanelRequests } from "./use-panel-requests";
+import { useRunsOverview } from "./use-runs-overview";
 
 /** Holds the chosen language; the panel under it remounts per language. */
 export function MinutesView({ meeting }: { meeting: MinutesMeetingInfo }) {
-  const [lang, setLang] = useState<MinutesLang>("vi");
+  const [lang, setLang] = useState<MinutesLang>(DEFAULT_SOURCE_LANG);
   const { available, markAvailable } = useAvailability(meeting.id);
+  const overview = useRunsOverview(meeting.id, markAvailable);
   return (
     <MinutesPanel
       key={lang}
@@ -32,6 +29,8 @@ export function MinutesView({ meeting }: { meeting: MinutesMeetingInfo }) {
       onLangChange={setLang}
       available={available}
       onHasMinutes={markAvailable}
+      translatingInto={overview.translatingInto}
+      onRunEnded={overview.refresh}
     />
   );
 }
@@ -63,49 +62,56 @@ interface MinutesPanelProps {
   onLangChange: (lang: MinutesLang) => void;
   available: MinutesAvailability;
   onHasMinutes: (lang: MinutesLang) => void;
+  /** Language a translation is running into right now (any tab), or null. */
+  translatingInto: MinutesLang | null;
+  /** Called when a run of this panel ended, so the page re-reads the runs (a translation follows). */
+  onRunEnded: () => void;
 }
 
-function MinutesPanel({ meeting, lang, onLangChange, available, onHasMinutes }: MinutesPanelProps) {
-  const [confirm, setConfirm] = useState<Confirm | null>(null);
-  const minutes = useMinutes(meeting.id, lang);
-  const { phase, edit, dirty } = minutes;
-  const hasSaved = minutes.saved !== null;
-  useEffect(() => {
-    if (hasSaved) onHasMinutes(lang);
-  }, [hasSaved, lang, onHasMinutes]);
-
-  const requestLang = (next: MinutesLang) => {
-    if (next === lang) return;
-    if (dirty) setConfirm({ kind: "lang", lang: next });
-    else onLangChange(next);
-  };
-  const requestRemoveTopic = (topic: MinutesTopic) => {
-    if (hasBody(topic)) setConfirm({ kind: "topic", topic });
-    else edit({ type: "topic/remove", id: topic.id });
-  };
+function MinutesPanel(props: MinutesPanelProps) {
+  const { meeting, lang, onLangChange, available, translatingInto } = props;
+  const minutes = useMinutes(meeting.id, lang, onLangChange);
+  const { phase, edit, dirty, saved } = minutes;
+  const req = usePanelRequests({ ...props, minutes });
+  const other = otherMinutesLang(lang);
 
   return (
     <div className="min-h-dvh">
       <MinutesTopBar
         meeting={meeting}
         lang={lang}
-        onLangChange={requestLang}
-        saved={phase === "ready" || phase === "generating" ? minutes.saved : null}
+        onLangChange={req.requestLang}
+        saved={phase === "ready" || phase === "generating" ? saved : null}
         dirty={dirty}
         saving={minutes.saving}
         busy={phase === "generating"}
         available={available}
         onSave={minutes.save}
-        onRegenerate={() => setConfirm({ kind: "regenerate" })}
+        onRegenerate={req.requestAct}
       />
-      <PanelBanners minutes={minutes} onRegenerate={() => setConfirm({ kind: "regenerate" })} />
+      <PanelBanners
+        minutes={minutes}
+        onAct={req.requestAct}
+        onRetryGenerate={() => void minutes.generate(lang)}
+        onRetryTranslate={req.requestTranslate}
+        notice={translatingInto !== lang ? translatingInto : null}
+      />
       <main className="py-6">
-        <PanelBody meeting={meeting} minutes={minutes} onRemoveTopic={requestRemoveTopic} />
+        <PanelBody
+          meeting={meeting}
+          minutes={minutes}
+          translateFrom={available[other] ? other : null}
+          onTranslate={req.requestTranslate}
+          onRemoveTopic={req.requestRemoveTopic}
+        />
       </main>
       <MinutesConfirm
-        confirm={confirm}
-        onClose={() => setConfirm(null)}
-        onRegenerate={minutes.generate}
+        confirm={req.confirm}
+        lang={lang}
+        otherExists={available[other]}
+        onClose={req.closeConfirm}
+        onRegenerate={(sourceLang) => void minutes.generate(sourceLang)}
+        onRetranslate={() => void minutes.translate(true)}
         onSwitchLang={onLangChange}
         onRemoveTopic={(id) => edit({ type: "topic/remove", id })}
       />
@@ -113,25 +119,41 @@ function MinutesPanel({ meeting, lang, onLangChange, available, onHasMinutes }: 
   );
 }
 
+interface PanelBannersProps {
+  minutes: ReturnType<typeof useMinutes>;
+  onAct: () => void;
+  onRetryGenerate: () => void;
+  onRetryTranslate: () => void;
+  /** Language being translated into elsewhere (shown on the other tab); null = nothing running. */
+  notice: MinutesLang | null;
+}
+
 function PanelBanners({
   minutes,
-  onRegenerate,
-}: {
-  minutes: ReturnType<typeof useMinutes>;
-  onRegenerate: () => void;
-}) {
+  onAct,
+  onRetryGenerate,
+  onRetryTranslate,
+  notice,
+}: PanelBannersProps) {
   const { failure, phase, saved } = minutes;
+  const retry = failure?.action === "translate" ? onRetryTranslate : onRetryGenerate;
+  const canRetry = failure?.action === "generate" || failure?.action === "translate";
   return (
     <>
       {failure && (
         <FailureBanner
           message={failure.message}
-          onRetry={failure.action === "generate" ? minutes.generate : undefined}
+          onRetry={canRetry ? retry : undefined}
           onDismiss={minutes.dismissFailure}
         />
       )}
+      {notice && phase === "ready" && <TranslatingBanner into={notice} />}
       {phase === "ready" && saved?.stale && (
-        <StaleBanner reasons={saved.staleReasons} onRegenerate={onRegenerate} />
+        <StaleBanner
+          reasons={saved.staleReasons}
+          derived={saved.derivedFromLang !== null}
+          onAct={onAct}
+        />
       )}
     </>
   );
@@ -140,10 +162,18 @@ function PanelBanners({
 interface PanelBodyProps {
   meeting: MinutesMeetingInfo;
   minutes: ReturnType<typeof useMinutes>;
+  translateFrom: MinutesLang | null;
+  onTranslate: () => void;
   onRemoveTopic: (topic: MinutesTopic) => void;
 }
 
-function PanelBody({ meeting, minutes, onRemoveTopic }: PanelBodyProps) {
+function PanelBody({
+  meeting,
+  minutes,
+  translateFrom,
+  onTranslate,
+  onRemoveTopic,
+}: PanelBodyProps) {
   switch (minutes.phase) {
     case "loading":
       return <LoadingMinutes />;
@@ -161,7 +191,13 @@ function PanelBody({ meeting, minutes, onRemoveTopic }: PanelBodyProps) {
       );
     case "empty":
       return (
-        <EmptyMinutes meetingId={meeting.id} ended={meeting.ended} onGenerate={minutes.generate} />
+        <EmptyMinutes
+          meetingId={meeting.id}
+          ended={meeting.ended}
+          onGenerate={(sourceLang) => void minutes.generate(sourceLang)}
+          translateFrom={translateFrom}
+          onTranslate={onTranslate}
+        />
       );
     case "generating":
       return <GeneratingMinutes run={minutes.run} />;
@@ -175,123 +211,4 @@ function PanelBody({ meeting, minutes, onRemoveTopic }: PanelBodyProps) {
         />
       );
   }
-}
-
-interface MinutesConfirmProps {
-  confirm: Confirm | null;
-  onClose: () => void;
-  onRegenerate: () => void;
-  onSwitchLang: (lang: MinutesLang) => void;
-  onRemoveTopic: (id: string) => void;
-}
-
-/** Keeps the last copy while the dialog fades out, so the title never flashes empty. */
-function MinutesConfirm({
-  confirm,
-  onClose,
-  onRegenerate,
-  onSwitchLang,
-  onRemoveTopic,
-}: MinutesConfirmProps) {
-  const [shown, setShown] = useState<Confirm | null>(confirm);
-  if (confirm && confirm !== shown) setShown(confirm);
-  const copy = shown && describe(shown);
-  const run = () => {
-    if (!shown) return;
-    if (shown.kind === "regenerate") onRegenerate();
-    if (shown.kind === "lang") onSwitchLang(shown.lang);
-    if (shown.kind === "topic") onRemoveTopic(shown.topic.id);
-  };
-  return (
-    <ConfirmDialog
-      open={confirm !== null}
-      onOpenChange={(open) => !open && onClose()}
-      title={copy?.title ?? ""}
-      description={copy?.description}
-      confirmLabel={copy?.action ?? ""}
-      destructive={copy?.destructive ?? false}
-      onConfirm={run}
-    />
-  );
-}
-
-function describe(confirm: Confirm) {
-  switch (confirm.kind) {
-    case "regenerate":
-      return {
-        title: "Tạo lại biên bản?",
-        description:
-          "Biên bản mới sẽ thay thế bản hiện tại. Mọi chỉnh sửa của bạn trong ngôn ngữ này sẽ mất.",
-        action: "Tạo lại",
-        destructive: true,
-      };
-    case "lang":
-      return {
-        title: "Bỏ thay đổi chưa lưu?",
-        description: "Bạn có chỉnh sửa chưa lưu. Chuyển ngôn ngữ sẽ bỏ các chỉnh sửa này.",
-        action: "Bỏ và chuyển",
-        destructive: true,
-      };
-    case "topic":
-      return {
-        title: "Xóa chủ đề này?",
-        description: "Các ý chính và kết luận của chủ đề sẽ bị xóa khỏi biên bản.",
-        action: "Xóa chủ đề",
-        destructive: true,
-      };
-  }
-}
-
-interface FailureBannerProps {
-  message: string;
-  /** Present for a failed generation: runs it again. */
-  onRetry?: () => void;
-  onDismiss: () => void;
-}
-
-function FailureBanner({ message, onRetry, onDismiss }: FailureBannerProps) {
-  return (
-    <Banner
-      tone="error"
-      icon={<WarningCircle />}
-      className="mt-3"
-      action={
-        <ActionGroup>
-          {onRetry && (
-            <Button size="sm" onClick={onRetry}>
-              Thử lại
-            </Button>
-          )}
-          <Button size="sm" variant="outline" onClick={onDismiss}>
-            Đóng
-          </Button>
-        </ActionGroup>
-      }
-    >
-      {message}
-    </Banner>
-  );
-}
-
-function StaleBanner({
-  reasons,
-  onRegenerate,
-}: {
-  reasons: StaleReason[];
-  onRegenerate: () => void;
-}) {
-  return (
-    <Banner
-      tone="warn"
-      icon={<Info />}
-      className="mt-3"
-      action={
-        <Button size="sm" variant="outline" onClick={onRegenerate}>
-          Tạo lại
-        </Button>
-      }
-    >
-      {staleBannerText(reasons)}
-    </Banner>
-  );
 }

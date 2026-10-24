@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import type { Mark } from "@recap/core";
 import type { MarkTarget } from "./marks";
 import { ConclusionList, TopicList, type MarkEditing } from "./mark-sections";
-import { visibleSuggestions, type MinutesSuggestions } from "./minutes-suggestions";
+import { hiddenCounts, visibleSuggestions, type MinutesSuggestions } from "./minutes-suggestions";
 import { SessionStats } from "./session-stats";
 import { buildSideTabs, SIDE_TABS_ID_BASE, type SideTabId } from "./side-tabs";
 import type { RoomState } from "./state";
@@ -49,11 +49,16 @@ type TopicsBodyProps = MarkEditing & {
 
 /** Hand-made topic markers, then the topics proposed by the minutes. */
 function TopicsBody({ room, suggestions, onJump, ...rest }: TopicsBodyProps) {
-  const shown = visibleSuggestions(suggestions, room.marks).topics;
+  const visible = visibleSuggestions(suggestions, room.marks);
+  const shown = visible.topics;
   return (
     <>
       <TopicList marks={room.marks} withHeading={shown.length > 0} {...rest} />
-      <TopicSuggestions items={shown} onJump={onJump} />
+      <TopicSuggestions
+        items={shown}
+        hidden={hiddenCounts(suggestions, visible).topics}
+        onJump={onJump}
+      />
     </>
   );
 }
@@ -74,7 +79,8 @@ function ConclusionsBody({
   onJumpTime,
   onRemove,
 }: ConclusionsBodyProps) {
-  const shown = visibleSuggestions(suggestions, room.marks).conclusions;
+  const visible = visibleSuggestions(suggestions, room.marks);
+  const shown = visible.conclusions;
   return (
     <>
       <ConclusionList
@@ -85,7 +91,11 @@ function ConclusionsBody({
         onRemove={onRemove}
         withHeading={shown.length > 0}
       />
-      <ConclusionSuggestions items={shown} onJump={onJumpTime} />
+      <ConclusionSuggestions
+        items={shown}
+        hidden={hiddenCounts(suggestions, visible).conclusions}
+        onJump={onJumpTime}
+      />
     </>
   );
 }

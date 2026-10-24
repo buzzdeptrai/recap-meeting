@@ -22,3 +22,12 @@ export {
 export { buildStreamUrl, capKeyterms as capAssemblyAiKeyterms } from "./assemblyai/url";
 export { parseAssemblyAiMessage } from "./assemblyai/parse";
 export { splitStereo } from "./assemblyai/split-stereo";
+export { SilenceGate, PRE_ROLL_MS, SLEEP_LEVEL, WAKE_LEVEL } from "./silence-gate";
+export type {
+  GateFrame,
+  GateOutput,
+  GateState,
+  GateTransition,
+  SilenceGateConfig,
+} from "./silence-gate";
+export { rmsLevel } from "./audio-level";

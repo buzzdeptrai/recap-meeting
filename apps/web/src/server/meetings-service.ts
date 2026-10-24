@@ -1,10 +1,17 @@
 import type { Mark } from "@recap/core";
 import type { LangFilter, Meeting, MeetingSort, MeetingStatus, MinutesFilter } from "@recap/db";
-import type { MarkAnchorDto, MeetingDetailDto, MeetingListDto } from "@/lib/api-types";
+import type {
+  DeletedMeetingListDto,
+  MarkAnchorDto,
+  MeetingDetailDto,
+  MeetingDto,
+  MeetingListDto,
+} from "@/lib/api-types";
 import type { RangeValue } from "@/lib/list-query";
 import { vnWeekStart } from "@/lib/vn-time";
 import { getRepositories } from "./db";
 import { resolveRange } from "./list-range";
+import { ServiceError } from "./service-error";
 import { loadSegmentsPage } from "./transcript-service";
 
 /** Segments sent with the room's first render; the rest is fetched page by page. */
@@ -103,3 +110,25 @@ export const getMeetingById = (id: string): Meeting | undefined =>
 
 /** Server clock in epoch ms (a function so render code stays free of impure calls). */
 export const serverNow = (): number => Date.now();
+
+/** Soft-deletes a meeting (restorable). Live meetings are refused; deleting twice is fine. */
+export function deleteMeeting(id: string, userId?: string): MeetingDto {
+  const result = getRepositories().meetings.softDelete(id, userId);
+  if (result.ok) return result.meeting;
+  if (result.reason === "live") {
+    throw new ServiceError(409, "MEETING_LIVE", "Cuộc họp đang ghi, hãy dừng ghi trước khi xóa.");
+  }
+  throw new ServiceError(404, "NOT_FOUND", "Không tìm thấy cuộc họp này.");
+}
+
+/** Brings a soft-deleted meeting back to the list (no-op for a meeting that is not deleted). */
+export function restoreMeeting(id: string): MeetingDto {
+  const meeting = getRepositories().meetings.restore(id);
+  if (!meeting) throw new ServiceError(404, "NOT_FOUND", "Không tìm thấy cuộc họp này.");
+  return meeting;
+}
+
+/** "Đã xóa gần đây": soft-deleted meetings, most recently deleted first. */
+export function listDeletedMeetings(limit?: number, offset?: number): DeletedMeetingListDto {
+  return getRepositories().meetings.listDeleted({ limit, offset });
+}

@@ -2,7 +2,7 @@ import { CHANNEL_ME, CHANNEL_OTHERS, type Channel } from "@recap/core";
 import WebSocket from "ws";
 import type { DeepgramDeps, SocketFactory } from "../deepgram/provider";
 import { SttEmitter } from "../emitter";
-import type { SttProvider, SttStatus } from "../types";
+import type { SttProvider, SttStatus, SttUsageSource } from "../types";
 import { ChannelSession } from "./channel-session";
 import type { AssemblyAiConfig } from "./config";
 import { splitStereo } from "./split-stereo";
@@ -24,6 +24,13 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
     [CHANNEL_ME]: "closed",
     [CHANNEL_OTHERS]: "closed",
   };
+  /** Channels parked by the silence gate (or waking up): they do not count for the merged status. */
+  private readonly idle: Record<Channel, boolean> = {
+    [CHANNEL_ME]: false,
+    [CHANNEL_OTHERS]: false,
+  };
+  /** Set only when silence gating is on: billing then follows the frames actually sent. */
+  readonly usage?: SttUsageSource;
   private status: SttStatus = "closed";
   private frameCounter = 0;
   /** True once close()/fatal/failed-open began: per-socket status changes no longer matter. */
@@ -39,8 +46,16 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
         onStatus: (status) => this.onChannelStatus(channel, status),
         onError: (message) => this.emit("error", { message, fatal: false }),
         onFatal: (message) => this.onChannelFatal(message),
+        onIdleChange: (idle) => this.onChannelIdle(channel, idle),
+        onActivity: (state) => this.emit("activity", { channel, state }),
       });
     this.sessions = { [CHANNEL_ME]: make(CHANNEL_ME), [CHANNEL_OTHERS]: make(CHANNEL_OTHERS) };
+    if (config.idleAfterMs && config.idleAfterMs > 0) {
+      this.usage = {
+        takeSentChannelFrames: () =>
+          this.all().reduce((total, session) => total + session.takeSentFrames(), 0),
+      };
+    }
   }
 
   /** Frames waiting for a connection, summed over both channels (tests / diagnostics). */
@@ -50,6 +65,8 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
 
   async open(): Promise<void> {
     this.ending = false;
+    this.idle[CHANNEL_ME] = false;
+    this.idle[CHANNEL_OTHERS] = false;
     this.setStatus("connecting");
     const results = await Promise.allSettled(this.all().map((session) => session.open()));
     const rejected = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
@@ -84,9 +101,20 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
     this.setStatus(this.mergedStatus());
   }
 
-  /** open only when both sockets are open; any reconnecting socket shows as reconnecting. */
+  private onChannelIdle(channel: Channel, idle: boolean): void {
+    this.idle[channel] = idle;
+    if (!this.ending) this.setStatus(this.mergedStatus());
+  }
+
+  /**
+   * open only when both sockets are open; any reconnecting socket shows as reconnecting. Idle
+   * channels are left out (parking a silent channel is not a failure); all idle = still open.
+   */
   private mergedStatus(): SttStatus {
-    const values = Object.values(this.statuses);
+    const values = ([CHANNEL_ME, CHANNEL_OTHERS] as const)
+      .filter((channel) => !this.idle[channel])
+      .map((channel) => this.statuses[channel]);
+    if (values.length === 0) return "open";
     if (values.every((s) => s === "closed")) return "closed";
     if (values.includes("reconnecting")) return "reconnecting";
     if (values.every((s) => s === "open")) return "open";

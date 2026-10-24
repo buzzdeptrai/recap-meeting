@@ -7,6 +7,8 @@ import { migration007 } from "./007_mark_updated_at";
 import { migration008 } from "./008_auth";
 import { migration009 } from "./009_list_indexes";
 import { migration010 } from "./010_minutes_runs";
+import { migration011 } from "./011_meeting_soft_delete";
+import { migration012 } from "./012_minutes_translation";
 
 export interface Migration {
   readonly version: number;
@@ -25,4 +27,6 @@ export const migrations: readonly Migration[] = [
   migration008,
   migration009,
   migration010,
+  migration011,
+  migration012,
 ];

@@ -3,6 +3,7 @@ import type { Repositories } from "@recap/db";
 import {
   createMinutesWorker,
   createOpenAiLlmFactory,
+  createOpenAiTranslateLlmFactory,
   generatorConfigFromEnv,
   minutesWorkerConfigFromEnv,
   type MinutesWorker,
@@ -30,6 +31,7 @@ export function createRealtimeMinutesWorker(options: RealtimeMinutesWorkerOption
     minutes: repos.minutes,
     repos,
     createLlm: createOpenAiLlmFactory(source, options.client),
+    createTranslateLlm: createOpenAiTranslateLlmFactory(source, options.client),
     usage: options.usage,
     generatorConfig: () => generatorConfigFromEnv(source),
     ...minutesWorkerConfigFromEnv(source),

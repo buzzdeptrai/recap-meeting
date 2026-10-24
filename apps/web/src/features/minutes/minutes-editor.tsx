@@ -28,7 +28,7 @@ export function MinutesEditor({ meetingId, content, edit, onRemoveTopic }: Minut
             label="Tóm tắt cuộc họp"
             placeholder="Tóm tắt nội dung chính của cuộc họp"
             onChange={(text) => edit({ type: "summary/set", text })}
-            className="max-w-[110ch] text-transcript"
+            className="text-transcript"
           />
         </div>
       </section>

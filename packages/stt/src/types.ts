@@ -33,11 +33,27 @@ export interface SttError {
   fatal: boolean;
 }
 
+/** Per-channel streaming state: `idle` = the channel is not being sent to the vendor (silence). */
+export type SttChannelState = "active" | "idle";
+
+export interface SttChannelActivity {
+  channel: Channel;
+  state: SttChannelState;
+}
+
+/** Optional usage hook for providers that may skip silent audio per channel. */
+export interface SttUsageSource {
+  /** Channel-frames (one FRAME_MS mono frame = 1) actually sent to the vendor since the last call. */
+  takeSentChannelFrames(): number;
+}
+
 export interface SttEvents {
   interim: SttResult;
   final: SttResult;
   status: SttStatus;
   error: SttError;
+  /** Only providers with silence gating emit this (AssemblyAI). */
+  activity: SttChannelActivity;
 }
 
 export type SttListener<E extends keyof SttEvents> = (payload: SttEvents[E]) => void;
@@ -45,6 +61,8 @@ export type SttListener<E extends keyof SttEvents> = (payload: SttEvents[E]) => 
 /** Streaming speech-to-text backend. Audio in: interleaved Int16 stereo PCM frames. */
 export interface SttProvider {
   readonly name: string;
+  /** Present only when the provider can skip audio, so billing must follow what was sent. */
+  readonly usage?: SttUsageSource;
   /** Connects. Rejects if the first connection cannot be established. */
   open(): Promise<void>;
   /** Queues/sends one stereo PCM frame. Never throws; drops audio when closed. */

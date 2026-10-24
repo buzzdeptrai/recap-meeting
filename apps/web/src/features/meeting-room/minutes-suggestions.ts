@@ -62,3 +62,11 @@ export function visibleSuggestions(all: MinutesSuggestions, marks: Mark[]): Minu
     conclusions: all.conclusions.filter((c) => !nearAny(c.atMs, conclusionMarks)),
   };
 }
+
+/** How many candidates were hidden because a hand mark of the same kind already covers them. */
+export function hiddenCounts(all: MinutesSuggestions, shown: MinutesSuggestions) {
+  return {
+    topics: all.topics.length - shown.topics.length,
+    conclusions: all.conclusions.length - shown.conclusions.length,
+  };
+}

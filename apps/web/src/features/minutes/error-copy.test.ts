@@ -17,6 +17,12 @@ describe("describeMinutesError", () => {
     expect(describeMinutesError("generate", err(500))).toContain("Không tạo được");
   });
 
+  it("explains translation failures", () => {
+    expect(describeMinutesError("translate", err(409))).toContain("biên bản gốc");
+    expect(describeMinutesError("translate", err(503))).toContain("cấu hình");
+    expect(describeMinutesError("translate", err(500))).toContain("Không dịch được");
+  });
+
   it("explains a rejected save", () => {
     expect(describeMinutesError("save", err(400))).toContain("không hợp lệ");
   });

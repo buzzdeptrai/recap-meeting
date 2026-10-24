@@ -4,6 +4,8 @@ import { MinutesError } from "./errors";
 import type { GeneratorConfig } from "./types";
 
 const DEFAULT_MODEL = "gpt-4.1";
+/** Cheap model for translating finished minutes (priced in config/pricing.json). */
+const DEFAULT_TRANSLATE_MODEL = "gpt-4.1-mini";
 const DEFAULT_DEADLINE_MS = 120_000;
 const MIN_WINDOW_BEFORE_MS = 5_000;
 const MAX_WINDOW_BEFORE_MS = 300_000;
@@ -31,6 +33,10 @@ const blankToUndefined = (v: unknown) => (typeof v === "string" && v.trim() === 
 const envSchema = z.object({
   OPENAI_API_KEY: z.string().trim().min(1, "OPENAI_API_KEY is required"),
   OPENAI_MINUTES_MODEL: z.preprocess(blankToUndefined, z.string().trim().default(DEFAULT_MODEL)),
+  OPENAI_MINUTES_TRANSLATE_MODEL: z.preprocess(
+    blankToUndefined,
+    z.string().trim().default(DEFAULT_TRANSLATE_MODEL),
+  ),
   OPENAI_MINUTES_DEADLINE_MS: z.preprocess(
     blankToUndefined,
     z.coerce.number().int().min(1).default(DEFAULT_DEADLINE_MS),
@@ -85,6 +91,24 @@ export function minutesConfigFromEnv(env: Record<string, string | undefined>): O
   return {
     apiKey: e.OPENAI_API_KEY,
     model: e.OPENAI_MINUTES_MODEL,
+    deadlineMs: e.OPENAI_MINUTES_DEADLINE_MS,
+  };
+}
+
+/** The model used to translate minutes (no API key needed); null when the env is invalid. */
+export function translateModelFromEnv(env: Record<string, string | undefined>): string | null {
+  const parsed = envSchema.partial({ OPENAI_API_KEY: true }).safeParse(env);
+  return parsed.success ? parsed.data.OPENAI_MINUTES_TRANSLATE_MODEL : null;
+}
+
+/** Same as `minutesConfigFromEnv`, but with the translation model. */
+export function translateConfigFromEnv(
+  env: Record<string, string | undefined>,
+): OpenAiMinutesConfig {
+  const e = parseEnv(env, envSchema);
+  return {
+    apiKey: e.OPENAI_API_KEY,
+    model: e.OPENAI_MINUTES_TRANSLATE_MODEL,
     deadlineMs: e.OPENAI_MINUTES_DEADLINE_MS,
   };
 }

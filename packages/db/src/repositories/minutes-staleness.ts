@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { MarkKind } from "@recap/core";
+import type { MarkKind, MinutesContent } from "@recap/core";
 
 /**
  * The staleness rules for stored minutes. Minutes are stale when the transcript or the marks
@@ -14,7 +14,12 @@ import type { MarkKind } from "@recap/core";
  * timestamp parts are pinned against each other in `test/meeting-list.test.ts`.
  */
 export type StaleReason =
-  "transcript_changed" | "marks_changed" | "marks_removed" | "prompt_updated" | "model_changed";
+  | "transcript_changed"
+  | "marks_changed"
+  | "marks_removed"
+  | "prompt_updated"
+  | "model_changed"
+  | "source_edited";
 
 export interface VersionStamp {
   promptVersion: string | null;
@@ -76,4 +81,22 @@ export function minutesStaleSql(alias: string): string {
   const mark = `(SELECT MAX(MAX(k.created_at), MAX(COALESCE(k.updated_at, k.created_at)))
                    FROM marks k WHERE k.meeting_id = ${alias}.meeting_id)`;
   return `(COALESCE(${seg} > ${alias}.generated_at, 0) OR COALESCE(${mark} > ${alias}.generated_at, 0))`;
+}
+
+/** Hash of minutes content (as parsed by the schema, so key order is stable). */
+export function minutesContentHash(content: MinutesContent): string {
+  return createHash("sha256").update(JSON.stringify(content)).digest("hex");
+}
+
+/**
+ * A translation is stale when the source minutes it was made from changed (edited or
+ * regenerated). Transcript / marks / prompt / model staleness belongs to the source row only.
+ * A translation with no stored hash (or a missing source) is never flagged.
+ */
+export function derivedStaleReasons(
+  storedSourceHash: string | null,
+  currentSource: MinutesContent | null,
+): StaleReason[] {
+  if (storedSourceHash === null || currentSource === null) return [];
+  return minutesContentHash(currentSource) === storedSourceHash ? [] : ["source_edited"];
 }

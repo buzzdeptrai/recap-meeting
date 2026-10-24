@@ -48,6 +48,7 @@ function TranscriptCard({
   search,
 }: Omit<RoomBodyProps, "suggestions">) {
   const { socket, recording, ended } = controller;
+  const canTestMic = controller.capture.phase === "idle" || controller.capture.phase === "error";
   return (
     <FloatCard
       as="section"
@@ -68,7 +69,7 @@ function TranscriptCard({
         view={view}
         density={density}
         targetLang={targetLang}
-        empty={emptyContent({ ended, recording })}
+        empty={emptyContent({ ended, recording, canTestMic })}
         ended={ended}
         recording={recording}
         focusMs={focusMs}
@@ -125,10 +126,17 @@ export function RoomBody({
   );
 }
 
-function emptyContent({ ended, recording }: { ended: boolean; recording: boolean }): ReactNode {
+interface EmptyContentState {
+  ended: boolean;
+  recording: boolean;
+  /** Capture is idle: the checklist may hold a temporary mic stream for the level test. */
+  canTestMic: boolean;
+}
+
+function emptyContent({ ended, recording, canTestMic }: EmptyContentState): ReactNode {
   if (ended)
     return <p className="px-6 py-8 text-soft-muted">Cuộc họp này chưa có nội dung nào được ghi.</p>;
   if (recording)
     return <p className="px-6 py-8 text-soft-muted">Đang lắng nghe. Lời nói sẽ hiện ở đây.</p>;
-  return <SetupChecklist />;
+  return <SetupChecklist micTestEnabled={canTestMic} />;
 }

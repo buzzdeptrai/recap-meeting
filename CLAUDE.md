@@ -26,7 +26,7 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 
 ## Core architecture (read before changing the core; update this block when it changes — last review 2026-10-24)
 - **Two long-running Node processes sharing one SQLite file (WAL):** `apps/web` (Next: pages + 22 REST route handlers, thin) and `apps/realtime`
-  (`ws` audio/transcript socket **plus the background minutes worker**). Exactly **one realtime process per DB**; no horizontal scaling.
+  (`ws` audio/transcript socket **plus the background minutes worker**). Exactly **one realtime process per DB**; no horizontal scaling. At boot, before listening, realtime ends every meeting left `live` by a hard crash (`apps/realtime/src/boot-recovery.ts`, relies on this single-process rule).
   Needs a real VPS/disk (native better-sqlite3, AUDIO_DIR); not serverless. Deploy runbook: `docs/DEPLOY.md`, PM2 file `ecosystem.config.cjs`.
   Production uses `next start` on the full repo tree (**not** `output: "standalone"`: it drops `config/pricing.json` and `packages/db` repo-root lookup). `NEXT_PUBLIC_REALTIME_URL`
   is inlined at build time (set `wss://<domain>/ws` before `npm run build`). Realtime binds all interfaces unless `REALTIME_HOST` is set (PM2 production sets 127.0.0.1).
@@ -39,9 +39,11 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
   `GET .../minutes/run`); worker (`packages/minutes/src/worker/`, wired in `apps/realtime/src/minutes-worker.ts`) claims rows with a conditional UPDATE, writes progress,
   boot recovery marks leftover `running` rows failed (never requeues). Env: `MINUTES_WORKER_POLL_MS`, `MINUTES_WORKER_CONCURRENCY`, `MINUTES_QUEUED_CLAIM_TIMEOUT_MS`,
   `MINUTES_RUN_STALE_MS`. If realtime is down the UI shows "Đang chờ xử lý" then a failure. Map-reduce for long meetings is in `packages/minutes/src/generate.ts`.
+  **Generate once, translate the rest (migration 012):** a generate run produces the SOURCE minutes (default `en`, owner picks per run); the worker then queues a `kind='translate'` run for the other language (`packages/minutes/src/translate*.ts`, model `OPENAI_MINUTES_TRANSLATE_MODEL`, default gpt-4.1-mini, usage `service=translate`). Derived rows carry `derived_from_lang` + `source_hash`; stale reason `source_edited`; hand-edited translations are overwritten only with explicit confirm (`confirmOverwrite`).
 - **Stale minutes** are detected by version, not only timestamps: `minutes.prompt_version` (`PROMPT_VERSION` in `packages/minutes`; a test pins a hash of the prompts —
   bump it when `prompts.ts` changes), model, `marks_fingerprint` → typed reasons (`transcript_changed|marks_changed|marks_removed|prompt_updated|model_changed`).
   The meetings-list stale badge is still timestamp-only.
+- **STT silence gate (AssemblyAI only):** a channel silent for `STT_IDLE_AFTER_MS` (default 30000, 0 disables) stops sending audio to STT; 1.5 s pre-roll on resume; usage counts frames actually sent (`stt.usage`). Deepgram is untouched (stereo, 2x billing). Thresholds 0.005/0.012 are guesses. Client side: mic/tab silence + speaker-echo banners, mic picker/hot-swap in `apps/web/src/audio/`.
 - **Prompts:** transcript is wrapped in `<transcript>` tags and escaped (anti prompt-injection); Vietnamese output keeps English technical terms.
 - **Realtime protocol additions:** client `stt_retry` (restarts the STT provider when status `closed`; errors `NOT_RECORDING|STT_ALREADY_OPEN|RATE_LIMITED`; audio sent while
   closed is not re-sent to STT, only kept in the WAV). Spec in `docs/ARCHITECTURE.md` §3.
@@ -62,7 +64,7 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - Use implementation **agents with model Sonnet** (token saving) for multi-file work; verify their output yourself (run `npm run verify`, look at screenshots).
 - Observe before editing; plans/state go in files (ledger/PLAN), not memory.
 - Code: files ≤300 lines, functions ≤50 (off only for admin-ui `.tsx` and tests), early returns, no magic numbers, every external service behind an interface, vitest tests.
-- **DB migrations are immutable once applied** — add a new numbered migration (latest: 010). A test pins their checksums.
+- **DB migrations are immutable once applied** — add a new numbered migration (latest: 012 minutes translation; 011 = soft delete `meetings.deleted_at`: filter every meetings query on it; `meetings.get()` hides deleted rows). A test pins their checksums.
 - Money/token/usage numbers live **only** on `/usage` (+ Settings pricing/budget), not on dashboard or lists.
 - Amber is reserved for conclusions/decisions; no gradients except the Soft signature ones; no emoji; statuses via `apps/web/src/lib/status.ts`.
 - Don't kill the owner's dev servers with `pkill`; check ports with `curl` first.
@@ -77,7 +79,7 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - Vietnamese / mixed EN–VI STT quality is **unmeasured** — needs the owner's real recording + reference text (Phase 0 exit criteria).
 
 ## Open items (details in the ledger)
-Owner real-meeting test (Win + Mac) · mixed EN–VI benchmark · "Đã thống nhất" (was "Đã chốt") over-assigned by the minutes prompt (idea: typed notes as must-keep signal, B1) ·
+Owner real-meeting test (Win + Mac) · tune silence/echo thresholds · transcript echo dedupe (deferred until real data) · Deepgram per-channel saving needs two mono sockets · purge/hard delete of soft-deleted meetings (needs audio-file policy) · mixed EN–VI benchmark · "Đã thống nhất" (was "Đã chốt") over-assigned by the minutes prompt (idea: typed notes as must-keep signal, B1) ·
 T12 re-transcription · delete meeting · pause · toast · glossary page · per-meeting keyterm priority (Deepgram cap 30 terms) ·
 backlog B1 notes tab ("Ghi chú", disabled in the room) / B2 minutes templates / B3+ Q&A from documents · rename speakers · word-level storage ·
 **unverified live:** new room recording/draft states + dark mode, STT retry against real Deepgram/AssemblyAI, minutes progress with the real LLM, touch-device gutter times.

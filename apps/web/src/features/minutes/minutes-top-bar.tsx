@@ -10,17 +10,18 @@ import {
   type SegmentOption,
 } from "@recap/admin-ui";
 import { StatusBadge } from "@/components/status-badge";
-import { MINUTES_SOURCE, UNSAVED_STATUS } from "@/lib/status";
+import { MINUTES_DERIVED, MINUTES_SOURCE, UNSAVED_STATUS } from "@/lib/status";
 import type { MinutesDto } from "@/lib/api-types";
 import { formatClock, formatDateTime } from "@/lib/format";
 import { ExportMenu } from "./export-menu";
 import type { MinutesAvailability } from "./export-options";
 import { formatSavedTime } from "./format";
+import { MINUTES_LANG_ORDER, derivedBadgeText, langTitle } from "./minutes-langs";
 
-const LANG_OPTIONS: ReadonlyArray<SegmentOption<MinutesLang>> = [
-  { value: "vi", label: "VI" },
-  { value: "en", label: "EN" },
-];
+const LANG_OPTIONS: ReadonlyArray<SegmentOption<MinutesLang>> = MINUTES_LANG_ORDER.map((lang) => ({
+  value: lang,
+  label: langTitle(lang),
+}));
 
 export interface MinutesMeetingInfo {
   id: string;
@@ -40,6 +41,7 @@ interface MinutesTopBarProps {
   busy: boolean;
   available: MinutesAvailability;
   onSave: () => void;
+  /** Source minutes: regenerate. Translation: translate again. */
   onRegenerate: () => void;
 }
 
@@ -68,6 +70,11 @@ export function MinutesTopBar({ meeting, lang, onLangChange, saved, ...rest }: M
           onValueChange={onLangChange}
           size="sm"
         />
+        {saved?.derivedFromLang && (
+          <StatusBadge status={MINUTES_DERIVED}>
+            {derivedBadgeText(saved.derivedFromLang)}
+          </StatusBadge>
+        )}
         {saved && <SaveCluster saved={saved} meetingId={meeting.id} {...rest} />}
       </div>
     </header>
@@ -103,7 +110,7 @@ function SaveCluster(props: ClusterProps) {
         onClick={onRegenerate}
         disabled={busy}
       >
-        Tạo lại
+        {saved.derivedFromLang ? "Dịch lại" : "Tạo lại"}
       </Button>
       <ExportMenu meetingId={meetingId} available={available} dirty={dirty} disabled={busy} />
       <SaveButton dirty={dirty} saving={saving} busy={busy} onSave={onSave} />

@@ -45,6 +45,7 @@ export * from "./meeting-list-extras";
 export * from "./meeting-list-query";
 export * from "./meeting-search";
 export * from "./meetings";
+export * from "./meetings-trash";
 export * from "./minutes";
 export * from "./minutes-runs";
 export * from "./minutes-staleness";

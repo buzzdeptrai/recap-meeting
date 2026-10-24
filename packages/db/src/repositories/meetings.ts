@@ -1,6 +1,8 @@
 import type { SourceLang, TargetLang } from "@recap/core";
 import type { Meeting, MeetingStatus, RepoContext } from "../types";
 import { searchMeetings, type SearchMeetingsOptions } from "./meeting-search";
+import { createMeetingRecovery } from "./meetings-recovery";
+import { createMeetingTrash } from "./meetings-trash";
 
 export interface MeetingRow {
   id: string;
@@ -13,6 +15,7 @@ export interface MeetingRow {
   started_at: string | null;
   ended_at: string | null;
   duration_ms: number | null;
+  deleted_at: string | null;
 }
 
 export interface CreateMeetingInput {
@@ -25,6 +28,8 @@ export interface CreateMeetingInput {
 export interface ListMeetingsOptions {
   limit?: number;
   offset?: number;
+  /** Soft-deleted meetings are hidden unless asked for (usage history needs their titles). */
+  includeDeleted?: boolean;
 }
 
 const DEFAULT_LIST_LIMIT = 100;
@@ -41,11 +46,13 @@ export function toMeeting(row: MeetingRow): Meeting {
     startedAt: row.started_at,
     endedAt: row.ended_at,
     durationMs: row.duration_ms,
+    deletedAt: row.deleted_at ?? null,
   };
 }
 
-const SELECT_BY_ID = "SELECT * FROM meetings WHERE id = ?";
+const SELECT_BY_ID = "SELECT * FROM meetings WHERE id = ? AND deleted_at IS NULL";
 
+/** A soft-deleted meeting is invisible here: every caller (routes, realtime, worker) sees "not found". */
 function getMeeting({ db }: RepoContext, id: string): Meeting | undefined {
   const row = db.prepare<[string], MeetingRow>(SELECT_BY_ID).get(id);
   return row ? toMeeting(row) : undefined;
@@ -72,14 +79,17 @@ function createMeeting(ctx: RepoContext, input: CreateMeetingInput): Meeting {
 function listMeetings({ db }: RepoContext, options: ListMeetingsOptions = {}): Meeting[] {
   return db
     .prepare<[number, number], MeetingRow>(
-      "SELECT * FROM meetings ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?",
+      `SELECT * FROM meetings ${options.includeDeleted ? "" : "WHERE deleted_at IS NULL"}
+       ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
     )
     .all(options.limit ?? DEFAULT_LIST_LIMIT, options.offset ?? 0)
     .map(toMeeting);
 }
 
 function setColumn(ctx: RepoContext, id: string, column: "title" | "status", value: string) {
-  ctx.db.prepare(`UPDATE meetings SET ${column} = ? WHERE id = ?`).run(value, id);
+  ctx.db
+    .prepare(`UPDATE meetings SET ${column} = ? WHERE id = ? AND deleted_at IS NULL`)
+    .run(value, id);
   return getMeeting(ctx, id);
 }
 
@@ -88,7 +98,7 @@ function startMeeting(ctx: RepoContext, id: string, startedAt: string = ctx.now(
   ctx.db
     .prepare(
       `UPDATE meetings SET status = 'live', started_at = COALESCE(started_at, ?),
-         ended_at = NULL, duration_ms = NULL WHERE id = ?`,
+         ended_at = NULL, duration_ms = NULL WHERE id = ? AND deleted_at IS NULL`,
     )
     .run(startedAt, id);
   return getMeeting(ctx, id);
@@ -127,6 +137,8 @@ export function createMeetingsRepository(ctx: RepoContext) {
     start: (id: string, startedAt?: string) => startMeeting(ctx, id, startedAt),
     end: (id: string, endedAt?: string, recordedMs?: number) =>
       endMeeting(ctx, id, endedAt, recordedMs),
+    ...createMeetingTrash(ctx),
+    ...createMeetingRecovery(ctx),
     remove: (id: string) => ctx.db.prepare("DELETE FROM meetings WHERE id = ?").run(id).changes > 0,
   };
 }
