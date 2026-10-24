@@ -78,7 +78,7 @@ export function Input({ className, id, "aria-describedby": describedBy, ...rest 
       aria-describedby={describedBy ?? field?.describedBy}
       aria-invalid={field?.invalid || undefined}
       className={cn(
-        "soft-focus h-11 w-full rounded-xl border border-soft-line bg-soft-surface px-4 text-sm text-soft-ink shadow-soft-sm outline-none placeholder:text-soft-muted/70 focus-visible:border-soft-purple disabled:opacity-60 aria-[invalid=true]:border-soft-bad",
+        "soft-focus h-11 w-full rounded-xl border border-soft-line bg-soft-surface px-4 text-sm text-soft-ink shadow-soft-sm outline-none placeholder:text-soft-muted/70 focus-visible:border-soft-brand disabled:opacity-60 aria-[invalid=true]:border-soft-bad",
         className,
       )}
       {...rest}
@@ -101,7 +101,7 @@ export function Textarea({
       aria-describedby={describedBy ?? field?.describedBy}
       aria-invalid={field?.invalid || undefined}
       className={cn(
-        "soft-focus min-h-24 w-full resize-y rounded-xl border border-soft-line bg-soft-surface px-4 py-3 text-sm leading-relaxed text-soft-ink shadow-soft-sm outline-none placeholder:text-soft-muted/70 focus-visible:border-soft-purple disabled:opacity-60 aria-[invalid=true]:border-soft-bad",
+        "soft-focus min-h-24 w-full resize-y rounded-xl border border-soft-line bg-soft-surface px-4 py-3 text-sm leading-relaxed text-soft-ink shadow-soft-sm outline-none placeholder:text-soft-muted/70 focus-visible:border-soft-brand disabled:opacity-60 aria-[invalid=true]:border-soft-bad",
         className,
       )}
       {...rest}

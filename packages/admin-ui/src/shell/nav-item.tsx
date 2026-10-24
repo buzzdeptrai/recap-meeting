@@ -20,7 +20,7 @@ export function NavItem({ item, active }: NavItemProps) {
       aria-hidden="true"
       className={cn(
         "grid size-8 shrink-0 place-items-center rounded-[10px] bg-soft-surface text-soft-ink shadow-soft-sm [&_svg]:size-4",
-        active && "bg-soft-main text-white shadow-[0_4px_7px_rgba(121,40,202,0.35)]",
+        active && "bg-soft-main text-white shadow-[0_4px_7px_rgba(29,78,216,0.35)]",
       )}
     >
       {item.icon}

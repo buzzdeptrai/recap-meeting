@@ -176,7 +176,7 @@ export function UsagePage({ chartWidth }: { chartWidth: number }) {
             formatValue={formatUsd}
             formatAxis={formatUsdAxis}
             series={[
-              { id: "dg", label: "Deepgram", values: DG, color: "#7928CA" },
+              { id: "dg", label: "Deepgram", values: DG, color: "#1D4ED8" },
               { id: "oa", label: "OpenAI", values: OP, color: "#FF0080" },
               { id: "ge", label: "Gemini", values: GE, color: "#3A416F" },
             ]}

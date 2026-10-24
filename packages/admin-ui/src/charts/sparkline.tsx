@@ -16,7 +16,7 @@ export interface SparklineProps {
 /** Tiny trend line for tables and stat cards. Scales 0..max (or min..max when `values` never touch 0 by a wide margin). */
 export function Sparkline({
   values,
-  color = "var(--soft-purple)",
+  color = "var(--soft-brand)",
   width = 120,
   height = 32,
   area = true,

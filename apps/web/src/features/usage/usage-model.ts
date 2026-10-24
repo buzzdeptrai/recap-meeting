@@ -28,12 +28,12 @@ export const SERVICE_LABEL: Record<string, string> = {
 };
 
 const VENDOR_COLOR: Record<string, string> = {
-  deepgram: "#7928CA",
+  deepgram: "#1D4ED8",
   openai: "#FF0080",
   gemini: "#3A416F",
   assemblyai: "#17C1E8",
 };
-const PALETTE = ["#7928CA", "#FF0080", "#3A416F", "#17C1E8", "#A8B8D8"];
+const PALETTE = ["#1D4ED8", "#FF0080", "#3A416F", "#17C1E8", "#A8B8D8"];
 
 export function keyLabel(group: GroupKey | "meeting", key: string | null): string {
   if (key === null || key === "") return "Không gắn cuộc họp";

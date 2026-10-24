@@ -73,7 +73,7 @@ describe("labels", () => {
   });
 
   it("gives vendors fixed colours and cycles a palette otherwise", () => {
-    expect(keyColor("vendor", "deepgram", 3)).toBe("#7928CA");
+    expect(keyColor("vendor", "deepgram", 3)).toBe("#1D4ED8");
     expect(keyColor("model", "a", 0)).toBe(keyColor("model", "b", 5));
   });
 });

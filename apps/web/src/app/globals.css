@@ -17,7 +17,7 @@
   --line: var(--soft-line);
   --fg: var(--soft-ink);
   --fg-muted: var(--soft-muted);
-  --accent: var(--soft-purple);
+  --accent: var(--soft-brand);
   --on-accent: #ffffff;
   --others: #0f766e;
   --decision: var(--soft-conclusion);
@@ -138,6 +138,46 @@
   animation: fade-in var(--motion-fast) var(--ease-out) both;
 }
 
+/* Interim transcript line: three blinking dots (still under reduced motion: animation is cut). */
+.typing-dots > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--soft-muted);
+  opacity: 0.4;
+  animation: typing-blink 1.2s infinite;
+}
+.typing-dots > i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dots > i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes typing-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* REC status dot: soft expanding ring. */
+@keyframes rec-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.rec-pulse > [aria-hidden="true"]:first-child {
+  animation: rec-pulse 1.8s ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -146,4 +186,18 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Floating-card pages (meetings list, new meeting): tint the whole shell like the room preview. */
+[data-soft-root]:has([data-page-tint]) {
+  background-color: var(--soft-page);
+}
+[data-soft-root]:has([data-page-tint]) header.sticky {
+  background-color: var(--soft-page);
+}
+
+/* Live room: tinted page behind the floating cards (the shell itself stays untouched). */
+.room-page [data-soft-root],
+.room-page [data-soft-root] header.sticky {
+  background-color: var(--soft-page);
 }

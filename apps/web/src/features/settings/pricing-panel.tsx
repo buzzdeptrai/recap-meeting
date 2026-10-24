@@ -49,7 +49,7 @@ const COLUMNS: DataColumn<PricingRow>[] = [
         href={r.sourceUrl}
         target="_blank"
         rel="noreferrer noopener"
-        className="soft-focus rounded text-soft-purple hover:underline"
+        className="soft-focus rounded text-soft-brand hover:underline"
       >
         {r.sourceHost}
       </a>

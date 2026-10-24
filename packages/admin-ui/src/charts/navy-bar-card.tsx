@@ -79,7 +79,7 @@ export function NavyBarCard({
           title: formatLabel(labels[active] ?? ""),
           rows: [
             {
-              color: "#7928CA",
+              color: "#1D4ED8",
               label: seriesLabel || String(title),
               value: formatValue(values[active] ?? 0),
             },

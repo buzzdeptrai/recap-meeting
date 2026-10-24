@@ -196,7 +196,7 @@ export function LineAreaChart({
                 x2={xAt(active)}
                 y1={box.top}
                 y2={baseY}
-                stroke="var(--soft-purple)"
+                stroke="var(--soft-brand)"
                 strokeWidth={1.5}
                 strokeDasharray="4 4"
               />

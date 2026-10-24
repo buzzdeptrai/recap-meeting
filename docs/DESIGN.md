@@ -9,7 +9,7 @@ controls stay quiet around it. Think: a court stenographer's record crossed with
 desktop tool (Linear / Things level of restraint). Information density over decoration.
 
 ## Do NOT use (generic-AI tells)
-- Purple/blue gradients, glassmorphism, glow, blurred blobs, neon accents on near-black
+- Rainbow/neon gradients (the single blue Soft signature gradient is fine), glassmorphism, glow, blurred blobs, neon accents on near-black
 - Cream background + serif display + terracotta accent
 - Inter / Space Grotesk as the face; emoji as icons or section markers
 - Everything centered; big hero sections; `rounded-2xl` + shadow on every block
@@ -89,9 +89,9 @@ Errors say what went wrong and how to fix it. No exclamation marks, no "AI magic
 Owner chose preview v3 (`design/admin-preview-v3/`, pages `dashboard.html`, `usage.html`; v1/v2 are rejected references).
 The transcript room keeps the calm "Biên bản" reading layout but sits inside the same shell, same tokens for radius/shadow.
 - Page bg light cool grey `#F8F9FA`; text navy-slate `#344767`; muted `#67748E`. Dark mode: neutral dark greys (stub; v2 adds dark values for its tokens).
-- Floating white sidebar (rounded, soft shadow, margin around it); nav rows with a small rounded icon tile; ACTIVE tile = purple→pink gradient, white icon.
+- Floating white sidebar (rounded, soft shadow, margin around it); nav rows with a small rounded icon tile; ACTIVE tile = blue gradient, white icon.
 - Cards: white, radius 16px (v2 floating cards: 24px, see below), soft shadow `0 20px 27px rgba(0,0,0,.05)`, no borders, 20–24px padding.
-- Signature gradient `linear-gradient(310deg,#7928CA,#FF0080)` for primary buttons, active tiles, gradient progress bars, headline accents.
+- Signature gradient `linear-gradient(310deg,#1D4ED8,#2F6BF0)` (blue since kit 0.2.1; white text 6.7:1 / 4.7:1) for primary buttons, active tiles, gradient progress bars, headline accents.
   Dark navy gradient `linear-gradient(310deg,#141727,#3A416F)` for one hero chart card. Secondary tile gradients (blue, orange, green, red) used sparingly.
 - Charts: smooth line + soft area fill, rounded white bars on navy card, dashed light gridlines. Numbers in mono where tabular.
 - Amber stays reserved for conclusions in minutes. Font stays Be Vietnam Pro (+ JetBrains Mono). No emoji.
@@ -131,8 +131,8 @@ Primitive: kit `ActionGroup` (`placement`: `toolbar` | `end` | `start` | `center
 | Service health | ok "Hoạt động" (green) · warn "Có lỗi" (yellow) · bad "Lỗi nhiều" (red) · idle "Chưa có dữ liệu" (grey) |
 | Provider | configured "Đã cấu hình" (green) · missing "Thiếu khóa" (red) · unused "Chưa dùng" (grey) |
 | User | active "Hoạt động" (green) · disabled "Đã khóa" (grey) |
-| Pricing | verified "Đã xác minh" (green) · example "Ví dụ" (purple) |
-| Minutes source | ai "AI tạo" (purple) · edited "Đã chỉnh sửa" (grey) · unsaved "Chưa lưu" (yellow) |
+| Pricing | verified "Đã xác minh" (green) · example "Ví dụ" (blue accent) |
+| Minutes source | ai "AI tạo" (blue accent) · edited "Đã chỉnh sửa" (grey) · unsaved "Chưa lưu" (yellow) |
 Amber (`conclusion` tone, `--decision*`) belongs to conclusions and decisions only: the "Đã chốt" topic status, the conclusion box in minutes, the "Kết luận" tags and rail in the room. Warnings that are not decisions are yellow `warn`. A test (`lib/status.test.ts`) fails if another domain uses the amber tone.
 
 **Copy.** Vietnamese, new-style tone marks: Hủy, xóa, khóa, hóa, tùy. Cancel is "Hủy", never "Huỷ". Numbers vi-VN (`1.234,5`), dates `dd/mm/yyyy` (ISO strings go through `formatIsoDate`), timestamps `hh:mm:ss` in mono. No exclamation marks.
@@ -144,7 +144,7 @@ Amber (`conclusion` tone, `--decision*`) belongs to conclusions and decisions on
 ## admin-ui v2 (2026-10-24)
 Kit 0.2.0 (`packages/admin-ui/CHANGELOG.md`) holds everything the approved room preview (`design/room-preview-v1/`, derived from `admin-preview-v6`) needs. The room is redesigned with it in a separate step; until then the old room code keeps working.
 
-**Contradictions resolved.** "No radius > 10px" (graphite era) and "cards 16px only" no longer hold: floating cards are **24px** (`rounded-soft-card`), inner blocks 18px, pills/segments fully round; 16px `Card` stays for admin pages. Accents are **blue** (`soft-accent`, tone-a) and **teal** (tone-b) in the room; the gradient purple primary and purple focus ring remain app-wide until the owner decides on a full palette switch (open item). Warnings are olive-yellow (`warn`), never amber.
+**Contradictions resolved.** "No radius > 10px" (graphite era) and "cards 16px only" no longer hold: floating cards are **24px** (`rounded-soft-card`), inner blocks 18px, pills/segments fully round; 16px `Card` stays for admin pages. Accents are **blue** (`soft-accent`, tone-a) and **teal** (tone-b) in the room; the whole app is now blue too (decided 2026-10-24): primary `--soft-brand` `#1D4ED8` (dark `#3B82F6`), gradient `#1D4ED8 -> #2F6BF0`, focus ring `#1D4ED8` at 70% (dark `#60A5FA` at 70%); `--soft-purple` / `Badge variant="purple"` remain only as deprecated aliases. `tone-a` is sky blue (`#0369a1`) so it stays distinct from the brand blue. Warnings are olive-yellow (`warn`), never amber.
 
 **New tokens** (`--soft-*`, dark values included): `page` (pale tinted page bg, opt-in `bg-soft-page`; `--soft-bg` unchanged), `inset`, `inset-2`, `line-strong`, `faint`, `accent(-soft|-ink)`, `tone-a-*` / `tone-b-*` (`bg|ink|chip|bar`), `info-*`, `ok-bg|ink`, `danger-bg|ink`, `olive-*`, `conclusion-line`, radii `card|inner|pill`, shadows `card` (soft), `float` (bars), `seg` (active tab).
 

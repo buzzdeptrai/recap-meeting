@@ -45,7 +45,7 @@ const ITEM_SIZE = {
 } as const;
 
 const ITEM_ON = {
-  pill: "data-[state=on]:bg-soft-main data-[state=on]:text-white data-[state=on]:shadow-[0_3px_6px_rgba(121,40,202,0.3)]",
+  pill: "data-[state=on]:bg-soft-main data-[state=on]:text-white data-[state=on]:shadow-[0_3px_6px_rgba(29,78,216,0.3)]",
   tabs: "data-[state=on]:bg-soft-surface data-[state=on]:text-soft-ink data-[state=on]:shadow-soft-sm",
   soft: "data-[state=on]:bg-soft-surface data-[state=on]:font-semibold data-[state=on]:text-soft-ink data-[state=on]:shadow-soft-seg",
 } as const;

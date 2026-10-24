@@ -90,7 +90,7 @@ export function KitPage() {
             <Badge variant="rec">Đang ghi</Badge>
             <Badge variant="warn">Chưa có biên bản</Badge>
             <Badge variant="error">Lỗi</Badge>
-            <Badge shape="chip" variant="purple">
+            <Badge shape="chip" variant="accent">
               VI
             </Badge>
             <Badge shape="chip" variant="cyan">

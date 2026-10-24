@@ -75,7 +75,7 @@ function SortHeader<T>({
       <span
         className={cn(
           "inline-grid size-3 place-items-center",
-          active ? "text-soft-purple" : "opacity-0",
+          active ? "text-soft-brand" : "opacity-0",
         )}
         aria-hidden="true"
       >
@@ -164,7 +164,7 @@ export function DataTable<T>({
                       "border-t border-soft-line p-3 align-middle text-[13px]",
                       alignOf(col),
                       col.numeric && "soft-tabular font-soft-mono",
-                      col.highlight && "bg-[rgba(121,40,202,0.05)] font-bold text-soft-ink",
+                      col.highlight && "bg-[rgba(29,78,216,0.05)] font-bold text-soft-ink",
                       i === 0 && "pl-0",
                       col.className,
                     )}

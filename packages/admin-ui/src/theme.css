@@ -26,7 +26,9 @@
   --soft-fill: #f0f2f5;
   --soft-grid: #d9dde4;
 
-  --soft-purple: #7928ca;
+  /* Brand / primary blue (was purple until 0.2.1). `--soft-purple` stays as a deprecated alias. */
+  --soft-brand: #1d4ed8;
+  --soft-purple: var(--soft-brand);
   --soft-pink: #ff0080;
   --soft-navy: #3a416f;
   --soft-ok: #17ad37;
@@ -36,8 +38,8 @@
   --soft-conclusion: #b45309;
   --soft-conclusion-bg: #fdf1e3;
 
-  /* End stop darkened from #ff0080 so white 13px bold text on it passes WCAG AA (4.7:1 vs 3.8:1). */
-  --soft-g-main: linear-gradient(310deg, #7928ca, #e0006f);
+  /* Blue signature gradient; white 13px bold text passes AA on both stops (6.7:1 / 4.7:1). */
+  --soft-g-main: linear-gradient(310deg, #1d4ed8, #2f6bf0);
   --soft-g-dark: linear-gradient(310deg, #141727, #3a416f);
   --soft-g-blue: linear-gradient(310deg, #2152ff, #21d4fd);
   --soft-g-orange: linear-gradient(310deg, #f53939, #fbcf33);
@@ -49,8 +51,9 @@
   --soft-shadow-sm: 0 3px 5px -1px rgba(0, 0, 0, 0.09), 0 2px 3px -1px rgba(0, 0, 0, 0.07);
   --soft-shadow-tile: 0 4px 7px rgba(52, 71, 103, 0.18);
   --soft-shadow-pop: 0 8px 24px rgba(52, 71, 103, 0.18);
-  --soft-glow-main: 0 4px 7px rgba(121, 40, 202, 0.3);
-  --soft-focus: rgba(121, 40, 202, 0.45);
+  --soft-glow-main: 0 4px 7px rgba(29, 78, 216, 0.3);
+  /* Ring = #1d4ed8 at 70% -> about #6692f1 on white (3.0:1 non-text). */
+  --soft-focus: rgba(29, 78, 216, 0.7);
 
   --soft-sidebar-w: 272px;
   --soft-sidebar-w-collapsed: 88px;
@@ -59,7 +62,7 @@
   --soft-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Categorical chart colours (vendor stacks etc.). */
-  --soft-chart-1: #7928ca;
+  --soft-chart-1: #1d4ed8;
   --soft-chart-2: #ff0080;
   --soft-chart-3: #3a416f;
   --soft-chart-4: #17c1e8;
@@ -78,10 +81,11 @@
   --soft-accent-soft: #e8efff;
   --soft-accent-ink: #1e40af;
   /* Two neutral row tones, e.g. "self" (a, blue) and "other" (b, teal). bg = bubble, chip = icon holder, bar = meter fill. */
-  --soft-tone-a-bg: #eef3ff;
-  --soft-tone-a-ink: #1d4ed8;
-  --soft-tone-a-chip: #dbe6ff;
-  --soft-tone-a-bar: #1d4ed8;
+  /* tone-a is sky blue (hue ~200) so it never reads as the brand/accent blue (hue ~224) next to it. */
+  --soft-tone-a-bg: #e8f4fc;
+  --soft-tone-a-ink: #0369a1;
+  --soft-tone-a-chip: #cfe8f8;
+  --soft-tone-a-bar: #0284c7;
   --soft-tone-b-bg: #e9f7f4;
   --soft-tone-b-ink: #0f766e;
   --soft-tone-b-chip: #cdeee8;
@@ -120,6 +124,8 @@
   --soft-grid: #33363e;
   --soft-conclusion: #f2a34a;
   --soft-conclusion-bg: #33240f;
+  --soft-brand: #3b82f6;
+  --soft-focus: rgba(96, 165, 250, 0.7);
   --soft-shadow: 0 20px 27px rgba(0, 0, 0, 0.35);
   --soft-shadow-sm: 0 3px 5px -1px rgba(0, 0, 0, 0.5);
   --soft-shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -132,10 +138,10 @@
   --soft-accent: #3b82f6;
   --soft-accent-soft: rgba(59, 130, 246, 0.18);
   --soft-accent-ink: #93b8ff;
-  --soft-tone-a-bg: rgba(59, 130, 246, 0.14);
-  --soft-tone-a-ink: #8db4ff;
-  --soft-tone-a-chip: rgba(59, 130, 246, 0.28);
-  --soft-tone-a-bar: #3b82f6;
+  --soft-tone-a-bg: rgba(14, 165, 233, 0.14);
+  --soft-tone-a-ink: #7dd3fc;
+  --soft-tone-a-chip: rgba(14, 165, 233, 0.28);
+  --soft-tone-a-bar: #0ea5e9;
   --soft-tone-b-bg: rgba(13, 148, 136, 0.16);
   --soft-tone-b-ink: #5dd6c7;
   --soft-tone-b-chip: rgba(13, 148, 136, 0.32);
@@ -164,6 +170,7 @@
   --color-soft-muted: var(--soft-muted);
   --color-soft-line: var(--soft-line);
   --color-soft-fill: var(--soft-fill);
+  --color-soft-brand: var(--soft-brand);
   --color-soft-purple: var(--soft-purple);
   --color-soft-pink: var(--soft-pink);
   --color-soft-navy: var(--soft-navy);

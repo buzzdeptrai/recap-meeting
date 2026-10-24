@@ -86,7 +86,7 @@ function Login() {
         title="Đăng nhập"
         description="Dùng tài khoản quản trị do bạn được cấp."
         logo={
-          <span className="grid size-10 place-items-center rounded-xl bg-soft-main text-white shadow-[0_4px_7px_rgba(121,40,202,0.3)]">
+          <span className="grid size-10 place-items-center rounded-xl bg-soft-main text-white shadow-[0_4px_7px_rgba(29,78,216,0.3)]">
             <FileText width={20} height={20} />
           </span>
         }

@@ -81,7 +81,7 @@ export function Select({
                 key={o.value}
                 value={o.value}
                 disabled={o.disabled}
-                className="relative flex cursor-pointer items-center rounded-lg py-2 pr-8 pl-3 text-[13px] font-semibold outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-soft-bg data-[state=checked]:text-soft-purple"
+                className="relative flex cursor-pointer items-center rounded-lg py-2 pr-8 pl-3 text-[13px] font-semibold outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-soft-bg data-[state=checked]:text-soft-brand"
               >
                 <RadixSelect.ItemText>{o.label}</RadixSelect.ItemText>
                 <RadixSelect.ItemIndicator className="absolute right-3">

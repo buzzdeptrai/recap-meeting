@@ -85,7 +85,7 @@ export const VENDORS: VendorRow[] = [
     id: "dg",
     name: "Deepgram",
     models: "nova-3",
-    color: "#7928CA",
+    color: "#1D4ED8",
     seconds: 285120,
     tokensIn: null,
     tokensOut: null,

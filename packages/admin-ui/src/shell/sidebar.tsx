@@ -33,7 +33,7 @@ export function BrandMark({ brand, compact }: { brand: BrandConfig; compact?: bo
       {brand.logo ?? (
         <span
           aria-hidden="true"
-          className="grid size-9 shrink-0 place-items-center rounded-xl bg-soft-main text-white shadow-[0_4px_7px_rgba(121,40,202,0.3)] [&_svg]:size-5"
+          className="grid size-9 shrink-0 place-items-center rounded-xl bg-soft-main text-white shadow-[0_4px_7px_rgba(29,78,216,0.3)] [&_svg]:size-5"
         >
           {brand.icon}
         </span>
@@ -150,7 +150,7 @@ export function SidebarHelpCard({ icon, title, description, action }: SidebarHel
       {icon ? (
         <span
           aria-hidden="true"
-          className="relative mb-3 grid size-8 place-items-center rounded-[10px] bg-white text-soft-purple [&_svg]:size-4"
+          className="relative mb-3 grid size-8 place-items-center rounded-[10px] bg-white text-[#1d4ed8] [&_svg]:size-4"
         >
           {icon}
         </span>
@@ -169,7 +169,7 @@ export function HelpCardAction({ href, children }: { href: string; children: Rea
   return (
     <a
       href={href}
-      className="soft-focus block rounded-[10px] bg-white px-4 py-2 text-center text-xs font-bold text-soft-ink shadow-soft-sm"
+      className="soft-focus block rounded-[10px] bg-white px-4 py-2 text-center text-xs font-bold text-[#1e3a8a] shadow-soft-sm"
     >
       {children}
     </a>

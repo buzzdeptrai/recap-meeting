@@ -184,7 +184,7 @@ describe("charts", () => {
   });
   it("StackedBarChart renders both variants with a legend", () => {
     const series = [
-      { id: "dg", label: "Deepgram", values: [1, 2, 3], color: "#7928CA" },
+      { id: "dg", label: "Deepgram", values: [1, 2, 3], color: "#1D4ED8" },
       { id: "oa", label: "OpenAI", values: [0.5, 0, 1], color: "#FF0080" },
     ];
     for (const variant of ["bars", "area"] as const) {

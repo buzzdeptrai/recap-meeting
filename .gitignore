@@ -8,5 +8,5 @@ data/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
-.next-long/
+.next-*/
 .claude/tsc-cache/

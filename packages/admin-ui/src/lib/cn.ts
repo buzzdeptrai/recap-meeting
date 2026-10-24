@@ -17,6 +17,7 @@ const twMerge = extendTailwindMerge({
         "soft-muted",
         "soft-line",
         "soft-fill",
+        "soft-brand",
         "soft-purple",
         "soft-pink",
         "soft-navy",

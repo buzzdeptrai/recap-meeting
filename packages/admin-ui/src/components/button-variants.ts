@@ -7,7 +7,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-soft-main text-white shadow-[0_3px_6px_rgba(121,40,202,0.3)] hover:shadow-[0_6px_12px_rgba(121,40,202,0.35)] active:translate-y-px",
+          "bg-soft-main text-white shadow-[0_3px_6px_rgba(29,78,216,0.3)] hover:shadow-[0_6px_12px_rgba(29,78,216,0.35)] active:translate-y-px",
         outline: "bg-soft-surface text-soft-ink shadow-soft-sm hover:bg-soft-bg",
         ghost: "text-soft-muted hover:bg-soft-bg hover:text-soft-ink",
         danger:

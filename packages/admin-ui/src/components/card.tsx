@@ -50,7 +50,7 @@ export function CardLink({ className, ...rest }: ComponentProps<"a">) {
   return (
     <a
       className={cn(
-        "soft-focus inline-flex items-center gap-1 rounded-lg text-[13px] font-semibold text-soft-purple hover:underline",
+        "soft-focus inline-flex items-center gap-1 rounded-lg text-[13px] font-semibold text-soft-brand hover:underline",
         className,
       )}
       {...rest}

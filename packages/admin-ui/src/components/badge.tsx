@@ -10,7 +10,9 @@ const badgeVariants = cva("inline-flex items-center whitespace-nowrap font-bold"
       rec: "bg-[#ffe5f1] text-[#b3005a]",
       warn: "bg-[#fff3d6] text-[#8a5b00]",
       error: "bg-[#fde4e4] text-[#a30606]",
-      purple: "bg-[#f3e8fd] text-[#6b21a8]",
+      accent: "bg-soft-accent-soft text-soft-accent-ink",
+      /** Deprecated alias of `accent` (kept so existing call sites keep working). */
+      purple: "bg-soft-accent-soft text-soft-accent-ink",
       cyan: "bg-[#e3f6fd] text-[#0b6c8c]",
       /** Conclusions / decisions only (minutes, room). */
       conclusion: "bg-soft-conclusion-bg text-soft-conclusion",
@@ -41,11 +43,11 @@ export function Badge({ variant, shape, dot, className, children, ...rest }: Bad
   );
 }
 
-/** Small purple pill, e.g. "ví dụ" next to estimated figures. */
+/** Small accent (blue) pill, e.g. "ví dụ" next to estimated figures. */
 export function Pill({ className, ...rest }: ComponentProps<"span">) {
   return (
     <Badge
-      variant="purple"
+      variant="accent"
       shape="pill"
       className={cn("px-2 py-0.5 text-[11px]", className)}
       {...rest}

@@ -119,7 +119,7 @@ export function LoginForm({
               name="remember"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
-              className="soft-focus size-4 cursor-pointer accent-soft-purple"
+              className="soft-focus size-4 cursor-pointer accent-soft-brand"
             />
             {t.remember}
           </label>

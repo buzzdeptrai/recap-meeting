@@ -204,7 +204,7 @@ export function DashboardPage({ widths }: { widths: Widths }) {
                 </div>
                 <span className="inline-flex gap-1 max-[640px]:hidden">
                   {m.langs.map((l) => (
-                    <Badge key={l} shape="chip" variant={l === "VI" ? "purple" : "cyan"}>
+                    <Badge key={l} shape="chip" variant={l === "VI" ? "accent" : "cyan"}>
                       {l}
                     </Badge>
                   ))}

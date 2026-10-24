@@ -28,7 +28,7 @@ The kit does not load fonts. Load Be Vietnam Pro (400/600/700, `vietnamese` subs
 System fallbacks are used otherwise. `AppShell` applies the font; pages outside it add `font-soft`.
 
 ## Tokens (`src/theme.css`)
-All prefixed `--soft-*` (no clash with app tokens). Colour utilities: `bg-soft-bg|surface|fill`, `text-soft-ink|muted|purple|ok|bad`, `border-soft-line`; amber conclusion tokens `soft-conclusion(-bg)`. Gradients as utilities `bg-soft-main|dark|blue|orange|green|red`, `text-soft-gradient`. Radius `rounded-soft` (16px). Shadows `shadow-soft`, `shadow-soft-sm`, `shadow-soft-tile`, `shadow-soft-pop`. Fonts `font-soft`, `font-soft-mono`. Helpers `soft-tabular`, `soft-focus`. Categorical chart colours `--soft-chart-1..5`. Dark: `<html data-theme="dark">` (neutral stub, light is the reference).
+All prefixed `--soft-*` (no clash with app tokens). Colour utilities: `bg-soft-bg|surface|fill`, `text-soft-ink|muted|brand|ok|bad`, `border-soft-line`; amber conclusion tokens `soft-conclusion(-bg)`. Gradients as utilities `bg-soft-main|dark|blue|orange|green|red`, `text-soft-gradient`. Radius `rounded-soft` (16px). Shadows `shadow-soft`, `shadow-soft-sm`, `shadow-soft-tile`, `shadow-soft-pop`. Fonts `font-soft`, `font-soft-mono`. Helpers `soft-tabular`, `soft-focus`. Categorical chart colours `--soft-chart-1..5`. Dark: `<html data-theme="dark">` (neutral stub, light is the reference).
 
 ## App shell
 ```tsx
