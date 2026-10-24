@@ -7,6 +7,12 @@ import type {
 } from "@/lib/api-types";
 import { countWords } from "./marks";
 import {
+  isSttRetryErrorCode,
+  nextSttRetryPhase,
+  type SttRetryEvent,
+  type SttRetryPhase,
+} from "./stt-banner";
+import {
   extendWindow,
   isAtTail,
   isCurrentPage,
@@ -48,6 +54,8 @@ export interface RoomState {
   marks: Mark[];
   interim: Record<Channel, InterimLine | null>;
   stt: SttState | null;
+  /** Manual "Thử lại" of the speech-to-text provider. */
+  sttRetry: SttRetryPhase;
   translateProvider: string | null;
   translateDegraded: boolean;
   /** Server ISO start of the meeting; elapsed time = now - startedAt. */
@@ -76,6 +84,7 @@ export type RoomAction =
   | { type: "server"; message: ServerMessage; receivedAt?: number }
   | { type: "mark-removed"; id: string }
   | { type: "mark-renamed"; id: string; label: string }
+  | { type: "stt-retry"; event: SttRetryEvent }
   | { type: "clear-error" };
 
 const LATENCY_WINDOW = 20;
@@ -91,6 +100,7 @@ export const initialRoomState: RoomState = {
   marks: [],
   interim: { 0: null, 1: null },
   stt: null,
+  sttRetry: "idle",
   translateProvider: null,
   translateDegraded: false,
   startedAt: null,
@@ -223,6 +233,7 @@ function applyServer(state: RoomState, message: ServerMessage, receivedAt?: numb
       return {
         ...state,
         stt: message.stt,
+        sttRetry: nextSttRetryPhase(state.sttRetry, { type: "status", stt: message.stt }),
         translateProvider: message.translate.provider,
         translateDegraded: message.translate.degraded,
       };
@@ -248,6 +259,10 @@ function applyServer(state: RoomState, message: ServerMessage, receivedAt?: numb
     case "unmark":
       return { ...state, marks: removeMark(state.marks, message.id) };
     case "error":
+      if (isSttRetryErrorCode(message.code)) {
+        const sttRetry = nextSttRetryPhase(state.sttRetry, { type: "error", code: message.code });
+        return { ...state, sttRetry };
+      }
       return { ...state, lastError: message };
     default:
       return state;
@@ -268,6 +283,8 @@ export function roomReducer(state: RoomState, action: RoomAction): RoomState {
       return { ...state, marks: removeMark(state.marks, action.id) };
     case "mark-renamed":
       return { ...state, marks: renameMark(state.marks, action.id, action.label) };
+    case "stt-retry":
+      return { ...state, sttRetry: nextSttRetryPhase(state.sttRetry, action.event) };
     case "clear-error":
       return { ...state, lastError: null };
   }

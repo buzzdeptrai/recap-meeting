@@ -6,6 +6,7 @@ import {
   openDatabase,
   type Repositories,
 } from "@recap/db";
+import type { MinutesWorker } from "@recap/minutes";
 import {
   createSttProvider,
   segmenterConfigForLanguage,
@@ -15,6 +16,7 @@ import {
   type SttProviderConfig,
 } from "@recap/stt";
 import { EnvError, type Env } from "./env";
+import { createRealtimeMinutesWorker } from "./minutes-worker";
 import { SessionRegistry } from "./session/registry";
 import type { SessionHooks } from "./session/types";
 import { createTranslationHook, createTranslatorFromEnv } from "./translation";
@@ -48,6 +50,8 @@ export interface RealtimeDeps {
     sttModel: string;
     sttLanguage: SttLanguage;
   };
+  /** Background minutes generation; started and stopped by the server entry point. */
+  minutesWorker?: MinutesWorker;
   /** Releases resources owned by the deps (database). */
   close?: () => void;
 }
@@ -116,6 +120,11 @@ export function createRealtimeDeps(env: Env): RealtimeDeps {
       sttModel: env.STT_PROVIDER === "assemblyai" ? env.ASSEMBLYAI_MODEL : env.DEEPGRAM_MODEL,
       sttLanguage: env.DEEPGRAM_LANGUAGE,
     },
+    minutesWorker: createRealtimeMinutesWorker({
+      repos,
+      usage: usageSink,
+      source: { ...process.env, OPENAI_API_KEY: env.OPENAI_API_KEY },
+    }),
     close: () => db.close(),
   };
 }

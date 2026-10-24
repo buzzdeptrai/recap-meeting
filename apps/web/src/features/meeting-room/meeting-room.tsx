@@ -54,10 +54,10 @@ export function MeetingRoom({ meeting, initial, focusMs = null }: MeetingRoomPro
         sources={capture.sources}
         captureError={capture.error}
         connection={socket.connection}
-        stt={socket.room.stt}
-        serverError={socket.room.lastError}
+        room={socket.room}
         onReshare={capture.reshareTab}
         onRetry={socket.retry}
+        onRetryStt={socket.retryStt}
         onDismissError={socket.clearError}
       />
       <RoomBody

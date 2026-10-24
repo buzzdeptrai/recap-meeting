@@ -17,6 +17,12 @@ export const errorCodeSchema = z.enum([
   "MEETING_NOT_FOUND",
   "TRANSLATE_FAILED",
   "INTERNAL",
+  /** `stt_retry` while no live recording exists. */
+  "NOT_RECORDING",
+  /** `stt_retry` while the provider is already connecting/open (no-op). */
+  "STT_ALREADY_OPEN",
+  /** `stt_retry` too soon after the last one, or too many in this session. */
+  "RATE_LIMITED",
 ]);
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
 

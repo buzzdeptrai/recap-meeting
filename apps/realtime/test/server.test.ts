@@ -72,3 +72,16 @@ describe("realtime server", () => {
     await expect(connect("/other")).rejects.toThrow();
   });
 });
+
+describe("listen host", () => {
+  it("binds only the requested host", async () => {
+    const local = createRealtimeServer();
+    try {
+      const boundPort = await local.listen(0, "127.0.0.1");
+      expect(boundPort).toBeGreaterThan(0);
+      expect(local.http.address()).toMatchObject({ address: "127.0.0.1", port: boundPort });
+    } finally {
+      await local.close();
+    }
+  });
+});

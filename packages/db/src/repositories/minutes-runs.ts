@@ -1,21 +1,7 @@
 import type { MinutesLang } from "@recap/core";
 import type { MinutesRun, MinutesRunPhase, MinutesRunStatus, RepoContext } from "../types";
-
-interface RunRow {
-  id: string;
-  meeting_id: string;
-  lang: MinutesLang;
-  status: MinutesRunStatus;
-  total_chunks: number;
-  done_chunks: number;
-  phase: MinutesRunPhase | null;
-  error: string | null;
-  model: string | null;
-  prompt_version: string | null;
-  started_at: string;
-  updated_at: string;
-  finished_at: string | null;
-}
+import { createMinutesRunsQueue } from "./minutes-runs-queue";
+import { toRun, type RunRow } from "./minutes-runs-row";
 
 export interface StartRunInput {
   meetingId: string;
@@ -29,22 +15,6 @@ export interface RunProgress {
   done: number;
   total: number;
 }
-
-const toRun = (row: RunRow): MinutesRun => ({
-  id: row.id,
-  meetingId: row.meeting_id,
-  lang: row.lang,
-  status: row.status,
-  totalChunks: row.total_chunks,
-  doneChunks: row.done_chunks,
-  phase: row.phase,
-  error: row.error,
-  model: row.model,
-  promptVersion: row.prompt_version,
-  startedAt: row.started_at,
-  updatedAt: row.updated_at,
-  finishedAt: row.finished_at,
-});
 
 const ACTIVE = "status IN ('queued', 'running')";
 
@@ -75,10 +45,6 @@ function prepareStatements(db: RepoContext["db"]) {
     `UPDATE minutes_runs SET status = @status, error = @error, updated_at = @at, finished_at = @at
      WHERE id = @id AND ${ACTIVE}`,
   );
-  const staleStmt = db.prepare(
-    `UPDATE minutes_runs SET status = 'failed', error = @error, updated_at = @at, finished_at = @at
-     WHERE meeting_id = @meetingId AND lang = @lang AND ${ACTIVE} AND updated_at < @cutoff`,
-  );
   return {
     getStmt,
     activeStmt,
@@ -88,7 +54,6 @@ function prepareStatements(db: RepoContext["db"]) {
     runningStmt,
     progressStmt,
     endStmt,
-    staleStmt,
   };
 }
 
@@ -97,7 +62,8 @@ function prepareStatements(db: RepoContext["db"]) {
  * run (done / failed / cancelled) can never be revived by a late writer, and all of them are safe
  * to repeat.
  */
-export function createMinutesRunsRepository({ db, now, newId }: RepoContext) {
+export function createMinutesRunsRepository(context: RepoContext) {
+  const { db, now, newId } = context;
   const {
     getStmt,
     activeStmt,
@@ -107,7 +73,6 @@ export function createMinutesRunsRepository({ db, now, newId }: RepoContext) {
     runningStmt,
     progressStmt,
     endStmt,
-    staleStmt,
   } = prepareStatements(db);
 
   const get = (id: string): MinutesRun | undefined => {
@@ -149,9 +114,7 @@ export function createMinutesRunsRepository({ db, now, newId }: RepoContext) {
     finish: (id: string): boolean => end("done", id, null),
     fail: (id: string, error: string): boolean => end("failed", id, error),
     cancel: (id: string): boolean => end("cancelled", id, null),
-    /** Fails active runs of this meeting + language whose last update is older than `cutoff`. */
-    failStale: (meetingId: string, lang: MinutesLang, cutoff: string, error: string): number =>
-      staleStmt.run({ meetingId, lang, cutoff, error, at: now() }).changes,
+    ...createMinutesRunsQueue(context),
   };
 }
 

@@ -35,6 +35,8 @@ export interface MeetingSocketApi {
   connect: () => void;
   /** Manual immediate reconnect (the "Thử lại" button). */
   retry: () => void;
+  /** Asks the server to restart the speech-to-text provider (the banner's "Thử lại"). */
+  retryStt: () => void;
   /** Ends the meeting on the server and closes the socket. */
   stop: () => void;
   /** Returns false when the frame was dropped (not ready / backed up). */
@@ -47,6 +49,33 @@ export interface MeetingSocketApi {
   applyMarkRemoved: (id: string) => void;
   applyMarkRenamed: (id: string, label: string) => void;
   clearError: () => void;
+}
+
+/** A retry that never gets an answer (lost message, stuck provider) is reported as failed. */
+export const STT_RETRY_TIMEOUT_MS = 20_000;
+
+function useSttRetry(
+  phase: RoomState["sttRetry"],
+  connection: ConnectionState,
+  dispatch: Dispatch<RoomAction>,
+  socketRef: { current: MeetingSocket | null },
+): () => void {
+  useEffect(() => {
+    if (phase !== "waiting" && phase !== "connecting") return;
+    const timer = setTimeout(
+      () => dispatch({ type: "stt-retry", event: { type: "timeout" } }),
+      STT_RETRY_TIMEOUT_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [phase, dispatch]);
+  useEffect(() => {
+    if (connection !== "ready") dispatch({ type: "stt-retry", event: { type: "reset" } });
+  }, [connection, dispatch]);
+  return useCallback(() => {
+    dispatch({ type: "stt-retry", event: { type: "click" } });
+    if (socketRef.current?.sendSttRetry()) return;
+    dispatch({ type: "stt-retry", event: { type: "timeout" } });
+  }, [dispatch, socketRef]);
 }
 
 function init(initial: InitialRoomData): RoomState {
@@ -81,6 +110,7 @@ export function useMeetingSocket(options: UseMeetingSocketOptions): MeetingSocke
   }, [meetingId, sourceLang, targetLang, resume, url]);
 
   useEffect(() => () => socketRef.current?.close(), []);
+  const retryStt = useSttRetry(room.sttRetry, connection, dispatch, socketRef);
 
   return {
     room,
@@ -88,6 +118,7 @@ export function useMeetingSocket(options: UseMeetingSocketOptions): MeetingSocke
     connection,
     connect,
     retry: useCallback(() => socketRef.current?.retry(), []),
+    retryStt,
     stop: useCallback(() => socketRef.current?.stop(), []),
     sendAudio: useCallback((frame) => socketRef.current?.sendAudio(frame) ?? false, []),
     sendMark: useCallback((atMs, kind) => socketRef.current?.sendMark(atMs, kind) ?? false, []),

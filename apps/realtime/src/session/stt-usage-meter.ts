@@ -37,8 +37,8 @@ export class SttUsageMeter {
     this.timer.unref();
   }
 
-  addFrame(): void {
-    this.frames += 1;
+  addFrame(count = 1): void {
+    this.frames += count;
   }
 
   /** Stops the timer and records what is left. Safe to call more than once. */

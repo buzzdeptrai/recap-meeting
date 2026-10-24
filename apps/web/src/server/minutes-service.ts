@@ -6,39 +6,20 @@ import {
   type StaleReason,
   type StoredMinutes,
 } from "@recap/db";
-import {
-  MinutesError,
-  PROMPT_VERSION,
-  generateMinutes,
-  generatorConfigFromEnv,
-  type GeneratorConfig,
-  type MinutesLlm,
-  type MinutesProgress,
-} from "@recap/minutes";
+import { PROMPT_VERSION } from "@recap/minutes";
 import type { MinutesDto } from "@/lib/api-types";
 import { getRepositories } from "./db";
-import { currentMinutesModel, getMinutesLlm } from "./minutes-llm";
+import { currentMinutesModel } from "./minutes-model";
 import { ServiceError } from "./service-error";
-import { usageContext } from "./usage-recorder";
 
 export interface MinutesServiceDeps {
   repos: Repositories;
-  /** Lazy so routes that never generate do not need an API key. */
-  llm: () => MinutesLlm;
   /** The model generation would use now (null = unknown); lets staleness notice a model change. */
   currentModel?: () => string | null;
-  /** Clock in epoch ms (tests). */
-  now?: () => number;
-  /** A running row not updated for this long is treated as failed. */
-  staleRunMs?: number;
-  /** Generator overrides on top of the env config (tests). */
-  config?: Partial<GeneratorConfig>;
 }
 
-const inFlight = new Map<string, Promise<MinutesDto>>();
-
 function defaultDeps(): MinutesServiceDeps {
-  return { repos: getRepositories(), llm: getMinutesLlm, currentModel: currentMinutesModel };
+  return { repos: getRepositories(), currentModel: currentMinutesModel };
 }
 
 /**
@@ -68,7 +49,7 @@ export function minutesStaleReasonsOf(
   });
 }
 
-type ReadDeps = Pick<MinutesServiceDeps, "repos" | "currentModel">;
+type ReadDeps = MinutesServiceDeps;
 
 function toDto(stored: StoredMinutes, deps: ReadDeps): MinutesDto {
   const staleReasons = minutesStaleReasonsOf(
@@ -107,81 +88,6 @@ export function requireEndedMeeting(repos: Repositories, meetingId: string) {
     );
   }
   return meeting;
-}
-
-export const ERROR_MAP: Record<string, [number, string, string]> = {
-  MEETING_NOT_FOUND: [404, "NOT_FOUND", "Không tìm thấy cuộc họp này."],
-  EMPTY_TRANSCRIPT: [422, "EMPTY_TRANSCRIPT", "Cuộc họp chưa có nội dung để lập biên bản."],
-  INVALID_OUTPUT: [502, "MINUTES_FAILED", "Mô hình trả về kết quả không hợp lệ. Vui lòng thử lại."],
-  LLM_FAILED: [502, "MINUTES_FAILED", "Không tạo được biên bản. Vui lòng thử lại."],
-  CONFIG: [503, "MINUTES_UNAVAILABLE", "Chưa cấu hình dịch vụ tạo biên bản."],
-};
-
-function toServiceError(err: unknown): unknown {
-  if (!(err instanceof MinutesError)) return err;
-  const [status, code, message] = ERROR_MAP[err.code] ?? [502, "MINUTES_FAILED", err.message];
-  return new ServiceError(status, code, message);
-}
-
-const GENERIC_FAILURE = "Không tạo được biên bản. Vui lòng thử lại.";
-
-/**
- * Text that is safe to show to the user and to store on a run: a curated message, never the
- * original error (which may carry request details).
- */
-export function safeFailureMessage(err: unknown): string {
-  if (err instanceof ServiceError) return err.message;
-  if (err instanceof MinutesError) return ERROR_MAP[err.code]?.[2] ?? GENERIC_FAILURE;
-  return GENERIC_FAILURE;
-}
-
-/** Generates the minutes and stores them as an `ai` version stamped with its prompt / marks. */
-export async function produceMinutes(
-  meetingId: string,
-  lang: MinutesLang,
-  deps: MinutesServiceDeps,
-  onProgress?: (progress: MinutesProgress) => void,
-): Promise<MinutesDto> {
-  try {
-    const result = await usageContext.run({ meetingId }, () =>
-      generateMinutes(
-        { meetingId, lang },
-        {
-          repos: deps.repos,
-          llm: deps.llm(),
-          config: { ...generatorConfigFromEnv(process.env), ...deps.config },
-          onProgress,
-        },
-      ),
-    );
-    const stored = deps.repos.minutes.upsert({
-      meetingId,
-      lang,
-      content: result.content,
-      source: "ai",
-      model: result.model,
-      promptVersion: result.promptVersion,
-      marksFingerprint: result.marksFingerprint,
-    });
-    return toDto(stored, deps);
-  } catch (err) {
-    throw toServiceError(err);
-  }
-}
-
-/** Generates (or regenerates) and stores minutes. Concurrent identical requests share one run. */
-export async function generateAndStoreMinutes(
-  meetingId: string,
-  lang: MinutesLang,
-  deps: MinutesServiceDeps = defaultDeps(),
-): Promise<MinutesDto> {
-  requireEndedMeeting(deps.repos, meetingId);
-  const key = `${meetingId}:${lang}`;
-  const running = inFlight.get(key);
-  if (running) return running;
-  const job = produceMinutes(meetingId, lang, deps).finally(() => inFlight.delete(key));
-  inFlight.set(key, job);
-  return job;
 }
 
 export function getMinutes(

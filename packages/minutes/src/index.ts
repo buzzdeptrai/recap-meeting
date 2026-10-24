@@ -29,3 +29,5 @@ export type {
   MinutesProgress,
   MinutesRepos,
 } from "./types";
+
+export * from "./worker";

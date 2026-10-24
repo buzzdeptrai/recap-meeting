@@ -1,14 +1,14 @@
 import { createServer, type Server } from "node:http";
 import type { WebSocketServer } from "ws";
 import type { RealtimeDeps } from "./deps";
-import { handleHttpRequest } from "./http";
+import { createHttpHandler } from "./http";
 import { CLOSE_GOING_AWAY, attachWebSocketServer, type WebSocketOptions } from "./ws";
 
 export interface RealtimeServer {
   http: Server;
   wss: WebSocketServer;
   /** Starts listening; resolves with the bound port (useful with port 0 in tests). */
-  listen: (port: number) => Promise<number>;
+  listen: (port: number, host?: string) => Promise<number>;
   /** Closes all sockets and the HTTP server. */
   close: () => Promise<void>;
 }
@@ -18,17 +18,19 @@ export function createRealtimeServer(
   deps?: RealtimeDeps,
   options?: WebSocketOptions,
 ): RealtimeServer {
-  const http = createServer(handleHttpRequest);
+  const http = createServer(createHttpHandler(deps?.minutesWorker));
   const wss = attachWebSocketServer(http, deps, options);
 
-  function listen(port: number): Promise<number> {
+  function listen(port: number, host?: string): Promise<number> {
     return new Promise((resolvePort, reject) => {
       http.once("error", reject);
-      http.listen(port, () => {
+      const onListening = () => {
         http.off("error", reject);
         const address = http.address();
         resolvePort(typeof address === "object" && address ? address.port : port);
-      });
+      };
+      if (host) http.listen(port, host, onListening);
+      else http.listen(port, onListening);
     });
   }
 

@@ -7,8 +7,9 @@ import {
 } from "@recap/db";
 import { FakeMinutesLlm, PROMPT_VERSION } from "@recap/minutes";
 import { beforeEach, describe, expect, it } from "vitest";
-import { generateAndStoreMinutes, getMinutes, saveEditedMinutes } from "./minutes-service";
-import { ServiceError } from "./service-error";
+import { generateNow } from "./minutes-test-support";
+import { getMinutes, saveEditedMinutes } from "./minutes-service";
+import type { ServiceError } from "./service-error";
 
 const reply = {
   summary: "Chốt giá.",
@@ -25,6 +26,7 @@ const reply = {
 };
 
 let repos: Repositories;
+const llm = () => new FakeMinutesLlm(reply);
 const fail = (status: number, code: string) =>
   expect.objectContaining({ status, code }) as unknown as ServiceError;
 
@@ -51,77 +53,6 @@ beforeEach(() => {
   repos = createRepositories(openDatabase(IN_MEMORY));
 });
 
-describe("generateAndStoreMinutes", () => {
-  it("generates, stores as ai and returns the dto", async () => {
-    const id = endedMeeting();
-    const llm = new FakeMinutesLlm(reply);
-    const dto = await generateAndStoreMinutes(id, "vi", { repos, llm: () => llm });
-    expect(dto).toMatchObject({ lang: "vi", source: "ai" });
-    expect(dto.content.topics[0]?.conclusion).toMatchObject({ atMs: 5_000, marked: true });
-    expect(repos.minutes.get(id, "vi")?.model).toBe("fake-model");
-    expect(getMinutes(id, "vi", { repos })).toEqual(dto);
-  });
-
-  it("regenerating replaces edited minutes", async () => {
-    const id = endedMeeting();
-    const deps = { repos, llm: () => new FakeMinutesLlm(reply) };
-    const first = await generateAndStoreMinutes(id, "vi", deps);
-    saveEditedMinutes(id, "vi", { ...first.content, summary: "Sửa tay" }, { repos });
-    const again = await generateAndStoreMinutes(id, "vi", deps);
-    expect(again).toMatchObject({ source: "ai" });
-    expect(again.content.summary).toBe("Chốt giá.");
-  });
-
-  it("404 for unknown meeting, 409 unless ended, 422 when there is no transcript", async () => {
-    const llm = () => new FakeMinutesLlm(reply);
-    await expect(generateAndStoreMinutes("nope", "vi", { repos, llm })).rejects.toMatchObject({
-      status: 404,
-    });
-    const draft = repos.meetings.create({ title: "d" }).id;
-    await expect(generateAndStoreMinutes(draft, "vi", { repos, llm })).rejects.toMatchObject({
-      status: 409,
-      code: "MEETING_NOT_ENDED",
-    });
-    const live = repos.meetings.create({ title: "l" }).id;
-    repos.meetings.start(live);
-    await expect(generateAndStoreMinutes(live, "vi", { repos, llm })).rejects.toMatchObject({
-      status: 409,
-    });
-    await expect(
-      generateAndStoreMinutes(endedMeeting(false), "vi", { repos, llm }),
-    ).rejects.toMatchObject({ status: 422 });
-  });
-
-  it("maps model failures to 502 and a missing key to 503, storing nothing", async () => {
-    const id = endedMeeting();
-    const bad = { repos, llm: () => new FakeMinutesLlm("garbage") };
-    await expect(generateAndStoreMinutes(id, "vi", bad)).rejects.toMatchObject({
-      status: 502,
-      code: "MINUTES_FAILED",
-    });
-    const noKey = {
-      repos,
-      llm: () => {
-        throw new ServiceError(503, "MINUTES_UNAVAILABLE", "x");
-      },
-    };
-    await expect(generateAndStoreMinutes(id, "en", noKey)).rejects.toMatchObject({ status: 503 });
-    expect(repos.minutes.get(id, "vi")).toBeUndefined();
-  });
-
-  it("shares one run between concurrent identical requests", async () => {
-    const id = endedMeeting();
-    const llm = new FakeMinutesLlm(reply);
-    const deps = { repos, llm: () => llm };
-    const [a, b] = await Promise.all([
-      generateAndStoreMinutes(id, "vi", deps),
-      generateAndStoreMinutes(id, "vi", deps),
-    ]);
-    expect(a).toEqual(b);
-    expect(llm.calls).toHaveLength(1);
-  });
-});
-
 describe("getMinutes / saveEditedMinutes", () => {
   it("404 for unknown meeting and for missing minutes", () => {
     expect(() => getMinutes("nope", "vi", { repos })).toThrow(fail(404, "NOT_FOUND"));
@@ -139,9 +70,9 @@ describe("getMinutes / saveEditedMinutes", () => {
 
   it("stores an edit with source edited and keeps the other language untouched", async () => {
     const id = endedMeeting();
-    const deps = { repos, llm: () => new FakeMinutesLlm(reply) };
-    const vi = await generateAndStoreMinutes(id, "vi", deps);
-    await generateAndStoreMinutes(id, "en", deps);
+    await generateNow(repos, id, "vi", llm);
+    await generateNow(repos, id, "en", llm);
+    const vi = getMinutes(id, "vi", { repos });
     const edited = saveEditedMinutes(id, "vi", { ...vi.content, summary: "Đã sửa" }, { repos });
     expect(edited).toMatchObject({ source: "edited", generatedAt: vi.generatedAt });
     expect(edited.content.summary).toBe("Đã sửa");
@@ -173,9 +104,9 @@ describe("minutes staleness", () => {
       endMs: 5_000,
       text: "Chốt 95 triệu",
     });
-    const deps = { repos: timed, llm: () => new FakeMinutesLlm(reply) };
-    const dto = await generateAndStoreMinutes(meeting.id, "vi", deps);
-    return { timed, id: meeting.id, deps, dto };
+    const deps = { repos: timed };
+    await generateNow(timed, meeting.id, "vi", llm);
+    return { timed, id: meeting.id, deps, dto: getMinutes(meeting.id, "vi", deps) };
   }
 
   it("is fresh right after generation", async () => {
@@ -196,7 +127,8 @@ describe("minutes staleness", () => {
       text: "Phần ghi tiếp",
     });
     expect(getMinutes(id, "vi", deps).stale).toBe(true);
-    expect((await generateAndStoreMinutes(id, "vi", deps)).stale).toBe(false);
+    await generateNow(timed, id, "vi", llm);
+    expect(getMinutes(id, "vi", deps).stale).toBe(false);
   });
 
   it("becomes stale when a topic marker is added or renamed, and stays stale after a user edit", async () => {
@@ -204,7 +136,7 @@ describe("minutes staleness", () => {
     const mark = timed.marks.insert({ meetingId: id, kind: "topic", atMs: 1_000 });
     expect(getMinutes(id, "vi", deps).stale).toBe(true);
     expect(saveEditedMinutes(id, "vi", dto.content, deps).stale).toBe(true);
-    await generateAndStoreMinutes(id, "vi", deps);
+    await generateNow(timed, id, "vi", llm);
     expect(getMinutes(id, "vi", deps).stale).toBe(false);
     timed.marks.updateLabel(id, mark.id, "Chủ đề mới");
     expect(getMinutes(id, "vi", deps).stale).toBe(true);
@@ -214,9 +146,8 @@ describe("minutes staleness", () => {
 describe("version-based staleness", () => {
   async function fresh() {
     const id = endedMeeting();
-    const deps = { repos, llm: () => new FakeMinutesLlm(reply) };
-    await generateAndStoreMinutes(id, "vi", deps);
-    return { id, deps };
+    await generateNow(repos, id, "vi", llm);
+    return { id, deps: { repos } };
   }
 
   it("stores the prompt version and marks fingerprint at generation", async () => {

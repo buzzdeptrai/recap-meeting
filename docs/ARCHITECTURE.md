@@ -63,6 +63,7 @@ JSON text frames:
 { type: "mark", kind: "conclusion" | "topic", atMs: number, label?: string /* max 120 */ }
 { type: "unmark", id: string }                         // delete a mark
 { type: "mark_label", id: string, label: string }      // rename; "" clears
+{ type: "stt_retry" }                                  // restart the STT provider after it gave up (status "closed")
 { type: "stop" }
 { type: "ping", t: number }
 ```
@@ -78,13 +79,14 @@ Binary frames (only after `ready`): raw PCM **Int16 little-endian, interleaved s
 { type: "translation", segmentId: string, seq: number, lang: "vi" | "en", text: string, provider: string, latencyMs: number }
 { type: "mark", mark: { id: string, kind: "conclusion" | "topic", atMs: number, label: string | null } }  // same id = upsert (rename)
 { type: "unmark", id: string }
-{ type: "error", code: "STT_UNAVAILABLE" | "BAD_MESSAGE" | "MEETING_NOT_FOUND" | "TRANSLATE_FAILED" | "INTERNAL", message: string, segmentId?: string }
+{ type: "error", code: "STT_UNAVAILABLE" | "BAD_MESSAGE" | "MEETING_NOT_FOUND" | "TRANSLATE_FAILED" | "INTERNAL" | "NOT_RECORDING" | "STT_ALREADY_OPEN" | "RATE_LIMITED", message: string, segmentId?: string }
 { type: "pong", t: number }
 { type: "stopped", meetingId: string }
 ```
 Topic markers (`kind:"topic"`) are hard topic boundaries for the minutes. Mark edits need a live session over the socket; ended meetings use REST `PATCH|DELETE /api/meetings/:id/marks/:markId`.
 Resuming (`start` with `resume:true`) is allowed for ended meetings: status goes back to `live`, `started_at` is kept, `ended_at`/`duration_ms` are cleared until the next end, and `duration_ms` on end = total recorded audio (all runs).
 `seq` is monotonically increasing per meeting across both channels (ordering key).
+`stt_retry`: only acts while the session is live and `status.stt` is `closed` (provider gave up after its 8 reconnect attempts, or never connected). The server calls `SttProvider.open()` again (same instance, same factory, no key leaves the server) and answers with `status` updates (`connecting` → `open`, or back to `closed` on failure; no error event on a failed attempt). Refusals: `NOT_RECORDING` (no live session), `STT_ALREADY_OPEN` (already connecting/open; a `status` is re-sent so the client resyncs), `RATE_LIMITED` (min 3 s between attempts, max 20 per session). Audio sent while the provider was `closed` is dropped (not replayed; it stays in the WAV); audio sent while the retry is connecting is buffered by the provider and replayed on success. Usage is metered by the one per-session meter: closed-time frames are not counted, frames buffered during a retry only if it connects.
 Every message is validated with zod on both sides; invalid → `error BAD_MESSAGE`.
 
 ## 4. Database (SQLite, packages/db)
@@ -122,6 +124,17 @@ IDs: `crypto.randomUUID()`. Timestamps: ISO strings. Repositories expose typed f
 no SQL outside `packages/db`. Driver: `better-sqlite3`; if it fails to build on Node 25 use
 `node:sqlite` behind the same interface (document the choice in the ledger).
 
+### Background minutes worker (no migration; table `minutes_runs` from migration 010)
+The model never runs inside the Next.js process. `POST /api/meetings/:id/minutes` keeps auth, same-origin, validation and the synchronous preconditions (404 / 409 / 422 / 503), inserts a `queued` run (idempotent per meeting + language) and answers 202 with the run DTO. A worker inside the long-lived `apps/realtime` process executes it; the UI reads `GET .../minutes/run`. Code: orchestration in `packages/minutes/src/worker/` (interfaces `RunStore`, `MinutesStore`, `LlmFactory`, `UsageSink`; no app imports), wiring in `apps/realtime/src/minutes-worker.ts`, enqueue/read in `apps/web/src/server/minutes-run-service.ts`. Web and realtime talk only through the SQLite file.
+| Status | Written by | Meaning |
+|---|---|---|
+| `queued` | web (enqueue) | waiting for the worker; unclaimed for `MINUTES_QUEUED_CLAIM_TIMEOUT_MS` -> `failed` lazily on read ("Dịch vụ xử lý nền chưa chạy. Hãy thử lại sau.") |
+| `running` | worker (claim) | claimed by one conditional `UPDATE ... WHERE status='queued' ... RETURNING` (two workers/processes never get the same row); progress (`phase` map/reduce/finalize, `done_chunks/total_chunks`) written per step |
+| `done` | worker | minutes stored (`prompt_version`, `model`, `marks_fingerprint`), `usage_events` written once per model call |
+| `failed` | worker / web / recovery | safe Vietnamese message only (never keys, prompts, transcript); also: not updated for `MINUTES_RUN_STALE_MS` (lazy, on read); `running` at realtime boot or shutdown -> "Máy chủ khởi động lại khi đang tạo biên bản. Hãy thử lại." (never auto-requeued) |
+| `cancelled` | (unused by the UI) | terminal |
+Worker loop: poll every `MINUTES_WORKER_POLL_MS`, at most `MINUTES_WORKER_CONCURRENCY` runs at once. A `finally` guard fails any row still active when its job ends. Startup recovery assumes ONE realtime process per database (a second process booting would fail the first one's running runs; a claim-owner column would need migration 011). `SIGTERM/SIGINT`: stop polling, fail in-flight runs with the restart message, close (hard timeout 5 s). `GET /health` on realtime adds `minutesWorker: {running, pollMs}`; the log line `minutes worker started` is printed at boot. Metering: the worker records `usage_events` (vendor openai, service minutes) through the same recorder as translation.
+
 ## 5. Configuration (.env at repo root)
 ```
 DEEPGRAM_API_KEY=            # required
@@ -135,9 +148,15 @@ OPENAI_TRANSLATE_MODEL=gpt-4.1-mini
 TRANSLATE_PROVIDER_ORDER=gemini,openai
 TRANSLATE_DEADLINE_MS=1500
 REALTIME_PORT=4001
+# REALTIME_HOST=127.0.0.1   # optional; unset = all interfaces (dev), production = loopback only
 NEXT_PUBLIC_REALTIME_URL=ws://localhost:4001/ws
 DB_PATH=./data/recap.db
 AUDIO_DIR=./data/audio
+OPENAI_MINUTES_MODEL=gpt-4.1   # read by the realtime minutes worker (and by web for the 503 check / stale-by-model)
+MINUTES_WORKER_POLL_MS=1000
+MINUTES_WORKER_CONCURRENCY=1
+MINUTES_QUEUED_CLAIM_TIMEOUT_MS=120000   # web: queued run nobody claimed -> failed
+MINUTES_RUN_STALE_MS=600000              # web: queued/running run not updated -> failed
 ```
 Env is validated at startup with zod (`apps/realtime/src/env.ts`); missing required key → clear error.
 

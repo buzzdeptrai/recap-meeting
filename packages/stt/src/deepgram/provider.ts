@@ -72,6 +72,8 @@ export class DeepgramProvider extends SttEmitter implements SttProvider {
     try {
       await this.connectSocket();
     } catch (error) {
+      // Frames buffered while connecting would be replayed out of order by a later open().
+      this.replay.clear();
       this.setStatus("closed");
       throw error;
     }

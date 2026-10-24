@@ -29,6 +29,7 @@ describe("parseClientMessage", () => {
     { type: "unmark", id: "k1" },
     { type: "mark_label", id: "k1", label: "Kế hoạch" },
     { type: "mark_label", id: "k1", label: "" },
+    { type: "stt_retry" },
     { type: "stop" },
     { type: "ping", t: 123.5 },
   ])("accepts %o", (input) => {
@@ -112,6 +113,9 @@ describe("parseServerMessage", () => {
     { type: "mark", mark: { id: "k2", kind: "topic", atMs: 4000, label: "Ngân sách" } },
     { type: "unmark", id: "k2" },
     { type: "error", code: "BAD_MESSAGE", message: "nope" },
+    { type: "error", code: "NOT_RECORDING", message: "x" },
+    { type: "error", code: "STT_ALREADY_OPEN", message: "x" },
+    { type: "error", code: "RATE_LIMITED", message: "x" },
     { type: "error", code: "TRANSLATE_FAILED", message: "x", segmentId: "s1" },
     { type: "pong", t: 1 },
     { type: "stopped", meetingId: "m1" },

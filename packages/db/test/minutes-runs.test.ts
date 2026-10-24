@@ -1,4 +1,8 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { createRepositories, openDatabase } from "../src";
 import { setup } from "./helpers";
 
 function meetingIn(repos: ReturnType<typeof setup>["repos"]) {
@@ -115,5 +119,77 @@ describe("minutes runs repository", () => {
     repos.minutesRuns.start({ meetingId, lang: "vi" });
     repos.meetings.remove(meetingId);
     expect(db.prepare("SELECT COUNT(*) FROM minutes_runs").pluck().get()).toBe(0);
+  });
+
+  describe("claiming (worker queue)", () => {
+    it("claimNext takes the oldest queued run, marks it running and leaves none behind", () => {
+      const { repos, advance } = setup();
+      const a = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+      advance(1_000);
+      const b = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+      expect(repos.minutesRuns.claimNext()).toMatchObject({ id: a.id, status: "running" });
+      expect(repos.minutesRuns.claimNext()).toMatchObject({ id: b.id, status: "running" });
+      expect(repos.minutesRuns.claimNext()).toBeUndefined();
+    });
+
+    it("never claims a run that is running or finished", () => {
+      const { repos } = setup();
+      const a = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+      repos.minutesRuns.fail(a.id, "x");
+      expect(repos.minutesRuns.claimNext()).toBeUndefined();
+    });
+
+    it("two connections racing for one queued row: exactly one wins", () => {
+      const dir = mkdtempSync(join(tmpdir(), "recap-claim-"));
+      const path = join(dir, "race.db");
+      const dbA = openDatabase(path);
+      const dbB = openDatabase(path);
+      try {
+        const a = createRepositories(dbA);
+        const b = createRepositories(dbB);
+        const meetingId = a.meetings.create({ title: "m" }).id;
+        const { run } = a.minutesRuns.start({ meetingId, lang: "vi" });
+        const claims = [a.minutesRuns.claimNext(), b.minutesRuns.claimNext()];
+        expect(claims.filter(Boolean)).toHaveLength(1);
+        expect(claims.find(Boolean)?.id).toBe(run.id);
+      } finally {
+        dbA.close();
+        dbB.close();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe("recovery and unclaimed timeout", () => {
+    it("failRunning fails every running run (not queued), repeatably", () => {
+      const { repos } = setup();
+      const a = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+      const b = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+      repos.minutesRuns.markRunning(a.id);
+      expect(repos.minutesRuns.failRunning("restart")).toBe(1);
+      expect(repos.minutesRuns.failRunning("restart")).toBe(0);
+      expect(repos.minutesRuns.get(a.id)).toMatchObject({ status: "failed", error: "restart" });
+      expect(repos.minutesRuns.get(b.id)?.status).toBe("queued");
+    });
+
+    it("failUnclaimed fails only queued runs older than the cutoff", () => {
+      const { repos, advance } = setup();
+      const meetingId = meetingIn(repos);
+      const other = meetingIn(repos);
+      const queued = repos.minutesRuns.start({ meetingId, lang: "vi" }).run;
+      const running = repos.minutesRuns.start({ meetingId: other, lang: "vi" }).run;
+      repos.minutesRuns.markRunning(running.id);
+      advance(60_000);
+      const cutoff = new Date(Date.parse(queued.updatedAt) + 30_000).toISOString();
+      expect(repos.minutesRuns.failUnclaimed(other, "vi", cutoff, "no worker")).toBe(0);
+      const early = new Date(Date.parse(queued.updatedAt) - 1).toISOString();
+      expect(repos.minutesRuns.failUnclaimed(meetingId, "vi", early, "no worker")).toBe(0);
+      expect(repos.minutesRuns.failUnclaimed(meetingId, "vi", cutoff, "no worker")).toBe(1);
+      expect(repos.minutesRuns.failUnclaimed(meetingId, "vi", cutoff, "no worker")).toBe(0);
+      expect(repos.minutesRuns.get(queued.id)).toMatchObject({
+        status: "failed",
+        error: "no worker",
+      });
+    });
   });
 });

@@ -27,6 +27,17 @@ describe("parseEnv", () => {
     expect(env.TRANSLATE_PROVIDER_ORDER).toEqual(["openai", "gemini"]);
   });
 
+  it("leaves REALTIME_HOST unset by default and accepts a trimmed host", () => {
+    expect(parseEnv(required).REALTIME_HOST).toBeUndefined();
+    expect(parseEnv({ ...required, REALTIME_HOST: " 127.0.0.1 " }).REALTIME_HOST).toBe("127.0.0.1");
+  });
+
+  it("rejects an empty or whitespace-only REALTIME_HOST", () => {
+    for (const REALTIME_HOST of ["", "   "]) {
+      expect(() => parseEnv({ ...required, REALTIME_HOST })).toThrow(/REALTIME_HOST/);
+    }
+  });
+
   it("names every missing key without echoing any values", () => {
     const attempt = () =>
       parseEnv({ OPENAI_API_KEY: SECRET, GEMINI_API_KEY: "  ", REALTIME_PORT: "abc" });

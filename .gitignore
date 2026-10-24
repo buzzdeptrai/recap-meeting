@@ -10,3 +10,4 @@ coverage/
 next-env.d.ts
 .next-*/
 .claude/tsc-cache/
+logs/

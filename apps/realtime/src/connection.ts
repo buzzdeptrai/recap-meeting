@@ -107,12 +107,19 @@ export class ClientConnection {
       case "mark_label":
         if (this.requireSession()) this.session?.renameMark(message.id, message.label);
         return;
+      case "stt_retry":
+        return this.sttRetry();
       case "stop":
         if (this.requireSession()) await this.stopSession("client");
         return;
       case "ping":
         return;
     }
+  }
+
+  private sttRetry(): void {
+    if (this.ready && this.session) return this.session.requestSttRetry();
+    this.sendError("NOT_RECORDING", "No live recording");
   }
 
   private requireSession(): boolean {

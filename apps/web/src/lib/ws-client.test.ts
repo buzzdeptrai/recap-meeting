@@ -168,6 +168,16 @@ describe("MeetingSocket", () => {
     ]);
   });
 
+  it("sends stt_retry only while the socket is open", () => {
+    const { socket } = setup();
+    expect(socket.sendSttRetry()).toBe(false);
+    socket.connect();
+    latest().open();
+    latest().receive(READY);
+    expect(socket.sendSttRetry()).toBe(true);
+    expect(latest().json().at(-1)).toEqual({ type: "stt_retry" });
+  });
+
   it("reports false for mark edits while not connected", () => {
     const { socket } = setup();
     expect(socket.sendUnmark("k1")).toBe(false);

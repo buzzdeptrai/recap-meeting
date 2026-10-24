@@ -9,6 +9,8 @@ export const PHASE_LABEL: Record<MinutesRunPhase, string> = {
   finalize: "Hoàn thiện",
 };
 const PREPARING_LABEL = "Đang chuẩn bị";
+/** Queued: waiting for the background worker to pick the run up. */
+const WAITING_LABEL = "Đang chờ xử lý";
 /** Steps besides the chunks: the merge and the final pass. */
 const EXTRA_STEPS = 2;
 
@@ -30,13 +32,18 @@ function completedSteps(run: MinutesRunDto, chunks: number): number {
   return run.phase === "map" ? Math.min(run.done, chunks) : 0;
 }
 
+function labelOf(run: MinutesRunDto | null): string {
+  if (run?.phase) return PHASE_LABEL[run.phase];
+  return run?.status === "queued" ? WAITING_LABEL : PREPARING_LABEL;
+}
+
 /** What the progress card shows for a run (or for the moment before the first answer). */
 export function runProgressView(run: MinutesRunDto | null): RunProgressView {
   const chunks = Math.max(run?.total ?? 0, 1);
   const steps = chunks + EXTRA_STEPS;
   const completed = run ? completedSteps(run, chunks) : 0;
   return {
-    label: run?.phase ? PHASE_LABEL[run.phase] : PREPARING_LABEL,
+    label: labelOf(run),
     step: Math.min(completed + 1, steps),
     steps,
     percent: Math.min(100, Math.round((completed / steps) * 100)),

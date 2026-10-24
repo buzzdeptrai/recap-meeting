@@ -10,6 +10,7 @@
   "dependencies": {
     "@recap/auth": "*",
     "@recap/core": "*",
-    "@recap/db": "*"
+    "@recap/db": "*",
+    "tsx": "^4.23.15"
   }
 }

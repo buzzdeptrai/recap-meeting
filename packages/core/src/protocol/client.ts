@@ -32,6 +32,9 @@ export const markLabelRequestSchema = z.object({
   label: markLabelSchema,
 });
 
+/** Asks the server to restart the STT provider after it gave up reconnecting. */
+export const sttRetryRequestSchema = z.object({ type: z.literal("stt_retry") });
+
 export const stopMessageSchema = z.object({ type: z.literal("stop") });
 
 export const pingMessageSchema = z.object({ type: z.literal("ping"), t: z.number() });
@@ -41,6 +44,7 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
   markRequestSchema,
   unmarkRequestSchema,
   markLabelRequestSchema,
+  sttRetryRequestSchema,
   stopMessageSchema,
   pingMessageSchema,
 ]);
@@ -49,6 +53,7 @@ export type StartMessage = z.infer<typeof startMessageSchema>;
 export type MarkRequest = z.infer<typeof markRequestSchema>;
 export type UnmarkRequest = z.infer<typeof unmarkRequestSchema>;
 export type MarkLabelRequest = z.infer<typeof markLabelRequestSchema>;
+export type SttRetryRequest = z.infer<typeof sttRetryRequestSchema>;
 export type StopMessage = z.infer<typeof stopMessageSchema>;
 export type PingMessage = z.infer<typeof pingMessageSchema>;
 export type ClientMessage = z.infer<typeof clientMessageSchema>;

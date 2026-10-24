@@ -23,8 +23,35 @@ Packages: `core` (protocol/zod/constants), `db` (migrations + repos), `stt` (Dee
 `minutes` (OpenAI minutes), `export` (docx), `auth`, `admin-ui` (reusable Soft UI kit — **the only UI component source**; no project knowledge inside).
 STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Two audio channels: ch0 mic "Tôi", ch1 tab "Người khác".
 
+## Core architecture (read before changing the core; update this block when it changes — last review 2026-10-24)
+- **Two long-running Node processes sharing one SQLite file (WAL):** `apps/web` (Next: pages + 22 REST route handlers, thin) and `apps/realtime`
+  (`ws` audio/transcript socket **plus the background minutes worker**). Exactly **one realtime process per DB**; no horizontal scaling.
+  Needs a real VPS/disk (native better-sqlite3, AUDIO_DIR); not serverless. Deploy runbook: `docs/DEPLOY.md`, PM2 file `ecosystem.config.cjs`.
+  Production uses `next start` on the full repo tree (**not** `output: "standalone"`: it drops `config/pricing.json` and `packages/db` repo-root lookup). `NEXT_PUBLIC_REALTIME_URL`
+  is inlined at build time (set `wss://<domain>/ws` before `npm run build`). Realtime binds all interfaces unless `REALTIME_HOST` is set (PM2 production sets 127.0.0.1).
+  Migrations run in `openDatabase()` on first open by any process (no cross-process lock; reload realtime first, wait for `/health`, then web).
+- **Size (LOC, 2026-10-24):** web ~15.5k, admin-ui ~4.7k, backend packages ~8.7k, realtime ~1.8k → the FE is the bigger half (room UI is heavy), not a "small part".
+- **Next is used thinly** (9 pages, `next/link|navigation|server`, `proxy.ts`, one font; almost no server components). Business logic lives in `packages/*`
+  and `apps/web/src/server/*`; route handlers stay thin so a later move is cheap. **Option B (deferred, decide after measuring RAM/start time in prod):**
+  Vite SPA + one Node API (Hono) merged with realtime, static FE behind Caddy. Do not start it without measurements and the owner's OK.
+- **Minutes run in a worker inside realtime, never in the web process:** web only enqueues (`minutes_runs`, status queued|running|done|failed|cancelled, 202 + polling
+  `GET .../minutes/run`); worker (`packages/minutes/src/worker/`, wired in `apps/realtime/src/minutes-worker.ts`) claims rows with a conditional UPDATE, writes progress,
+  boot recovery marks leftover `running` rows failed (never requeues). Env: `MINUTES_WORKER_POLL_MS`, `MINUTES_WORKER_CONCURRENCY`, `MINUTES_QUEUED_CLAIM_TIMEOUT_MS`,
+  `MINUTES_RUN_STALE_MS`. If realtime is down the UI shows "Đang chờ xử lý" then a failure. Map-reduce for long meetings is in `packages/minutes/src/generate.ts`.
+- **Stale minutes** are detected by version, not only timestamps: `minutes.prompt_version` (`PROMPT_VERSION` in `packages/minutes`; a test pins a hash of the prompts —
+  bump it when `prompts.ts` changes), model, `marks_fingerprint` → typed reasons (`transcript_changed|marks_changed|marks_removed|prompt_updated|model_changed`).
+  The meetings-list stale badge is still timestamp-only.
+- **Prompts:** transcript is wrapped in `<transcript>` tags and escaped (anti prompt-injection); Vietnamese output keeps English technical terms.
+- **Realtime protocol additions:** client `stt_retry` (restarts the STT provider when status `closed`; errors `NOT_RECORDING|STT_ALREADY_OPEN|RATE_LIMITED`; audio sent while
+  closed is not re-sent to STT, only kept in the WAV). Spec in `docs/ARCHITECTURE.md` §3.
+- **UI kit `@recap/admin-ui` v0.2.2 ("Soft v2"):** brand colour is **blue** (`--soft-brand`; `purple` names are deprecated aliases), floating cards + tonal secondary buttons +
+  solid-brand selected states. Room = transcript turns (header only on a new speaker/gap > 30 s), density Gọn/Thoải mái, conclusions are **divider rows** (not per-segment tint),
+  topic markers likewise. Row heights are measured constants pinned in `virtual-rows.test.ts` — re-measure if row markup changes. Static look reference: `design/room-preview-v1/`.
+- **Reference scan of Foresight / Meetily / Anarlog + backlog (A = upgrades, B = new features):** `docs/REFERENCE-competitor-scan.md`. Done so far: A1, A2, A3, A4, A5, A8.
+
 ## Hard rules (owner preferences — keep applying)
-- **Never commit/push unless asked; use the `/commit` skill, never raw `git commit`.** Nothing has been committed yet.
+- **Never commit/push unless asked; use the `/commit` skill, never raw `git commit`.** Remote `origin` = `github.com/buzzdeptrai/recap-meeting` (branch `main`).
+  Keep `ptg-meeting-note.jpg` (owner's personal note) out of git unless told otherwise.
 - **Never publish anything online** (no Artifact tool) and **don't create files the owner didn't ask for** — local only.
 - **Secrets:** `.env` holds real keys (reused from translation-ai, owner OK'd). Never print/log/echo key values, passwords or tokens; names/presence only.
   Browser must never receive a key. Don't write the owner's password anywhere.
@@ -40,10 +67,14 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - Conclusion mark (key **K**) stores only a timestamp (`marks.at_ms`); minutes generation extracts transcript from **90 s before to 15 s after**
   the mark (stops at the next mark/topic marker; env `MINUTES_MARK_WINDOW_*`). Topic marker (key **T**) = hard topic boundary with optional label.
 - Deepgram bills each channel separately (stereo = 2×); usage is shown as "giờ kênh". Prices in `config/pricing.json` (verified 2026-10-22 from official pages; re-check).
-- Next dev worker may not inherit root `.env` → server code that needs keys loads it lazily via `@next/env` (see `apps/web/src/server/minutes-llm.ts`).
+- Next dev worker may not inherit root `.env` → server code that needs keys loads it lazily via `@next/env` (see `apps/web/src/server/minutes-model.ts`). Realtime loads the root `.env` itself.
+- Node fetch (so the OpenAI SDK) refuses port 4190 — use another port for fake servers in tests.
 - Ended meetings are paged/virtualized in the room (`/api/meetings/:id/segments|segments/locate|search`).
 - Vietnamese / mixed EN–VI STT quality is **unmeasured** — needs the owner's real recording + reference text (Phase 0 exit criteria).
 
 ## Open items (details in the ledger)
-Owner real-meeting test (Win + Mac) · mixed EN–VI benchmark · long-meeting minutes (parallel chunks, progress, background) ·
-"Đã chốt" over-assigned by the minutes prompt · T12 re-transcription · delete meeting · pause · dark theme · toast · glossary page.
+Owner real-meeting test (Win + Mac) · mixed EN–VI benchmark · "Đã chốt" over-assigned by the minutes prompt (idea: typed notes as must-keep signal, B1) ·
+T12 re-transcription · delete meeting · pause · toast · glossary page · per-meeting keyterm priority (Deepgram cap 30 terms) ·
+backlog B1 notes tab ("Ghi chú", disabled in the room) / B2 minutes templates / B3+ Q&A from documents · rename speakers · word-level storage ·
+**unverified live:** new room recording/draft states + dark mode, STT retry against real Deepgram/AssemblyAI, minutes progress with the real LLM, touch-device gutter times.
+(Long-meeting background minutes + progress: **done** 2026-10-24.)

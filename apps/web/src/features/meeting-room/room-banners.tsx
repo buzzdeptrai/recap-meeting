@@ -1,14 +1,13 @@
 "use client";
 
-import type { ErrorMessage } from "@recap/core";
 import type { CapturePhase } from "./use-audio-capture";
 import type { SourceStatus } from "@/audio/capture";
 import { WarningCircle, WarningOctagon } from "@phosphor-icons/react";
 import { Banner, Button } from "@recap/admin-ui";
 import type { ConnectionState } from "@/lib/ws-client";
-import type { SttState } from "@recap/core";
+import type { RoomState } from "./state";
 import { describeServerError } from "./error-copy";
-import { selectSttBanner } from "./stt-banner";
+import { describeSttRetry, selectSttBanner, type SttRetryPhase } from "./stt-banner";
 
 const TAB_AUDIO_MISSING =
   "Chưa nhận được âm thanh cuộc họp. Hãy chia sẻ lại và tích “Chia sẻ âm thanh tab”.";
@@ -19,17 +18,17 @@ const SERVER_DOWN =
 const STT_RECONNECTING =
   "Dịch vụ nhận dạng giọng nói đang kết nối lại. Âm thanh vẫn được ghi và sẽ được bổ sung vào bản ghi khi nối lại xong.";
 const STT_FAILED =
-  "Dịch vụ nhận dạng giọng nói đã ngắt và không tự nối lại được. Phần âm thanh từ lúc này sẽ không có chữ. Hãy dừng ghi rồi tiếp tục cuộc họp để kết nối lại.";
+  "Dịch vụ nhận dạng giọng nói đã ngắt và không tự nối lại được. Bấm Thử lại để kết nối lại; âm thanh trong lúc ngắt sẽ không có chữ.";
 
 interface RoomBannersProps {
   phase: CapturePhase;
   sources: SourceStatus;
   captureError: string | null;
   connection: ConnectionState;
-  stt: SttState | null;
-  serverError: ErrorMessage | null;
+  room: RoomState;
   onReshare: () => void;
   onRetry: () => void;
+  onRetryStt: () => void;
   onDismissError: () => void;
 }
 
@@ -60,7 +59,14 @@ function ActionBanner({
   );
 }
 
-function SttBanners({ kind }: { kind: ReturnType<typeof selectSttBanner> }) {
+interface SttBannersProps {
+  kind: ReturnType<typeof selectSttBanner>;
+  phase: SttRetryPhase;
+  connection: ConnectionState;
+  onRetry: () => void;
+}
+
+function SttBanners({ kind, phase, connection, onRetry }: SttBannersProps) {
   if (kind === "reconnecting") {
     return (
       <Banner tone="warn" radius="lg" icon={<WarningCircle />}>
@@ -69,9 +75,25 @@ function SttBanners({ kind }: { kind: ReturnType<typeof selectSttBanner> }) {
     );
   }
   if (kind === "failed") {
+    const view = describeSttRetry(phase, connection);
     return (
-      <Banner tone="error" radius="lg" icon={<WarningOctagon />}>
-        {STT_FAILED}
+      <Banner
+        tone="error"
+        radius="lg"
+        icon={<WarningOctagon />}
+        action={
+          <Button
+            size="sm"
+            variant="tonal"
+            loading={view.loading}
+            disabled={view.disabled}
+            onClick={onRetry}
+          >
+            Thử lại
+          </Button>
+        }
+      >
+        {view.note ? `${STT_FAILED} ${view.note}` : STT_FAILED}
       </Banner>
     );
   }
@@ -86,7 +108,7 @@ function SttBanners({ kind }: { kind: ReturnType<typeof selectSttBanner> }) {
 export function RoomBanners(props: RoomBannersProps) {
   const recording = props.phase === "running";
   const sttBanner = selectSttBanner({
-    stt: props.stt,
+    stt: props.room.stt,
     recording,
     connection: props.connection,
   });
@@ -112,8 +134,13 @@ export function RoomBanners(props: RoomBannersProps) {
           {SERVER_DOWN}
         </ActionBanner>
       )}
-      <SttBanners kind={sttBanner} />
-      {props.serverError && (
+      <SttBanners
+        kind={sttBanner}
+        phase={props.room.sttRetry}
+        connection={props.connection}
+        onRetry={props.onRetryStt}
+      />
+      {props.room.lastError && (
         <Banner
           tone="warn"
           radius="lg"
@@ -121,7 +148,7 @@ export function RoomBanners(props: RoomBannersProps) {
           onDismiss={props.onDismissError}
           dismissLabel="Đóng"
         >
-          {describeServerError(props.serverError)}
+          {describeServerError(props.room.lastError)}
         </Banner>
       )}
     </>

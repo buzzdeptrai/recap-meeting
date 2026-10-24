@@ -55,8 +55,17 @@ describe("runProgressView", () => {
       step: 3,
       steps: 3,
     });
-    expect(runProgressView(run({ status: "queued", phase: null, total: 0 }))).toEqual({
+    expect(runProgressView(run({ status: "running", phase: null, total: 0 }))).toEqual({
       label: "Đang chuẩn bị",
+      step: 1,
+      steps: 3,
+      percent: 0,
+    });
+  });
+
+  it("says a queued run is waiting for the background worker", () => {
+    expect(runProgressView(run({ status: "queued", phase: null, total: 0 }))).toEqual({
+      label: "Đang chờ xử lý",
       step: 1,
       steps: 3,
       percent: 0,

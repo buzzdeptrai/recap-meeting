@@ -5,7 +5,7 @@ import { generateMinutesSchema, minutesQuerySchema, saveMinutesSchema } from "@/
 import { withAuth } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
-// Generation runs in the background after the 202; this only covers validation and reads.
+// Enqueue only: the model runs in the realtime worker after the 202.
 export const maxDuration = 60;
 
 interface RouteContext {
@@ -23,7 +23,7 @@ export const GET = withAuth(async (request: Request, { params }: RouteContext) =
 
 const HTTP_ACCEPTED = 202;
 
-/** Starts (or joins) a background generation; progress is read from `GET .../minutes/run`. */
+/** Enqueues (or joins) a background generation; progress is read from `GET .../minutes/run`. */
 export const POST = withAuth(async (request: Request, { params }: RouteContext) => {
   const forbidden = checkSameOrigin(request);
   if (forbidden) return forbidden;

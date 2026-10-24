@@ -103,6 +103,11 @@ export class MeetingSocket {
     return this.sendJson({ type: "mark_label", id, label });
   }
 
+  /** Asks the server to restart the speech-to-text provider; false when the socket is not open. */
+  sendSttRetry(): boolean {
+    return this.sendJson({ type: "stt_retry" });
+  }
+
   /** Ask the server to finish; closes on `stopped` or after a short grace period. */
   stop(): void {
     this.intentionalClose = true;

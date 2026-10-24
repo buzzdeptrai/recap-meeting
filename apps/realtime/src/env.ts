@@ -62,6 +62,8 @@ const envSchema = z.object({
     .optional()
     .transform((value) => parseAllowedOrigins(value)),
   REALTIME_PORT: z.coerce.number().int().min(0).max(MAX_PORT).default(DEFAULT_PORT),
+  /** Unset = all interfaces (dev). Production sets 127.0.0.1 so only the reverse proxy reaches it. */
+  REALTIME_HOST: z.string().trim().min(1, "must not be empty when set").optional(),
   DB_PATH: z.string().trim().min(1).default("./data/recap.db"),
   AUDIO_DIR: z.string().trim().min(1).default("./data/audio"),
 });

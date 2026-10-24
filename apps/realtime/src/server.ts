@@ -24,8 +24,11 @@ async function main(): Promise<void> {
     allowedOrigins: env.REALTIME_ALLOWED_ORIGINS,
     authenticator: createUpgradeAuth(deps.repos, env.RECAP_SERVICE_TOKEN),
   });
-  const port = await server.listen(env.REALTIME_PORT);
-  console.log(`[realtime] listening on http://localhost:${port} (ws path /ws)`);
+  const port = await server.listen(env.REALTIME_PORT, env.REALTIME_HOST);
+  deps.minutesWorker?.start();
+  console.log(
+    `[realtime] listening on http://${env.REALTIME_HOST ?? "localhost"}:${port} (bind ${env.REALTIME_HOST ?? "all interfaces"}, ws path /ws)`,
+  );
 
   let shuttingDown = false;
   const shutdown = (signal: NodeJS.Signals) => {
@@ -33,16 +36,19 @@ async function main(): Promise<void> {
     shuttingDown = true;
     console.log(`[realtime] ${signal} received, shutting down`);
     setTimeout(() => process.exit(EXIT_FAILURE), SHUTDOWN_TIMEOUT_MS).unref();
-    server.close().then(
-      () => {
-        deps.close?.();
-        process.exit(0);
-      },
-      (error: unknown) => {
-        console.error("[realtime] error during shutdown:", error);
-        process.exit(EXIT_FAILURE);
-      },
-    );
+    const stopWorker = deps.minutesWorker?.stop() ?? Promise.resolve();
+    stopWorker
+      .then(() => server.close())
+      .then(
+        () => {
+          deps.close?.();
+          process.exit(0);
+        },
+        (error: unknown) => {
+          console.error("[realtime] error during shutdown:", error);
+          process.exit(EXIT_FAILURE);
+        },
+      );
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);

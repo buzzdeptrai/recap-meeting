@@ -112,6 +112,21 @@ describe("DeepgramProvider connection", () => {
     expect(ctx.statuses).toEqual(["connecting", "closed"]);
   });
 
+  it("can be opened again after a failed open, without replaying stale frames", async () => {
+    const ctx = setup();
+    const firstTry = ctx.provider.open();
+    ctx.provider.sendAudio(frame(1));
+    ctx.sockets[0]?.drop();
+    await expect(firstTry).rejects.toThrow(/closed/);
+    ctx.provider.sendAudio(frame(2));
+    const secondTry = ctx.provider.open();
+    ctx.provider.sendAudio(frame(3));
+    ctx.sockets[1]?.open();
+    await secondTry;
+    expect((ctx.sockets[1] as FakeSocket).audio()).toEqual([frame(3)]);
+    expect(ctx.statuses).toEqual(["connecting", "closed", "connecting", "open"]);
+  });
+
   it("sends KeepAlive every 8 s", async () => {
     const ctx = setup();
     const socket = await openProvider(ctx);

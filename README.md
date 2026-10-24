@@ -68,6 +68,11 @@ README riêng của [`apps/realtime`](apps/realtime/README.md) và [`packages/tr
 Bảo mật mặc định: WebSocket chỉ nhận origin localhost, giới hạn kích thước và tốc độ message, tên file ghi âm
 được kiểm tra chống path traversal, API ghi của web từ chối request khác origin, khoá API không có trong bundle trình duyệt.
 
+## Triển khai
+
+Chạy trên một VPS Linux (PM2 + Caddy, hai tiến trình web và realtime): xem [`docs/DEPLOY.md`](docs/DEPLOY.md) và
+[`ecosystem.config.cjs`](ecosystem.config.cjs). Lệnh chính: `npm run build`, `pm2 start ecosystem.config.cjs --env production`.
+
 ## Hai tool dòng lệnh
 
 Phát file âm thanh vào hệ thống như một cuộc họp thật (cần realtime đang chạy):

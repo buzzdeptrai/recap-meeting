@@ -100,6 +100,23 @@ describe("roomReducer", () => {
     expect(roomReducer(state, { type: "clear-error" }).lastError).toBeNull();
   });
 
+  it("drives the STT retry phase from clicks, status and refusals without a generic error", () => {
+    const status = (stt: "connecting" | "open" | "closed") =>
+      ({ type: "status", stt, translate: { provider: null, degraded: false } }) as const;
+    let state = roomReducer(initialRoomState, { type: "stt-retry", event: { type: "click" } });
+    expect(state.sttRetry).toBe("waiting");
+    state = apply(state, status("connecting"));
+    state = apply(state, status("closed"));
+    expect(state.sttRetry).toBe("failed");
+    state = roomReducer(state, { type: "stt-retry", event: { type: "click" } });
+    state = apply(state, { type: "error", code: "RATE_LIMITED", message: "x" });
+    expect(state.sttRetry).toBe("failed");
+    expect(state.lastError).toBeNull();
+    state = roomReducer(state, { type: "stt-retry", event: { type: "click" } });
+    state = apply(state, status("open"));
+    expect(state.sttRetry).toBe("idle");
+  });
+
   it("hydrates from the REST detail, deduped and ordered", () => {
     const state = roomReducer(initialRoomState, {
       type: "hydrate",

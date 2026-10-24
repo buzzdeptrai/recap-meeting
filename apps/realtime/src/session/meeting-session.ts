@@ -18,6 +18,8 @@ import {
   type VariantEntry,
 } from "@recap/stt";
 import type { AudioWriter } from "../audio/audio-writer";
+import { waitBounded } from "./drain";
+import { SttRetry, type SttRetryOptions } from "./stt-retry";
 import { SttUsageMeter, type SttUsageMeterOptions } from "./stt-usage-meter";
 import { TranscriptRecorder } from "./transcript-recorder";
 import type {
@@ -43,12 +45,11 @@ export interface MeetingSessionOptions extends SessionLanguages {
   clock?: Clock;
   /** Enables Deepgram usage metering for this session. */
   usage?: Omit<SttUsageMeterOptions, "meetingId">;
+  /** Overrides for the manual STT retry guard (tests). */
+  sttRetry?: SttRetryOptions;
   /** Invoked once at the very end of `stop()` (e.g. to release the registry slot). */
   onEnded?: () => void;
 }
-
-/** Max time `stop()` waits for in-flight translations before ending the meeting anyway. */
-const DRAIN_TIMEOUT_MS = 4_000;
 
 type SessionState = "created" | "live" | "stopping" | "stopped";
 
@@ -67,6 +68,7 @@ export class MeetingSession {
   private framesAccepted = 0;
   private framesRejected = 0;
   private readonly usageMeter: SttUsageMeter | null;
+  private readonly retry: SttRetry;
 
   constructor(private readonly options: MeetingSessionOptions) {
     this.hooks = options.hooks ?? {};
@@ -76,6 +78,17 @@ export class MeetingSession {
     this.recorder = new TranscriptRecorder(options.repos, options.meeting.id, options.baseMs);
     this.segmenters = [0, 1].map((channel) => this.createSegmenter(channel as 0 | 1));
     this.attachProviderEvents();
+    this.retry = new SttRetry(
+      {
+        isLive: () => this.state === "live",
+        status: () => this.sttStatus,
+        open: () => options.stt.open(),
+        refuse: (code, message) => this.refuseSttRetry(code, message),
+        failed: () => this.setSttClosed(),
+        meterFrames: (count) => this.usageMeter?.addFrame(count),
+      },
+      options.sttRetry,
+    );
   }
 
   get meetingId(): string {
@@ -175,38 +188,56 @@ export class MeetingSession {
       log("audio write failed", error);
     }
     this.options.stt.sendAudio(frame);
-    if (this.sttStatus !== "closed") this.usageMeter?.addFrame();
+    if (this.retry.isRunning) this.retry.countFrame();
+    else if (this.sttStatus !== "closed") this.usageMeter?.addFrame();
     return true;
   }
 
+  /** Restarts the STT provider after it gave up (browser `stt_retry`). Idempotent. */
+  requestSttRetry(): void {
+    this.retry.request();
+  }
+
+  private refuseSttRetry(code: ErrorCode, message: string): void {
+    this.sendError(code, message);
+    if (code === "STT_ALREADY_OPEN") this.sendStatus();
+  }
+
+  private setSttClosed(): void {
+    this.sttStatus = "closed";
+    this.sendStatus();
+  }
+
   addMark(kind: MarkKind, atMs: number, label?: string): void {
-    try {
-      this.sendEvent({ type: "mark", mark: this.recorder.addMark(kind, atMs, label) });
-    } catch (error) {
-      log("failed to persist mark", error);
-      this.sendError("INTERNAL", "Could not save mark");
-    }
+    this.markAction("save mark", () => ({
+      type: "mark",
+      mark: this.recorder.addMark(kind, atMs, label),
+    }));
   }
 
   /** Renames a mark and echoes it as a `mark` event (same id = upsert on the client). */
   renameMark(id: string, label: string): void {
-    try {
+    this.markAction("rename mark", () => {
       const mark = this.recorder.setMarkLabel(id, label);
-      if (mark) this.sendEvent({ type: "mark", mark });
-      else this.sendError("BAD_MESSAGE", "Unknown mark");
-    } catch (error) {
-      log("failed to rename mark", error);
-      this.sendError("INTERNAL", "Could not rename mark");
-    }
+      return mark ? { type: "mark", mark } : null;
+    });
   }
 
   removeMark(id: string): void {
+    this.markAction("delete mark", () =>
+      this.recorder.removeMark(id) ? { type: "unmark", id } : null,
+    );
+  }
+
+  /** Runs a mark edit; `null` = unknown mark, a throw = persistence failure. */
+  private markAction(failure: string, action: () => ServerMessage | null): void {
     try {
-      if (this.recorder.removeMark(id)) this.sendEvent({ type: "unmark", id });
+      const event = action();
+      if (event) this.sendEvent(event);
       else this.sendError("BAD_MESSAGE", "Unknown mark");
     } catch (error) {
-      log("failed to delete mark", error);
-      this.sendError("INTERNAL", "Could not delete mark");
+      log(`failed to ${failure}`, error);
+      this.sendError("INTERNAL", `Could not ${failure}`);
     }
   }
 
@@ -224,7 +255,7 @@ export class MeetingSession {
       this.safelySync("flush segmenter", () => segmenter.flush());
       segmenter.dispose();
     }
-    await this.safely("drain hooks", () => this.drainHooks());
+    await this.safely("drain hooks", () => waitBounded(this.hooks.onDrain?.(this)));
     this.safelySync("close audio", () => this.options.audio.close());
     this.safelySync("end meeting", () => this.endMeeting());
     this.state = "stopped";
@@ -243,21 +274,6 @@ export class MeetingSession {
       undefined,
       recordedMs > 0 ? recordedMs : undefined,
     );
-  }
-
-  /** Waits for in-flight hook work, but never longer than DRAIN_TIMEOUT_MS. */
-  private async drainHooks(): Promise<void> {
-    const drain = this.hooks.onDrain?.(this);
-    if (!drain) return;
-    let timer: NodeJS.Timeout | undefined;
-    const timeout = new Promise<void>((resolve) => {
-      timer = setTimeout(resolve, DRAIN_TIMEOUT_MS);
-    });
-    try {
-      await Promise.race([drain, timeout]);
-    } finally {
-      clearTimeout(timer);
-    }
   }
 
   private createSegmenter(channel: 0 | 1): Segmenter {
