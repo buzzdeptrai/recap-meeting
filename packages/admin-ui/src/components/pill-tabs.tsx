@@ -35,8 +35,9 @@ export const pillTabId = (base: string, id: string) => `${base}-tab-${id}`;
 export const pillTabPanelId = (base: string, id: string) => `${base}-panel-${id}`;
 
 const COUNT_ON = {
-  accent: "bg-soft-accent-soft text-soft-accent-ink",
-  decision: "bg-soft-conclusion-bg text-soft-conclusion",
+  accent: "bg-white text-[#1e40af]",
+  decision:
+    "bg-soft-conclusion-bg text-soft-conclusion shadow-[inset_0_0_0_1px_var(--soft-conclusion-line)]",
 } as const;
 
 /**
@@ -84,7 +85,7 @@ export function PillTabs({
       aria-label={ariaLabel}
       aria-orientation="horizontal"
       className={cn(
-        "flex gap-0.5 rounded-soft-pill bg-soft-inset p-1 max-[639px]:overflow-x-auto max-[639px]:[scrollbar-width:none]",
+        "flex gap-0.5 rounded-soft-pill bg-soft-inset p-1 shadow-[inset_0_0_0_1px_var(--soft-line-strong)] max-[639px]:overflow-x-auto max-[639px]:[scrollbar-width:none]",
         className,
       )}
     >
@@ -109,9 +110,11 @@ export function PillTabs({
             }}
             onKeyDown={(event) => onKeyDown(event, index)}
             className={cn(
-              "soft-focus inline-flex h-[34px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-soft-pill px-3 text-[13px] font-medium whitespace-nowrap text-soft-muted transition-colors duration-150 hover:text-soft-ink",
-              on && "bg-soft-surface font-semibold text-soft-ink shadow-soft-seg",
-              tab.disabled && "cursor-not-allowed opacity-50 hover:text-soft-muted",
+              "soft-focus inline-flex h-[34px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-soft-pill px-3 text-[13px] font-semibold whitespace-nowrap text-soft-muted transition-colors duration-150 hover:bg-soft-inset-2 hover:text-soft-ink",
+              on &&
+                "bg-soft-solid font-bold text-white shadow-soft-seg hover:bg-soft-solid hover:text-white",
+              tab.disabled &&
+                "cursor-not-allowed opacity-60 hover:bg-transparent hover:text-soft-muted",
             )}
           >
             {tab.icon}
@@ -120,7 +123,7 @@ export function PillTabs({
               <span
                 className={cn(
                   "inline-grid h-[18px] min-w-[18px] place-items-center rounded-soft-pill px-[5px] text-[11px] font-semibold",
-                  on ? COUNT_ON[tab.countTone ?? "accent"] : "bg-soft-inset-2 text-soft-muted",
+                  on ? COUNT_ON[tab.countTone ?? "accent"] : "bg-soft-surface text-soft-muted",
                 )}
               >
                 {tab.count}

@@ -15,7 +15,7 @@ export function IssueList({ issues, edit, newId }: IssueListProps) {
   return (
     <section aria-labelledby="issues-heading">
       <SectionLabel id="issues-heading">Vấn đề còn mở</SectionLabel>
-      <div className="mt-2 rounded-soft bg-soft-surface shadow-soft-sm">
+      <div className="mt-2 rounded-soft border border-soft-line-strong bg-soft-surface shadow-soft-sm">
         {issues.length === 0 ? (
           <p className="px-4 py-3 text-small text-fg-muted">Không có vấn đề nào còn mở.</p>
         ) : (

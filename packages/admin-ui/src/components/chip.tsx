@@ -7,7 +7,7 @@ export const chipVariants = cva(
   {
     variants: {
       tone: {
-        neutral: "bg-soft-inset-2 text-soft-muted",
+        neutral: "bg-soft-inset text-soft-muted shadow-[inset_0_0_0_1px_var(--soft-line-strong)]",
         /** Low-key label on a coloured bubble (language tags). */
         outline: "bg-soft-surface text-soft-muted shadow-[inset_0_0_0_1px_var(--soft-line-strong)]",
         info: "bg-soft-accent-soft text-soft-accent-ink",

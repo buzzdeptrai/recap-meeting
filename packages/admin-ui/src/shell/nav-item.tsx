@@ -19,7 +19,7 @@ export function NavItem({ item, active }: NavItemProps) {
     <span
       aria-hidden="true"
       className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-[10px] bg-soft-surface text-soft-ink shadow-soft-sm [&_svg]:size-4",
+        "grid size-8 shrink-0 place-items-center rounded-[10px] bg-soft-surface text-soft-ink shadow-soft-sm ring-1 ring-soft-line-strong ring-inset [&_svg]:size-4",
         active && "bg-soft-main text-white shadow-[0_4px_7px_rgba(29,78,216,0.35)]",
       )}
     >
@@ -60,8 +60,9 @@ export function NavItem({ item, active }: NavItemProps) {
       onClick={closeDrawer}
       className={cn(
         ROW,
-        "soft-focus relative hover:bg-soft-bg hover:text-soft-ink",
-        active && "bg-soft-surface text-soft-ink shadow-soft hover:bg-soft-surface",
+        "soft-focus relative hover:bg-soft-tonal-bg hover:text-soft-ink",
+        active &&
+          "bg-soft-tonal-bg font-bold text-soft-tonal-ink before:absolute before:top-1.5 before:bottom-1.5 before:-left-1 before:w-[3px] before:rounded-full before:bg-soft-solid hover:bg-soft-tonal-hover hover:text-soft-tonal-ink",
         collapsed && "justify-center px-0",
       )}
     >

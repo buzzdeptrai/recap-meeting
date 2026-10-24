@@ -22,7 +22,7 @@ export function MinutesEditor({ meetingId, content, edit, onRemoveTopic }: Minut
     <div className="flex flex-col gap-8">
       <section aria-labelledby="summary-heading">
         <SectionLabel id="summary-heading">Tóm tắt</SectionLabel>
-        <div className="mt-2 rounded-soft bg-soft-surface shadow-soft-sm p-2">
+        <div className="mt-2 rounded-soft border border-soft-line-strong bg-soft-surface shadow-soft-sm p-2">
           <AutoTextarea
             value={content.summary}
             label="Tóm tắt cuộc họp"

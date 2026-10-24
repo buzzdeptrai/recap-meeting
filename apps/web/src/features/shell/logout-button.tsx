@@ -20,7 +20,7 @@ export function LogoutButton() {
       onClick={() => void logout()}
       aria-label="Đăng xuất"
       title="Đăng xuất"
-      className="soft-focus grid size-8 shrink-0 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-surface hover:text-soft-ink"
+      className="soft-focus grid size-8 shrink-0 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-tonal-bg hover:text-soft-tonal-ink"
     >
       <SignOut size={16} />
     </button>

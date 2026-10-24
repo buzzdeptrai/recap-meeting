@@ -68,7 +68,7 @@ export function SearchBox({ state, patch, input, className }: SearchBoxProps) {
         autoComplete="off"
         onChange={(event) => patch({ q: event.target.value })}
         onKeyDown={(event) => event.key === "Escape" && patch({ q: "" })}
-        className="h-10 rounded-soft-pill border-transparent bg-soft-inset pr-10 pl-10 text-[13px] shadow-none [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 rounded-soft-pill border-soft-line-strong bg-soft-inset pr-10 pl-10 text-[13px] shadow-none [&::-webkit-search-cancel-button]:hidden"
       />
       <span className="absolute top-1/2 right-2 -translate-y-1/2">
         {state.q ? (
@@ -101,7 +101,7 @@ export function StatusChips({ state, patch, counts, className }: StatusChipsProp
     label: (
       <>
         {option.label}
-        <span className="soft-tabular ml-1.5 text-[11px] font-medium text-soft-muted">
+        <span className="soft-tabular ml-1.5 text-[11px] font-semibold">
           {counts[option.value]}
         </span>
       </>

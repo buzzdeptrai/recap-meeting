@@ -68,7 +68,7 @@ export function Sidebar({
       data-open={open}
       aria-label={labels.navigation}
       className={cn(
-        "fixed inset-y-4 left-4 z-30 flex w-(--soft-sidebar-w) flex-col overflow-x-hidden overflow-y-auto rounded-soft bg-soft-surface px-4 pt-6 pb-4 shadow-soft",
+        "fixed inset-y-4 left-4 z-30 flex w-(--soft-sidebar-w) flex-col overflow-x-hidden overflow-y-auto rounded-soft border border-soft-line-strong bg-soft-surface px-4 pt-6 pb-4 shadow-soft",
         "transition-[transform,visibility,width] duration-250 ease-out",
         collapsed && "w-(--soft-sidebar-w-collapsed) px-3",
         "max-[860px]:inset-y-2 max-[860px]:left-2 max-[860px]:w-[min(300px,calc(100vw-16px))] max-[860px]:invisible max-[860px]:-translate-x-[calc(100%+24px)] max-[860px]:px-4",
@@ -87,7 +87,7 @@ export function Sidebar({
             type="button"
             onClick={onToggleCollapsed}
             aria-label={labels.collapseSidebar}
-            className="soft-focus grid size-8 shrink-0 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-bg hover:text-soft-ink max-[860px]:hidden"
+            className="soft-focus grid size-8 shrink-0 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-tonal-bg hover:text-soft-tonal-ink max-[860px]:hidden"
           >
             <ChevronsLeftIcon />
           </button>
@@ -98,7 +98,7 @@ export function Sidebar({
           type="button"
           onClick={onToggleCollapsed}
           aria-label={labels.expandSidebar}
-          className="soft-focus mx-auto mb-3 grid size-8 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-bg hover:text-soft-ink max-[860px]:hidden"
+          className="soft-focus mx-auto mb-3 grid size-8 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-tonal-bg hover:text-soft-tonal-ink max-[860px]:hidden"
         >
           <ChevronsLeftIcon className="rotate-180" />
         </button>

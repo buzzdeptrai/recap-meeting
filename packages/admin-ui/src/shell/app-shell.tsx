@@ -191,7 +191,7 @@ export function AppShell({
                 aria-expanded={drawer.open}
                 aria-controls={drawer.sidebarId}
                 onClick={() => drawer.setOpen((v) => !v)}
-                className="soft-focus grid size-10 place-items-center rounded-xl bg-soft-surface shadow-soft-sm"
+                className="soft-focus grid size-10 place-items-center rounded-xl bg-soft-tonal-bg text-soft-tonal-ink"
               >
                 <MenuIcon width={20} height={20} />
               </button>

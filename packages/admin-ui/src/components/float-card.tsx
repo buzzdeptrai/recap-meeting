@@ -10,7 +10,7 @@ const bodyPadding = {
 } as const;
 
 const floatCardVariants = cva(
-  "flex min-h-0 min-w-0 flex-col rounded-soft-card bg-soft-surface text-soft-ink shadow-soft-card",
+  "flex min-h-0 min-w-0 flex-col rounded-soft-card border border-soft-line-strong bg-soft-surface text-soft-ink shadow-soft-card",
   {
     variants: {
       /** Clip children to the rounded corners (scroll containers, edge-to-edge media). */
@@ -33,7 +33,7 @@ export interface FloatCardProps
   bodyClassName?: string;
 }
 
-/** Floating panel: 24px radius, soft card shadow, no border. Body grows; header/footer stay put. */
+/** Floating panel: 24px radius, 1px strong hairline, soft card shadow. Body grows; header/footer stay put. */
 export function FloatCard({
   as: Tag = "div",
   padding = "md",

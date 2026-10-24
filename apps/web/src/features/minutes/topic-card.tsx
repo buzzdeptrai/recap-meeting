@@ -31,7 +31,7 @@ export function TopicCard(props: TopicCardProps) {
     <article
       aria-label={`Chủ đề ${index + 1}`}
       className={clsx(
-        "rounded-soft border-l-[3px] bg-soft-surface p-4 shadow-soft-sm",
+        "rounded-soft border border-l-[3px] border-soft-line-strong bg-soft-surface p-4 shadow-soft-sm",
         topic.status === "decided" ? "border-l-decision" : "border-l-transparent",
       )}
     >

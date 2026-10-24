@@ -18,12 +18,12 @@
 @source "./";
 
 :root {
-  --soft-bg: #f8f9fa;
+  --soft-bg: #eef2f9;
   --soft-surface: #ffffff;
   --soft-ink: #344767;
-  --soft-muted: #67748e;
-  --soft-line: #e9ecef;
-  --soft-fill: #f0f2f5;
+  --soft-muted: #54617c;
+  --soft-line: #dfe5f0;
+  --soft-fill: #e6ebf5;
   --soft-grid: #d9dde4;
 
   /* Brand / primary blue (was purple until 0.2.1). `--soft-purple` stays as a deprecated alias. */
@@ -70,16 +70,21 @@
 
   /* ---- v2 tokens (additive; used by FloatCard, PillTabs, Chip, Bubble, ...) ---- */
   /* Pale tinted page background for floating-card layouts (opt-in: `bg-soft-page`). */
-  --soft-page: #eef2f9;
+  --soft-page: #e5ebf6;
   /* Inset surfaces sitting on a white card, and a stronger hairline. */
-  --soft-inset: #f3f6fc;
-  --soft-inset-2: #e8edf7;
-  --soft-line-strong: #d3dcee;
+  --soft-inset: #e9eefa;
+  --soft-inset-2: #dbe4f4;
+  --soft-line-strong: #cbd6ea;
   --soft-faint: #94a3b8;
   /* Blue accent (selected counts, "info" tone, topic chips). */
   --soft-accent: #1d4ed8;
   --soft-accent-soft: #e8efff;
   --soft-accent-ink: #1e40af;
+  /* 0.2.2 selected / tonal states. solid = active tab fill (white text 6.7:1); tonal = secondary button + active nav tint (ink 7.2:1 / hover 6.5:1). */
+  --soft-solid: #1d4ed8;
+  --soft-tonal-bg: #e1e9ff;
+  --soft-tonal-hover: #d0defd;
+  --soft-tonal-ink: #1e40af;
   /* Two neutral row tones, e.g. "self" (a, blue) and "other" (b, teal). bg = bubble, chip = icon holder, bar = meter fill. */
   /* tone-a is sky blue (hue ~200) so it never reads as the brand/accent blue (hue ~224) next to it. */
   --soft-tone-a-bg: #e8f4fc;
@@ -118,7 +123,7 @@
   --soft-bg: #101114;
   --soft-surface: #191b20;
   --soft-ink: #e6e8ec;
-  --soft-muted: #9aa2b1;
+  --soft-muted: #a9b1bf;
   --soft-line: #2a2d34;
   --soft-fill: #23262c;
   --soft-grid: #33363e;
@@ -137,7 +142,11 @@
   --soft-faint: #6b7385;
   --soft-accent: #3b82f6;
   --soft-accent-soft: rgba(59, 130, 246, 0.18);
-  --soft-accent-ink: #93b8ff;
+  --soft-accent-ink: #a9c8ff;
+  --soft-solid: #2563eb;
+  --soft-tonal-bg: rgba(59, 130, 246, 0.2);
+  --soft-tonal-hover: rgba(59, 130, 246, 0.32);
+  --soft-tonal-ink: #a9c8ff;
   --soft-tone-a-bg: rgba(14, 165, 233, 0.14);
   --soft-tone-a-ink: #7dd3fc;
   --soft-tone-a-chip: rgba(14, 165, 233, 0.28);
@@ -188,6 +197,10 @@
   --color-soft-accent: var(--soft-accent);
   --color-soft-accent-soft: var(--soft-accent-soft);
   --color-soft-accent-ink: var(--soft-accent-ink);
+  --color-soft-solid: var(--soft-solid);
+  --color-soft-tonal-bg: var(--soft-tonal-bg);
+  --color-soft-tonal-hover: var(--soft-tonal-hover);
+  --color-soft-tonal-ink: var(--soft-tonal-ink);
   --color-soft-tone-a-bg: var(--soft-tone-a-bg);
   --color-soft-tone-a-ink: var(--soft-tone-a-ink);
   --color-soft-tone-a-chip: var(--soft-tone-a-chip);

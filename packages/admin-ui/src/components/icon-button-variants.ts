@@ -9,7 +9,7 @@ export const iconButtonVariants = cva(
       size: { sm: "size-8 rounded-[10px]", md: "size-10 rounded-xl" },
       /** `danger` tints the hover state red (delete). */
       tone: {
-        default: "hover:bg-soft-fill hover:text-soft-ink",
+        default: "hover:bg-soft-tonal-bg hover:text-soft-tonal-ink",
         danger: "hover:bg-[#fde4e4] hover:text-[#a30606]",
       },
     },

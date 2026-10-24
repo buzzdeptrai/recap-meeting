@@ -5,7 +5,7 @@ import { cn } from "../lib/cn";
 const badgeVariants = cva("inline-flex items-center whitespace-nowrap font-bold", {
   variants: {
     variant: {
-      neutral: "bg-soft-fill text-soft-navy",
+      neutral: "bg-soft-fill text-soft-ink",
       ok: "bg-[#e6f7ea] text-[#117a28]",
       rec: "bg-[#ffe5f1] text-[#b3005a]",
       warn: "bg-[#fff3d6] text-[#8a5b00]",

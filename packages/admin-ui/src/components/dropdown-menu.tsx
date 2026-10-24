@@ -27,7 +27,7 @@ export interface DropdownMenuProps {
 }
 
 const ITEM =
-  "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-soft-bg";
+  "flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-soft-tonal-bg data-[highlighted]:text-soft-tonal-ink";
 
 /** Menu for user / row actions. */
 export function DropdownMenu({

@@ -91,7 +91,7 @@ export function Dialog({
           <RadixDialog.Close
             aria-label={closeLabel}
             disabled={busy}
-            className="soft-focus absolute top-4 right-4 grid size-8 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-bg hover:text-soft-ink disabled:opacity-50"
+            className="soft-focus absolute top-4 right-4 grid size-8 place-items-center rounded-[10px] text-soft-muted hover:bg-soft-tonal-bg hover:text-soft-tonal-ink disabled:opacity-50"
           >
             <CloseIcon />
           </RadixDialog.Close>

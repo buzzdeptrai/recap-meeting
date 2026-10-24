@@ -3,12 +3,15 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/cn";
 import { ActionGroup } from "./action-group";
 
-const cardVariants = cva("min-w-0 rounded-soft bg-soft-surface text-soft-ink shadow-soft", {
-  variants: {
-    padding: { none: "", sm: "p-4", md: "p-5 sm:p-6" },
+const cardVariants = cva(
+  "min-w-0 rounded-soft border border-soft-line-strong bg-soft-surface text-soft-ink shadow-soft",
+  {
+    variants: {
+      padding: { none: "", sm: "p-4", md: "p-5 sm:p-6" },
+    },
+    defaultVariants: { padding: "md" },
   },
-  defaultVariants: { padding: "md" },
-});
+);
 
 export interface CardProps
   extends Omit<ComponentProps<"div">, "title">, VariantProps<typeof cardVariants> {
@@ -16,7 +19,7 @@ export interface CardProps
   as?: "div" | "section" | "article" | "aside";
 }
 
-/** White rounded surface with the soft shadow. No border by design. */
+/** White rounded surface with the hairline border and the soft shadow. */
 export function Card({ as: Tag = "div", padding, className, ...rest }: CardProps) {
   return <Tag className={cn(cardVariants({ padding }), className)} {...rest} />;
 }

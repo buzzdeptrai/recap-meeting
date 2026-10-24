@@ -4,13 +4,16 @@ import type { ComponentProps } from "react";
 import * as RadixTabs from "@radix-ui/react-tabs";
 import { cn } from "../lib/cn";
 
-/** Radix Tabs with the grey-track / white-active look. Compose: Tabs > TabsList > TabsTrigger + TabsContent. */
+/** Radix Tabs with the tinted-track / solid-brand-active look. Compose: Tabs > TabsList > TabsTrigger + TabsContent. */
 export const Tabs = RadixTabs.Root;
 
 export function TabsList({ className, ...rest }: ComponentProps<typeof RadixTabs.List>) {
   return (
     <RadixTabs.List
-      className={cn("inline-flex flex-wrap gap-1 rounded-xl bg-soft-bg p-1", className)}
+      className={cn(
+        "inline-flex flex-wrap gap-1 rounded-xl bg-soft-inset p-1 shadow-[inset_0_0_0_1px_var(--soft-line-strong)]",
+        className,
+      )}
       {...rest}
     />
   );
@@ -20,7 +23,7 @@ export function TabsTrigger({ className, ...rest }: ComponentProps<typeof RadixT
   return (
     <RadixTabs.Trigger
       className={cn(
-        "soft-focus cursor-pointer rounded-[9px] px-4 py-2 text-[13px] font-semibold text-soft-muted transition-all duration-150 hover:text-soft-ink data-[state=active]:bg-soft-surface data-[state=active]:text-soft-ink data-[state=active]:shadow-soft-sm disabled:opacity-50 max-[640px]:px-3",
+        "soft-focus cursor-pointer rounded-[9px] px-4 py-2 text-[13px] font-semibold text-soft-muted transition-all duration-150 hover:bg-soft-inset-2 hover:text-soft-ink data-[state=active]:bg-soft-solid data-[state=active]:text-white data-[state=active]:shadow-soft-seg data-[state=active]:hover:bg-soft-solid data-[state=active]:hover:text-white disabled:opacity-60 max-[640px]:px-3",
         className,
       )}
       {...rest}

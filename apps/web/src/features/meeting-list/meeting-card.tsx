@@ -23,7 +23,7 @@ interface CardProps {
 
 const LAYOUT = {
   list: "px-4 py-3.5 transition-colors duration-150 hover:bg-soft-inset sm:px-5",
-  tile: "h-full rounded-soft-card bg-soft-surface p-4 shadow-soft-card transition-shadow duration-150 hover:shadow-soft-float sm:p-5",
+  tile: "h-full rounded-soft-card border border-soft-line-strong bg-soft-surface p-4 shadow-soft-card transition-shadow duration-150 hover:shadow-soft-float sm:p-5",
 } as const;
 
 /** Stacked card: icon + title + status, sub line, date / duration / language, minutes chips, actions. */

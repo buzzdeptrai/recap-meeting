@@ -1,5 +1,26 @@
 # Changelog — @recap/admin-ui
 
+## 0.2.2 — contrast and selected states (2026-10-24)
+
+Owner feedback: buttons, tabs and the active menu item were all white on grey, so selected vs unselected was hard to see and the UI felt washed out.
+
+### Changed
+
+- `Button variant="outline"` (and new alias `tonal`) is now a blue tint: `bg-soft-tonal-bg` + `text-soft-tonal-ink`, hover `bg-soft-tonal-hover`. The old white/shadow look lives on as `variant="plain"` (hairline ring). `ghost`: ink text, tonal tint on hover (was muted text, grey hover). Disabled opacity 50 -> 60 (kept readable). `IconButton` default hover, `Select` trigger, `DropdownMenu`/`Select` highlighted items and sidebar/dialog icon buttons use the same tint.
+- `PillTabs`, `SegmentedControl` (`soft`, `tabs`) and `Tabs`: active = solid brand (`bg-soft-solid`, white bold text); inactive = transparent with `soft-muted` text on a `soft-inset` track with a `line-strong` inset hairline; inactive hover = `soft-inset-2`. Inactive count badges are white chips, active count is white-on-blue.
+- Sidebar `NavItem` active: tonal background, bold `soft-tonal-ink`, 3px rounded left accent bar (was white card + shadow); inactive hover = tonal tint. The icon tile gets a hairline ring.
+- `Card`, `FloatCard`, `Sidebar` get `border border-soft-line-strong`. `Input`/`Textarea` use `soft-inset` + `line-strong` border (white on focus). Neutral `Chip` uses inset + hairline.
+- Tokens: `--soft-bg` `#f8f9fa -> #eef2f9`, `--soft-page` `#eef2f9 -> #e5ebf6`, `--soft-muted` `#67748e -> #54617c` (dark `#9aa2b1 -> #a9b1bf`), `--soft-line` `#e9ecef -> #dfe5f0`, `--soft-fill` `#f0f2f5 -> #e6ebf5`, `--soft-inset` `#f3f6fc -> #e9eefa`, `--soft-inset-2` `#e8edf7 -> #dbe4f4`, `--soft-line-strong` `#d3dcee -> #cbd6ea`, dark `--soft-accent-ink` `#93b8ff -> #a9c8ff`.
+
+### Added
+
+- Tokens (light + dark) and utilities: `--soft-solid` (`#1d4ed8`; dark `#2563eb`, white 5.2:1), `--soft-tonal-bg` (`#e1e9ff`; dark brand 20%), `--soft-tonal-hover` (`#d0defd`; dark 32%), `--soft-tonal-ink` (`#1e40af`; dark `#a9c8ff`).
+- `buttonVariants` variants `tonal`, `plain`.
+
+### Contrast (WCAG)
+
+muted on white 6.2:1, on page 5.2:1, on inset 5.4:1; tonal ink on tint 7.2:1 (hover 6.5:1); white on solid 6.7:1 (dark 5.2:1); dark muted on surface 8.0:1, tonal ink on tint 7.8:1.
+
 ## 0.2.1 — blue brand (2026-10-24)
 
 The whole kit moves from purple to blue (owner decision, matches `design/room-preview-v1`).

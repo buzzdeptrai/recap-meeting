@@ -20,7 +20,7 @@ export function ActionTable({ meetingId, items, edit, newId }: ActionTableProps)
   return (
     <section aria-labelledby="actions-heading">
       <SectionLabel id="actions-heading">Việc cần làm</SectionLabel>
-      <div className="mt-2 rounded-soft bg-soft-surface shadow-soft-sm">
+      <div className="mt-2 rounded-soft border border-soft-line-strong bg-soft-surface shadow-soft-sm">
         {items.length === 0 ? (
           <p className="px-4 py-3 text-small text-fg-muted">Chưa có việc nào được giao.</p>
         ) : (

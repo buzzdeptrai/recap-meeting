@@ -57,15 +57,15 @@ export function Select({
       <RadixSelect.Trigger
         aria-label={ariaLabel}
         className={cn(
-          "soft-focus inline-flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-xl bg-soft-surface py-2.5 pr-3 pl-4 text-[13px] font-semibold text-soft-ink shadow-soft-sm disabled:opacity-50 data-[placeholder]:text-soft-muted",
+          "soft-focus inline-flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-xl bg-soft-tonal-bg py-2.5 pr-3 pl-4 text-[13px] font-semibold text-soft-tonal-ink hover:bg-soft-tonal-hover disabled:opacity-60 data-[placeholder]:text-soft-muted",
           className,
         )}
       >
-        {prefix ? <span className="text-soft-muted">{prefix}</span> : null}
+        {prefix ? <span className="opacity-80">{prefix}</span> : null}
         <span className="min-w-0 flex-1 truncate text-left">
           <RadixSelect.Value placeholder={placeholder}>{current?.label}</RadixSelect.Value>
         </span>
-        <RadixSelect.Icon className="text-soft-muted">
+        <RadixSelect.Icon>
           <ChevronDownIcon />
         </RadixSelect.Icon>
       </RadixSelect.Trigger>
@@ -81,7 +81,7 @@ export function Select({
                 key={o.value}
                 value={o.value}
                 disabled={o.disabled}
-                className="relative flex cursor-pointer items-center rounded-lg py-2 pr-8 pl-3 text-[13px] font-semibold outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-soft-bg data-[state=checked]:text-soft-brand"
+                className="relative flex cursor-pointer items-center rounded-lg py-2 pr-8 pl-3 text-[13px] font-semibold outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-soft-tonal-bg data-[highlighted]:text-soft-tonal-ink data-[state=checked]:text-soft-brand"
               >
                 <RadixSelect.ItemText>{o.label}</RadixSelect.ItemText>
                 <RadixSelect.ItemIndicator className="absolute right-3">

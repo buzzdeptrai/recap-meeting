@@ -45,7 +45,7 @@ interface MinutesTopBarProps {
 
 export function MinutesTopBar({ meeting, lang, onLangChange, saved, ...rest }: MinutesTopBarProps) {
   return (
-    <header className="z-[5] rounded-soft bg-soft-surface shadow-soft-sm min-[861px]:sticky min-[861px]:top-3">
+    <header className="z-[5] rounded-soft border border-soft-line-strong bg-soft-surface shadow-soft-sm min-[861px]:sticky min-[861px]:top-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6">
         <Link
           href={`/meetings/${meeting.id}`}

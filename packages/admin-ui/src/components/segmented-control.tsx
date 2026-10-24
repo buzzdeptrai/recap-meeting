@@ -17,7 +17,7 @@ export interface SegmentedControlProps<V extends string> {
   onValueChange: (value: V) => void;
   /** Names the group for assistive tech, e.g. "Khoảng thời gian". */
   ariaLabel: string;
-  /** `pill`: white floating track, gradient active (range pickers). `tabs`: grey track, white active (metric switch). `soft`: fully round inset track, white active chip (v2, room/toolbars). */
+  /** `pill`: inset tinted track, gradient active (range pickers). `tabs`: inset track, solid brand active (metric switch). `soft`: fully round inset track, solid brand active (v2, room/toolbars). */
   variant?: "pill" | "tabs" | "soft";
   /** `sm` for toolbars and dense rows. */
   size?: "sm" | "md";
@@ -27,9 +27,9 @@ export interface SegmentedControlProps<V extends string> {
 }
 
 const TRACK = {
-  pill: "bg-soft-surface shadow-soft-sm",
-  tabs: "bg-soft-bg flex-wrap",
-  soft: "bg-soft-inset",
+  pill: "bg-soft-inset shadow-[inset_0_0_0_1px_var(--soft-line-strong)]",
+  tabs: "bg-soft-inset shadow-[inset_0_0_0_1px_var(--soft-line-strong)] flex-wrap",
+  soft: "bg-soft-inset shadow-[inset_0_0_0_1px_var(--soft-line-strong)]",
 } as const;
 
 const TRACK_SHAPE = { pill: "rounded-xl", tabs: "rounded-xl", soft: "rounded-soft-pill" } as const;
@@ -46,8 +46,8 @@ const ITEM_SIZE = {
 
 const ITEM_ON = {
   pill: "data-[state=on]:bg-soft-main data-[state=on]:text-white data-[state=on]:shadow-[0_3px_6px_rgba(29,78,216,0.3)]",
-  tabs: "data-[state=on]:bg-soft-surface data-[state=on]:text-soft-ink data-[state=on]:shadow-soft-sm",
-  soft: "data-[state=on]:bg-soft-surface data-[state=on]:font-semibold data-[state=on]:text-soft-ink data-[state=on]:shadow-soft-seg",
+  tabs: "data-[state=on]:bg-soft-solid data-[state=on]:text-white data-[state=on]:shadow-soft-seg",
+  soft: "data-[state=on]:bg-soft-solid data-[state=on]:font-bold data-[state=on]:text-white data-[state=on]:shadow-soft-seg",
 } as const;
 
 /** Single-choice toggle group with roving focus (arrow keys). Selection cannot be cleared. */
@@ -83,7 +83,7 @@ export function SegmentedControl<V extends string>({
           value={o.value}
           disabled={o.disabled}
           className={cn(
-            "soft-focus inline-flex cursor-pointer items-center justify-center gap-2 font-semibold whitespace-nowrap text-soft-muted transition-all duration-150 hover:text-soft-ink disabled:cursor-not-allowed disabled:opacity-50",
+            "soft-focus inline-flex cursor-pointer items-center justify-center gap-2 font-semibold whitespace-nowrap text-soft-muted transition-all duration-150 hover:bg-soft-inset-2 hover:text-soft-ink data-[state=on]:hover:bg-soft-solid data-[state=on]:hover:text-white disabled:cursor-not-allowed disabled:opacity-60",
             ITEM_SHAPE[variant],
             ITEM_SIZE[size],
             fill && "flex-1",
