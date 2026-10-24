@@ -1,0 +1,41 @@
+{
+  "name": "recap-meeting",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n web,realtime -c blue,green \"npm:dev:web\" \"npm:dev:realtime\"",
+    "dev:web": "npm run dev -w @recap/web",
+    "dev:realtime": "npm run dev -w @recap/realtime",
+    "create-admin": "tsx tools/create-admin/src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck -w @recap/admin-ui && npm run typecheck -w @recap/web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:deps": "node scripts/check-deps.mjs",
+    "verify": "npm test && npm run typecheck && npm run lint && npm run format:check && npm run check:deps"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.4.2",
+    "@types/node": "^26.6.5",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^4.1.12"
+  }
+}

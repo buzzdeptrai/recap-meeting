@@ -1,0 +1,95 @@
+import { ArrowDown } from "@phosphor-icons/react";
+import { Button } from "@recap/admin-ui";
+import type { Mark } from "@recap/core";
+import { isNearMark } from "./marks";
+import { InterimRow, SegmentRow, type ViewMode } from "./segment-row";
+import type { RoomState } from "./state";
+import { TopicDivider } from "./topic-divider";
+import type { EdgeState } from "./use-transcript-pager";
+import { EDGE_ROW_PX, type VirtualRow } from "./virtual-rows";
+
+export function LatestPill({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      icon={<ArrowDown size={16} />}
+      onClick={onClick}
+      className="animate-fade-in absolute bottom-4 left-1/2 -translate-x-1/2 shadow-soft-pop"
+    >
+      {label}
+    </Button>
+  );
+}
+
+interface EdgeRowProps {
+  side: "top" | "bottom";
+  state: EdgeState;
+  onRetry: () => void;
+}
+
+/** Placeholder above / below the loaded run while the next page is on its way. */
+export function EdgeRow({ side, state, onRetry }: EdgeRowProps) {
+  return (
+    <div
+      style={{ height: EDGE_ROW_PX }}
+      className="flex items-center justify-center text-small text-fg-muted"
+    >
+      {state === "error" ? (
+        <Button size="sm" variant="outline" onClick={onRetry}>
+          Không tải được. Thử lại
+        </Button>
+      ) : (
+        <span role="status">{side === "top" ? "Đang tải đoạn trước…" : "Đang tải đoạn tiếp…"}</span>
+      )}
+    </div>
+  );
+}
+
+export interface RowViewContext {
+  room: RoomState;
+  view: ViewMode;
+  marks: Mark[];
+  highlightId: string | null;
+  terms: readonly string[] | undefined;
+  /** First live seq (those fade in) and the newest one whose fade already played. */
+  liveFromSeq: number | null;
+  settledSeq: number;
+  edge: { top: EdgeState; bottom: EdgeState };
+  onRetryEdge: (side: "top" | "bottom") => void;
+}
+
+export function VirtualRowView({ row, ctx }: { row: VirtualRow; ctx: RowViewContext }) {
+  switch (row.type) {
+    case "edge":
+      return (
+        <EdgeRow
+          side={row.side}
+          state={ctx.edge[row.side]}
+          onRetry={() => ctx.onRetryEdge(row.side)}
+        />
+      );
+    case "divider":
+      return <TopicDivider mark={row.mark} name={row.name} />;
+    case "interim":
+      return <InterimRow channel={row.channel} line={row.line} />;
+    case "segment": {
+      const { segment } = row;
+      return (
+        <SegmentRow
+          segment={segment}
+          translation={ctx.room.translations[segment.id]}
+          view={ctx.view}
+          decision={isNearMark(segment, ctx.marks)}
+          animate={
+            ctx.liveFromSeq !== null &&
+            segment.seq >= ctx.liveFromSeq &&
+            segment.seq > ctx.settledSeq
+          }
+          highlight={segment.id === ctx.highlightId}
+          terms={ctx.terms}
+        />
+      );
+    }
+  }
+}

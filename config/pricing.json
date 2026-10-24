@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "currency": "USD",
+  "entries": [
+    {
+      "vendor": "deepgram",
+      "service": "stt_live",
+      "model": "nova-3",
+      "audioPerMinute": 0.0058,
+      "verified": true,
+      "source_url": "https://deepgram.com/pricing",
+      "updated_at": "2026-10-22",
+      "notes": "Nova-3 Multilingual streaming, pay-as-you-go. This is a limited-time promotional rate on the pricing page (regular streaming rate shown struck through: 0.0092/min). Multichannel is billed per channel: the Deepgram FAQ says a 10-minute stereo file is billed as 20 minutes, so usage is recorded in channel-seconds (both channels summed) and priced as-is."
+    },
+    {
+      "vendor": "deepgram",
+      "service": "stt_live",
+      "model": "nova-3:mono",
+      "audioPerMinute": 0.0048,
+      "verified": true,
+      "source_url": "https://deepgram.com/pricing",
+      "updated_at": "2026-10-22",
+      "notes": "Nova-3 Monolingual streaming, pay-as-you-go, limited-time promotional rate (regular 0.0077/min). Used when the session language is a single language (vi/en) rather than 'multi'. Per-channel billing as above."
+    },
+    {
+      "vendor": "deepgram",
+      "service": "stt_batch",
+      "model": "nova-3",
+      "audioPerMinute": 0.0052,
+      "verified": true,
+      "source_url": "https://deepgram.com/pricing",
+      "updated_at": "2026-10-22",
+      "notes": "Nova-3 Multilingual pre-recorded, pay-as-you-go. Multichannel billed per channel."
+    },
+    {
+      "vendor": "deepgram",
+      "service": "stt_batch",
+      "model": "nova-3:mono",
+      "audioPerMinute": 0.0043,
+      "verified": true,
+      "source_url": "https://deepgram.com/pricing",
+      "updated_at": "2026-10-22",
+      "notes": "Nova-3 Monolingual pre-recorded, pay-as-you-go. Multichannel billed per channel."
+    },
+    {
+      "vendor": "assemblyai",
+      "service": "stt_live",
+      "model": "universal-3-6-pro",
+      "audioPerMinute": 0.0075,
+      "verified": true,
+      "source_url": "https://www.assemblyai.com/pricing.md",
+      "updated_at": "2026-10-23",
+      "notes": "Universal-3.6 Pro streaming, $0.45/hour = 0.0075/min, billed per connection (session) second, not per audio channel. The provider opens one mono socket per channel, so usage is recorded as socket-seconds (both channels summed) and priced as-is. Idle open sessions are billed too; sockets are closed promptly."
+    },
+    {
+      "vendor": "gemini",
+      "service": "translate",
+      "model": "gemini-3.1-flash-lite",
+      "inputPer1M": 0.25,
+      "outputPer1M": 1.5,
+      "verified": true,
+      "source_url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updated_at": "2026-10-22",
+      "notes": "Standard paid tier, text input. Output price includes thinking tokens, so output tokens = candidates + thoughts. Audio input (0.50) is not used."
+    },
+    {
+      "vendor": "openai",
+      "service": "translate",
+      "model": "gpt-4.1-mini",
+      "inputPer1M": 0.4,
+      "outputPer1M": 1.6,
+      "verified": true,
+      "source_url": "https://developers.openai.com/api/docs/pricing",
+      "updated_at": "2026-10-22",
+      "notes": "Standard tier. Cached-input discounts are not modelled (cost is an upper estimate)."
+    },
+    {
+      "vendor": "openai",
+      "service": "minutes",
+      "model": "gpt-4.1",
+      "inputPer1M": 2,
+      "outputPer1M": 8,
+      "verified": true,
+      "source_url": "https://developers.openai.com/api/docs/pricing",
+      "updated_at": "2026-10-22",
+      "notes": "Standard tier. Cached-input discounts are not modelled (cost is an upper estimate)."
+    }
+  ]
+}

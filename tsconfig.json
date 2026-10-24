@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "apps/realtime/src/**/*.ts",
+    "apps/realtime/test/**/*.ts",
+    "tools/*/src/**/*.ts",
+    "tools/*/test/**/*.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["packages/admin-ui"]
+}

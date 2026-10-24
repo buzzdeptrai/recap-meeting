@@ -1,0 +1,15 @@
+{
+  "name": "@recap/tool-create-admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@recap/auth": "*",
+    "@recap/core": "*",
+    "@recap/db": "*"
+  }
+}

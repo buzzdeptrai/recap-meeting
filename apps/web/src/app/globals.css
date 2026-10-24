@@ -1,0 +1,149 @@
+@import "tailwindcss";
+@import "@recap/admin-ui/theme.css"; /* Soft admin kit: tokens + @source for its classes */
+
+/*
+ * Design tokens — docs/DESIGN.md "Biên bản".
+ * Light on :root; dark via OS preference (unless data-theme="light") or data-theme="dark".
+ */
+:root {
+  /*
+   * App token names (bg-surface, text-fg-muted, ...) are aliases of the admin-ui "Soft" tokens, so the
+   * kit stays the single source of truth and dark mode (data-theme="dark", still a stub) follows it.
+   * Amber (--decision*) is the only app-owned colour: conclusions and decisions, nothing else.
+   */
+  --bg: var(--soft-bg);
+  --surface: var(--soft-surface);
+  --surface-2: var(--soft-fill);
+  --line: var(--soft-line);
+  --fg: var(--soft-ink);
+  --fg-muted: var(--soft-muted);
+  --accent: var(--soft-purple);
+  --on-accent: #ffffff;
+  --others: #0f766e;
+  --decision: var(--soft-conclusion);
+  --decision-bg: var(--soft-conclusion-bg);
+  --rec: #d6006c;
+  --ok: #117a28;
+  --warn: #8a5b00;
+  --err: #a30606;
+
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Point the Soft kit at the app fonts (next/font variables). */
+  --soft-font-sans: var(--font-be-vietnam-pro), "Be Vietnam Pro", system-ui, sans-serif;
+  --soft-font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, monospace;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --others: #3cc0b1;
+  --rec: #ff6b9a;
+  --ok: #4cc38a;
+  --warn: #f2a34a;
+  --err: #ff7a6e;
+  color-scheme: dark;
+}
+
+/* Expose tokens as Tailwind utilities: bg-surface, text-fg-muted, border-line, text-others, ... */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-others: var(--others);
+  --color-decision: var(--decision);
+  --color-decision-bg: var(--decision-bg);
+  --color-rec: var(--rec);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+
+  --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* Type scale (px): 12 meta · 13 small UI · 14 base UI · 16 transcript · 20 title · 28 display */
+  --text-meta: 12px;
+  --text-small: 13px;
+  --text-base: 14px;
+  --text-transcript: 16px;
+  --text-transcript--line-height: 1.65;
+  --text-title: 20px;
+  --text-display: 28px;
+  --text-label: 11px;
+  --text-label--letter-spacing: 0.08em;
+}
+
+/* Static theme values: rounded-control (10px, matches kit sm controls), rounded-panel (16px = rounded-soft). */
+@theme {
+  --radius-control: 10px;
+  --radius-panel: 16px;
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  body {
+    font-family: var(--soft-font-sans);
+    font-size: var(--text-base);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--soft-focus);
+    outline-offset: 2px;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Motion: new transcript lines fade in 8px; dialogs and tooltips fade 120-160ms. */
+@keyframes segment-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-segment-in {
+  animation: segment-in var(--motion-base) var(--ease-out) both;
+}
+
+.animate-fade-in {
+  animation: fade-in var(--motion-fast) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

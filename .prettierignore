@@ -1,0 +1,11 @@
+node_modules
+.next
+data
+coverage
+package-lock.json
+next-env.d.ts
+*.md
+.claude
+thoughts
+design
+.next-*

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biên bản cuộc họp · Rà soát hợp đồng Q4</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* Specific styles for Minutes Document Page */
+    .minutes-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 32px;
+      align-items: start;
+    }
+    @media (max-width: 1100px) {
+      .minutes-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .topic-card {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      background: var(--bg-card);
+    }
+    .topic-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .topic-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--bg-muted);
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="app-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="brand-link">
+          <div class="brand-logo-mark">B</div>
+          <span>Biên bản</span>
+          <span class="brand-tag">Pro</span>
+        </a>
+      </div>
+
+      <div class="sidebar-body">
+        <div>
+          <div class="nav-group-label">Làm việc</div>
+          <ul class="nav-list">
+            <li>
+              <a href="dashboard.html" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                <span>Tổng quan</span>
+              </a>
+            </li>
+            <li>
+              <a href="meetings.html" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <span>Cuộc họp</span>
+                <span class="nav-badge">38</span>
+              </a>
+            </li>
+            <li>
+              <a href="minutes.html" class="nav-item-link active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span>Biên bản mẫu</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                <span>Thuật ngữ nhóm</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="nav-group-label">Hệ thống</div>
+          <ul class="nav-list">
+            <li>
+              <a href="#" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                <span>Mức dùng & Chi phí</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                <span>Cài đặt</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-box">
+          <div class="avatar-circle">VV</div>
+          <div class="user-info-text">
+            <div class="user-name">Viet Vu</div>
+            <div class="user-role">Quản trị viên</div>
+          </div>
+        </div>
+        <button class="icon-btn" data-action="toggle-theme" title="Đổi giao diện sáng/tối" style="width:30px;height:30px">
+          <svg data-theme-icon width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="app-main">
+      <!-- Topbar Header with Document Actions -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <div class="breadcrumbs">
+            <a href="meetings.html">Cuộc họp</a>
+            <span class="sep">/</span>
+            <span>Rà soát hợp đồng Q4</span>
+            <span class="sep">/</span>
+            <span class="current">Biên bản chính thức</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Language Mode Switcher -->
+          <div class="segmented-control">
+            <button class="segment-btn active" data-minutes-lang="both">Song ngữ VI - EN</button>
+            <button class="segment-btn" data-minutes-lang="vi">Bản Tiếng Việt</button>
+            <button class="segment-btn" data-minutes-lang="en">English Version</button>
+          </div>
+
+          <!-- Export Word Action -->
+          <button class="btn-secondary" title="Xuất file DOCX theo mẫu chuẩn doanh nghiệp">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Xuất Word (.docx) ▾
+          </button>
+
+          <!-- Primary Save Button -->
+          <button class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Lưu biên bản
+          </button>
+        </div>
+      </header>
+
+      <!-- Document Body -->
+      <main class="page-body">
+        <div class="minutes-layout">
+          <!-- Left Column: The Formal Minutes Document -->
+          <article class="doc-canvas">
+            <div class="doc-header-banner">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="badge-pill ended">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    Đã hoàn tất biên bản
+                  </span>
+                  <span class="lang-chip">Bilingual VI ⇄ EN</span>
+                  <span class="mono" style="font-size:12px;color:var(--text-muted)">ID: MTG-20261021-04</span>
+                </div>
+                <button class="btn-ghost" title="Chỉnh sửa thông tin">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Chỉnh sửa
+                </button>
+              </div>
+
+              <h1 class="doc-meeting-title">
+                Biên bản cuộc họp: Rà soát hợp đồng cung ứng linh kiện Q4 với đối tác Đài Loan
+              </h1>
+              <p style="font-size:14px;color:var(--text-muted);line-height:1.5">
+                Meeting Minutes: Q4 Component Supply Contract Review with Taiwan Partner
+              </p>
+
+              <!-- Meta Data Grid -->
+              <div class="doc-meta-grid">
+                <div class="doc-meta-item">
+                  <span class="doc-meta-label">Thời gian họp</span>
+                  <span class="doc-meta-value mono">21/10/2026 · 14:00 - 14:52</span>
+                </div>
+                <div class="doc-meta-item">
+                  <span class="doc-meta-label">Thời lượng âm thanh</span>
+                  <span class="doc-meta-value mono">00:52:18 (2 kênh)</span>
+                </div>
+                <div class="doc-meta-item">
+                  <span class="doc-meta-label">Chủ tọa cuộc họp</span>
+                  <span class="doc-meta-value">Lan Tran (Giám đốc Mua hàng)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Attendees Table -->
+            <div class="doc-section">
+              <h2 class="doc-section-title">
+                <span class="doc-section-num">1</span>
+                Thành phần tham dự (Participants)
+              </h2>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div style="padding:12px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--bg-subtle)">
+                  <div style="font-size:11px;font-weight:700;color:var(--brand-primary);text-transform:uppercase;margin-bottom:6px">Phía Công ty (Bên Mua)</div>
+                  <ul style="list-style:none;font-size:13px;display:flex;flex-direction:column;gap:4px">
+                    <li>• <b>Lan Tran</b> — Giám đốc Mua hàng (Chủ tọa)</li>
+                    <li>• <b>Minh Nguyen</b> — Trưởng phòng Kỹ thuật Phần cứng</li>
+                    <li>• <b>Viet Vu</b> — Chuyên viên Hợp đồng & Đàm phán</li>
+                  </ul>
+                </div>
+                <div style="padding:12px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--bg-subtle)">
+                  <div style="font-size:11px;font-weight:700;color:var(--ch-partner);text-transform:uppercase;margin-bottom:6px">Phía Đối tác (Bên Cung ứng)</div>
+                  <ul style="list-style:none;font-size:13px;display:flex;flex-direction:column;gap:4px">
+                    <li>• <b>David Miller</b> — Giám đốc Kinh doanh Khu vực Châu Á</li>
+                    <li>• <b>Jessica Chen</b> — Quản lý Chuỗi Cung ứng Quốc tế</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Executive Summary Callout -->
+            <div class="doc-section">
+              <h2 class="doc-section-title">
+                <span class="doc-section-num">2</span>
+                Tóm tắt điều hành (Executive Summary)
+              </h2>
+              <div class="summary-callout">
+                <div data-lang-content="vi">
+                  Hai bên đã đàm phán thành công và thống nhất các điều khoản sửa đổi của Hợp đồng cung ứng linh kiện vi xử lý đợt Q4/2026. Đối tác đồng ý giữ nguyên mức giá ưu đãi <b>$345/đơn vị</b> (giảm 8% so với giá đề xuất ban đầu) với điều kiện hợp đồng chính thức được ký kết trước ngày <b>31/10/2026</b>. Về điều khoản thanh toán, hai bên thống nhất áp dụng thư tín dụng trả chậm (L/C) 45 ngày thay vì 30 ngày. Lô hàng đầu tiên gồm 15.000 linh kiện sẽ cập cảng Hải Phòng trước ngày 15/11/2026.
+                </div>
+                <div data-lang-content="en" style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(37,99,235,0.2);color:var(--text-muted);font-style:italic">
+                  Both parties successfully finalized the revised terms for the Q4/2026 component supply contract. The supplier agreed to maintain the favorable unit price at <b>$345/unit</b> (an 8% reduction from initial proposal) on the condition that the formal agreement is signed prior to <b>October 31, 2026</b>. Payment terms are agreed at 45-day deferred L/C. The initial shipment of 15,000 units is scheduled to arrive at Hai Phong port before November 15, 2026.
+                </div>
+              </div>
+            </div>
+
+            <!-- Key Decisions (The Amber Highlight!) -->
+            <div class="doc-section">
+              <h2 class="doc-section-title">
+                <span class="doc-section-num" style="background:var(--status-amber-bg);color:var(--status-amber)">3</span>
+                Kết luận & Quyết định đã chốt (Key Decisions)
+              </h2>
+
+              <div class="decision-card-box">
+                <div class="decision-card-header">
+                  <span class="decision-tag">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    Quyết định 1 · Đã thống nhất
+                  </span>
+                  <span class="decision-timestamp">Mốc ghi âm: 00:18:24</span>
+                </div>
+                <div class="decision-card-content" data-lang-content="vi">
+                  Chốt đơn giá $345/đơn vị cho toàn bộ 50.000 linh kiện Q4/2026.
+                </div>
+                <div class="decision-card-sub" data-lang-content="vi">
+                  Điều kiện: Bên Mua phải hoàn tất chữ ký điện tử trên hợp đồng khung trước 17:00 ngày 31/10/2026.
+                </div>
+                <div class="decision-card-sub" data-lang-content="en" style="font-style:italic;margin-top:4px">
+                  EN: Fixed price locked at $345/unit for 50,000 units in Q4. Prerequisite: signed by Oct 31, 2026.
+                </div>
+              </div>
+
+              <div class="decision-card-box">
+                <div class="decision-card-header">
+                  <span class="decision-tag">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    Quyết định 2 · Đã thống nhất
+                  </span>
+                  <span class="decision-timestamp">Mốc ghi âm: 00:32:10</span>
+                </div>
+                <div class="decision-card-content" data-lang-content="vi">
+                  Phương thức thanh toán chuyển sang L/C trả chậm 45 ngày (Deferred L/C 45 days).
+                </div>
+                <div class="decision-card-sub" data-lang-content="vi">
+                  Bên Mua chịu chi phí mở L/C tại ngân hàng Vietcombank, Bên Bán xác nhận thông báo trong vòng 3 ngày làm việc.
+                </div>
+              </div>
+
+              <div class="decision-card-box">
+                <div class="decision-card-header">
+                  <span class="decision-tag">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    Quyết định 3 · Đã thống nhất
+                  </span>
+                  <span class="decision-timestamp">Mốc ghi âm: 00:44:15</span>
+                </div>
+                <div class="decision-card-content" data-lang-content="vi">
+                  Lịch giao hàng đợt 1 cập cảng Hải Phòng trước 15/11/2026.
+                </div>
+                <div class="decision-card-sub" data-lang-content="vi">
+                  Khối lượng đợt 1: 15.000 đơn vị linh kiện bo mạch chính. Bên Bán cung cấp số vận đơn (Bill of Lading) trước 05/11.
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Items Checklist -->
+            <div class="doc-section">
+              <h2 class="doc-section-title">
+                <span class="doc-section-num">4</span>
+                Kế hoạch hành động & Phân công (Action Items)
+              </h2>
+
+              <div class="action-item-row">
+                <div class="action-checkbox checked">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div class="action-body">
+                  <div class="action-title" style="text-decoration:line-through;opacity:0.6" data-lang-content="vi">
+                    Cập nhật phụ lục đơn giá $345 vào hợp đồng tiếng Anh & tiếng Việt
+                  </div>
+                  <div class="action-meta-row">
+                    <span class="assignee-chip">
+                      <span class="avatar-circle" style="width:18px;height:18px;font-size:9px">VV</span>
+                      Viet Vu (Pháp chế)
+                    </span>
+                    <span class="due-chip">Hoàn tất 22/10</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-item-row">
+                <div class="action-checkbox"></div>
+                <div class="action-body">
+                  <div class="action-title" data-lang-content="vi">
+                    Liên hệ Vietcombank để phê duyệt hạn mức phát hành L/C 45 ngày
+                  </div>
+                  <div class="action-meta-row">
+                    <span class="assignee-chip">
+                      <span class="avatar-circle" style="width:18px;height:18px;font-size:9px;background:#0d9488">LT</span>
+                      Lan Tran (Kế toán)
+                    </span>
+                    <span class="due-chip overdue">Hạn chót: 25/10/2026</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-item-row">
+                <div class="action-checkbox"></div>
+                <div class="action-body">
+                  <div class="action-title" data-lang-content="vi">
+                    Chuẩn bị kho bãi và thủ tục hải quan tiếp nhận 15.000 linh kiện đợt 1
+                  </div>
+                  <div class="action-meta-row">
+                    <span class="assignee-chip">
+                      <span class="avatar-circle" style="width:18px;height:18px;font-size:9px;background:#1d4ed8">MN</span>
+                      Minh Nguyen (Kho vận)
+                    </span>
+                    <span class="due-chip">Hạn chót: 08/11/2026</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Open Issues -->
+            <div class="doc-section">
+              <h2 class="doc-section-title">
+                <span class="doc-section-num">5</span>
+                Vấn đề còn tồn đọng (Open Issues)
+              </h2>
+              <div style="padding:14px 18px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--bg-subtle);font-size:13.5px;color:var(--text-body)">
+                <div style="font-weight:600;color:var(--status-warn);margin-bottom:4px">Phụ phí vận chuyển hàng không khẩn cấp:</div>
+                <div data-lang-content="vi">
+                  Trong trường hợp thời tiết xấu ảnh hưởng đến chuyến tàu biển ngày 05/11, đối tác đề xuất phương án chuyển phát nhanh 2.000 đơn vị qua đường hàng không. Chi phí chênh lệch ($1.200) sẽ được xem xét và quyết định vào ngày 03/11.
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Right Column: Audio Playback & Transcript Inspector -->
+          <aside style="display:flex;flex-direction:column;gap:20px">
+            <!-- Simulated Audio Player Card -->
+            <div class="card" style="padding:18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <span style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-muted)">Âm thanh cuộc họp</span>
+                <span class="badge-pill ended" style="font-size:10px;padding:1px 6px">16 kHz Stereo</span>
+              </div>
+
+              <!-- Audio waveform and controls -->
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+                <button class="btn-primary" data-action="toggle-audio" style="width:40px;height:40px;padding:0;border-radius:50%;justify-content:center;box-shadow:0 2px 6px rgba(29,78,216,0.3)" title="Phát / Dừng">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+                </button>
+                <div style="flex:1">
+                  <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px" class="mono">
+                    <span data-audio-time style="font-weight:600;color:var(--text-main)">18:24</span>
+                    <span style="color:var(--text-subtle)">52:18</span>
+                  </div>
+                  <!-- Progress Bar -->
+                  <div style="height:6px;background:var(--bg-muted);border-radius:3px;overflow:hidden;position:relative">
+                    <div style="width:35%;height:100%;background:var(--brand-primary);border-radius:3px"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Jump to Decisions Links -->
+              <div style="font-size:11px;font-weight:600;color:var(--text-subtle);text-transform:uppercase;margin-bottom:6px">Điểm chốt quyết định:</div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <a href="#decision1" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-subtle);border-radius:var(--radius-sm);font-size:12px;color:var(--text-main);transition:all .15s">
+                  <span>Chốt đơn giá $345</span>
+                  <span class="mono" style="color:var(--status-amber);font-weight:600">18:24</span>
+                </a>
+                <a href="#decision2" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-subtle);border-radius:var(--radius-sm);font-size:12px;color:var(--text-main);transition:all .15s">
+                  <span>Điều khoản L/C 45 ngày</span>
+                  <span class="mono" style="color:var(--status-amber);font-weight:600">32:10</span>
+                </a>
+                <a href="#decision3" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-subtle);border-radius:var(--radius-sm);font-size:12px;color:var(--text-main);transition:all .15s">
+                  <span>Lịch cập cảng Hải Phòng</span>
+                  <span class="mono" style="color:var(--status-amber);font-weight:600">44:15</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Transcript Context Snippet Card -->
+            <div class="card" style="padding:18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <span style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-muted)">Đoạn hội thoại gốc</span>
+                <span class="mono" style="font-size:11px;color:var(--text-subtle)">Tại 00:18:24</span>
+              </div>
+
+              <div style="font-size:12.5px;display:flex;flex-direction:column;gap:12px">
+                <div style="padding:10px;background:var(--ch-partner-bg);border-radius:var(--radius-sm);border-left:3px solid var(--ch-partner)">
+                  <div style="font-size:11px;font-weight:700;color:var(--ch-partner);margin-bottom:3px">DAVID MILLER (ĐỐI TÁC - TAB AUDIO)</div>
+                  <div style="color:var(--text-main);font-weight:500">"We can hold the unit price at 345 dollars if you can commit to signing the master purchase agreement before the end of this month."</div>
+                  <div style="color:var(--text-muted);margin-top:4px;font-style:italic">"Chúng tôi có thể giữ giá $345/đơn vị nếu các bạn cam kết ký thỏa thuận mua hàng khung trước cuối tháng này."</div>
+                </div>
+
+                <div style="padding:10px;background:var(--ch-me-bg);border-radius:var(--radius-sm);border-left:3px solid var(--ch-me)">
+                  <div style="font-size:11px;font-weight:700;color:var(--ch-me);margin-bottom:3px">LAN TRAN (TÔI - MIC)</div>
+                  <div style="color:var(--text-main);font-weight:500">"Agreed. We will submit the signed contract via DocuSign by October 31st."</div>
+                  <div style="color:var(--text-muted);margin-top:4px;font-style:italic">"Đồng ý. Chúng tôi sẽ nộp hợp đồng đã ký qua DocuSign trước ngày 31/10."</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Model Metadata -->
+            <div class="card" style="padding:16px;background:var(--bg-subtle)">
+              <div style="font-size:11px;font-weight:700;color:var(--text-subtle);text-transform:uppercase;margin-bottom:8px">Thông tin tạo biên bản</div>
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+                <div style="display:flex;justify-content:space-between">
+                  <span style="color:var(--text-muted)">Mô hình LLM:</span>
+                  <span style="font-weight:600;color:var(--text-main)">OpenAI GPT-4.1</span>
+                </div>
+                <div style="display:flex;justify-content:space-between">
+                  <span style="color:var(--text-muted)">STT Engine:</span>
+                  <span style="font-weight:600;color:var(--text-main)">Deepgram Nova-3 (2ch)</span>
+                </div>
+                <div style="display:flex;justify-content:space-between">
+                  <span style="color:var(--text-muted)">Độ chính xác nhận diện:</span>
+                  <span style="font-weight:600;color:var(--status-ok)">98,4%</span>
+                </div>
+                <div style="display:flex;justify-content:space-between">
+                  <span style="color:var(--text-muted)">Số đoạn chép lời:</span>
+                  <span class="mono" style="font-weight:600;color:var(--text-main)">142 segments</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

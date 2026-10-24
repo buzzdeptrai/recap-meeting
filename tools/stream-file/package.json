@@ -1,0 +1,18 @@
+{
+  "name": "@recap/tool-stream-file",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.2"
+  },
+  "dependencies": {
+    "@recap/core": "*",
+    "@recap/db": "*",
+    "ws": "^8.22.0"
+  }
+}

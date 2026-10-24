@@ -1,0 +1,266 @@
+/*
+ * @recap/admin-ui — "Soft" theme.
+ *
+ * Host usage (Tailwind 4, e.g. apps/web/src/app/globals.css):
+ *   @import "tailwindcss";
+ *   @import "@recap/admin-ui/theme.css";
+ *
+ * Fonts are provided by the host app: load Be Vietnam Pro (400/600/700, latin + vietnamese) and
+ * JetBrains Mono, then point the kit at them, e.g. with next/font:
+ *   :root { --soft-font-sans: var(--font-be-vietnam), system-ui, sans-serif; --soft-font-mono: var(--font-jetbrains), ui-monospace, monospace; }
+ * Without that the system UI stack is used.
+ *
+ * All tokens are prefixed `--soft-*` so they never collide with an app's own tokens.
+ * Dark mode is opt-in via `<html data-theme="dark">` (stub; light is the reference). v2 tokens (page, inset, tone-a/b, info, olive, card/float shadows) have dark values too.
+ */
+
+/* Make Tailwind generate the utilities used inside this package's source. */
+@source "./";
+
+:root {
+  --soft-bg: #f8f9fa;
+  --soft-surface: #ffffff;
+  --soft-ink: #344767;
+  --soft-muted: #67748e;
+  --soft-line: #e9ecef;
+  --soft-fill: #f0f2f5;
+  --soft-grid: #d9dde4;
+
+  --soft-purple: #7928ca;
+  --soft-pink: #ff0080;
+  --soft-navy: #3a416f;
+  --soft-ok: #17ad37;
+  --soft-bad: #ea0606;
+  --soft-warn: #e8a100;
+  /* Amber is reserved for conclusions (decisions / action items) in minutes. */
+  --soft-conclusion: #b45309;
+  --soft-conclusion-bg: #fdf1e3;
+
+  /* End stop darkened from #ff0080 so white 13px bold text on it passes WCAG AA (4.7:1 vs 3.8:1). */
+  --soft-g-main: linear-gradient(310deg, #7928ca, #e0006f);
+  --soft-g-dark: linear-gradient(310deg, #141727, #3a416f);
+  --soft-g-blue: linear-gradient(310deg, #2152ff, #21d4fd);
+  --soft-g-orange: linear-gradient(310deg, #f53939, #fbcf33);
+  --soft-g-green: linear-gradient(310deg, #17ad37, #98ec2d);
+  --soft-g-red: linear-gradient(310deg, #ea0606, #ff667c);
+
+  --soft-radius: 16px;
+  --soft-shadow: 0 20px 27px rgba(0, 0, 0, 0.05);
+  --soft-shadow-sm: 0 3px 5px -1px rgba(0, 0, 0, 0.09), 0 2px 3px -1px rgba(0, 0, 0, 0.07);
+  --soft-shadow-tile: 0 4px 7px rgba(52, 71, 103, 0.18);
+  --soft-shadow-pop: 0 8px 24px rgba(52, 71, 103, 0.18);
+  --soft-glow-main: 0 4px 7px rgba(121, 40, 202, 0.3);
+  --soft-focus: rgba(121, 40, 202, 0.45);
+
+  --soft-sidebar-w: 272px;
+  --soft-sidebar-w-collapsed: 88px;
+
+  --soft-font-sans: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --soft-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Categorical chart colours (vendor stacks etc.). */
+  --soft-chart-1: #7928ca;
+  --soft-chart-2: #ff0080;
+  --soft-chart-3: #3a416f;
+  --soft-chart-4: #17c1e8;
+  --soft-chart-5: #a8b8d8;
+
+  /* ---- v2 tokens (additive; used by FloatCard, PillTabs, Chip, Bubble, ...) ---- */
+  /* Pale tinted page background for floating-card layouts (opt-in: `bg-soft-page`). */
+  --soft-page: #eef2f9;
+  /* Inset surfaces sitting on a white card, and a stronger hairline. */
+  --soft-inset: #f3f6fc;
+  --soft-inset-2: #e8edf7;
+  --soft-line-strong: #d3dcee;
+  --soft-faint: #94a3b8;
+  /* Blue accent (selected counts, "info" tone, topic chips). */
+  --soft-accent: #1d4ed8;
+  --soft-accent-soft: #e8efff;
+  --soft-accent-ink: #1e40af;
+  /* Two neutral row tones, e.g. "self" (a, blue) and "other" (b, teal). bg = bubble, chip = icon holder, bar = meter fill. */
+  --soft-tone-a-bg: #eef3ff;
+  --soft-tone-a-ink: #1d4ed8;
+  --soft-tone-a-chip: #dbe6ff;
+  --soft-tone-a-bar: #1d4ed8;
+  --soft-tone-b-bg: #e9f7f4;
+  --soft-tone-b-ink: #0f766e;
+  --soft-tone-b-chip: #cdeee8;
+  --soft-tone-b-bar: #0d9488;
+  /* Status tints (Chip / Banner). */
+  --soft-info-bg: #eaf1ff;
+  --soft-info-ink: #1e3a8a;
+  --soft-info-line: #c4d6fb;
+  --soft-ok-bg: #dcf5e9;
+  --soft-ok-ink: #047857;
+  --soft-danger-bg: #ffe4e9;
+  --soft-danger-ink: #be123c;
+  /* Olive-yellow warning: deliberately distinct from the amber conclusion tone. */
+  --soft-olive-bg: #fefae0;
+  --soft-olive-ink: #665400;
+  --soft-olive-line: #e6d98a;
+  --soft-olive-icon: #a68600;
+  --soft-conclusion-line: #f2c78e;
+
+  --soft-radius-card: 24px;
+  --soft-radius-inner: 18px;
+  --soft-radius-pill: 9999px;
+  --soft-shadow-card: 0 10px 30px rgba(30, 50, 110, 0.07), 0 2px 6px rgba(30, 50, 110, 0.04);
+  --soft-shadow-float: 0 12px 32px rgba(30, 50, 110, 0.16), 0 2px 8px rgba(30, 50, 110, 0.08);
+  --soft-shadow-seg: 0 1px 4px rgba(30, 50, 110, 0.14);
+}
+
+/* Neutral dark stub: grey surfaces, same accents. Not tuned yet. */
+:root[data-theme="dark"] {
+  --soft-bg: #101114;
+  --soft-surface: #191b20;
+  --soft-ink: #e6e8ec;
+  --soft-muted: #9aa2b1;
+  --soft-line: #2a2d34;
+  --soft-fill: #23262c;
+  --soft-grid: #33363e;
+  --soft-conclusion: #f2a34a;
+  --soft-conclusion-bg: #33240f;
+  --soft-shadow: 0 20px 27px rgba(0, 0, 0, 0.35);
+  --soft-shadow-sm: 0 3px 5px -1px rgba(0, 0, 0, 0.5);
+  --soft-shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  --soft-page: #0b0c0f;
+  --soft-inset: #21242b;
+  --soft-inset-2: #2b2f37;
+  --soft-line-strong: #3a3e48;
+  --soft-faint: #6b7385;
+  --soft-accent: #3b82f6;
+  --soft-accent-soft: rgba(59, 130, 246, 0.18);
+  --soft-accent-ink: #93b8ff;
+  --soft-tone-a-bg: rgba(59, 130, 246, 0.14);
+  --soft-tone-a-ink: #8db4ff;
+  --soft-tone-a-chip: rgba(59, 130, 246, 0.28);
+  --soft-tone-a-bar: #3b82f6;
+  --soft-tone-b-bg: rgba(13, 148, 136, 0.16);
+  --soft-tone-b-ink: #5dd6c7;
+  --soft-tone-b-chip: rgba(13, 148, 136, 0.32);
+  --soft-tone-b-bar: #0d9488;
+  --soft-info-bg: rgba(59, 130, 246, 0.14);
+  --soft-info-ink: #b7ccff;
+  --soft-info-line: rgba(59, 130, 246, 0.35);
+  --soft-ok-bg: rgba(5, 150, 105, 0.2);
+  --soft-ok-ink: #4cc38a;
+  --soft-danger-bg: rgba(225, 29, 72, 0.2);
+  --soft-danger-ink: #ff8ea0;
+  --soft-olive-bg: rgba(230, 217, 138, 0.1);
+  --soft-olive-ink: #f0e08a;
+  --soft-olive-line: rgba(230, 217, 138, 0.35);
+  --soft-olive-icon: #f0e08a;
+  --soft-conclusion-line: rgba(242, 163, 74, 0.45);
+  --soft-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --soft-shadow-float: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --soft-shadow-seg: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+@theme inline {
+  --color-soft-bg: var(--soft-bg);
+  --color-soft-surface: var(--soft-surface);
+  --color-soft-ink: var(--soft-ink);
+  --color-soft-muted: var(--soft-muted);
+  --color-soft-line: var(--soft-line);
+  --color-soft-fill: var(--soft-fill);
+  --color-soft-purple: var(--soft-purple);
+  --color-soft-pink: var(--soft-pink);
+  --color-soft-navy: var(--soft-navy);
+  --color-soft-ok: var(--soft-ok);
+  --color-soft-bad: var(--soft-bad);
+  --color-soft-warn: var(--soft-warn);
+  --color-soft-conclusion: var(--soft-conclusion);
+  --color-soft-conclusion-bg: var(--soft-conclusion-bg);
+  --color-soft-conclusion-line: var(--soft-conclusion-line);
+  --color-soft-page: var(--soft-page);
+  --color-soft-inset: var(--soft-inset);
+  --color-soft-inset-2: var(--soft-inset-2);
+  --color-soft-line-strong: var(--soft-line-strong);
+  --color-soft-faint: var(--soft-faint);
+  --color-soft-accent: var(--soft-accent);
+  --color-soft-accent-soft: var(--soft-accent-soft);
+  --color-soft-accent-ink: var(--soft-accent-ink);
+  --color-soft-tone-a-bg: var(--soft-tone-a-bg);
+  --color-soft-tone-a-ink: var(--soft-tone-a-ink);
+  --color-soft-tone-a-chip: var(--soft-tone-a-chip);
+  --color-soft-tone-a-bar: var(--soft-tone-a-bar);
+  --color-soft-tone-b-bg: var(--soft-tone-b-bg);
+  --color-soft-tone-b-ink: var(--soft-tone-b-ink);
+  --color-soft-tone-b-chip: var(--soft-tone-b-chip);
+  --color-soft-tone-b-bar: var(--soft-tone-b-bar);
+  --color-soft-info-bg: var(--soft-info-bg);
+  --color-soft-info-ink: var(--soft-info-ink);
+  --color-soft-info-line: var(--soft-info-line);
+  --color-soft-ok-bg: var(--soft-ok-bg);
+  --color-soft-ok-ink: var(--soft-ok-ink);
+  --color-soft-danger-bg: var(--soft-danger-bg);
+  --color-soft-danger-ink: var(--soft-danger-ink);
+  --color-soft-olive-bg: var(--soft-olive-bg);
+  --color-soft-olive-ink: var(--soft-olive-ink);
+  --color-soft-olive-line: var(--soft-olive-line);
+  --color-soft-olive-icon: var(--soft-olive-icon);
+
+  --radius-soft: var(--soft-radius);
+  --radius-soft-card: var(--soft-radius-card);
+  --radius-soft-inner: var(--soft-radius-inner);
+  --radius-soft-pill: var(--soft-radius-pill);
+
+  --shadow-soft-card: var(--soft-shadow-card);
+  --shadow-soft-float: var(--soft-shadow-float);
+  --shadow-soft-seg: var(--soft-shadow-seg);
+
+  --shadow-soft: var(--soft-shadow);
+  --shadow-soft-sm: var(--soft-shadow-sm);
+  --shadow-soft-tile: var(--soft-shadow-tile);
+  --shadow-soft-pop: var(--soft-shadow-pop);
+
+  --font-soft: var(--soft-font-sans);
+  --font-soft-mono: var(--soft-font-mono);
+}
+
+/* Gradient backgrounds as utilities: bg-soft-main, bg-soft-dark, ... */
+@utility bg-soft-main {
+  background-image: var(--soft-g-main);
+}
+@utility bg-soft-dark {
+  background-image: var(--soft-g-dark);
+}
+@utility bg-soft-blue {
+  background-image: var(--soft-g-blue);
+}
+@utility bg-soft-orange {
+  background-image: var(--soft-g-orange);
+}
+@utility bg-soft-green {
+  background-image: var(--soft-g-green);
+}
+@utility bg-soft-red {
+  background-image: var(--soft-g-red);
+}
+@utility text-soft-gradient {
+  background-image: var(--soft-g-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@utility soft-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus ring shared by every interactive part of the kit. */
+@utility soft-focus {
+  &:focus-visible {
+    outline: 3px solid var(--soft-focus);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-soft-root] *,
+  [data-soft-root] *::before,
+  [data-soft-root] *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

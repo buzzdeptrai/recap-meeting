@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tổng quan điều hành · Biên bản</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="dashboard.html" class="brand-link">
+          <div class="brand-logo-mark">B</div>
+          <span>Biên bản</span>
+          <span class="brand-tag">Pro</span>
+        </a>
+      </div>
+
+      <div class="sidebar-body">
+        <div>
+          <div class="nav-group-label">Làm việc</div>
+          <ul class="nav-list">
+            <li>
+              <a href="dashboard.html" class="nav-item-link active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                <span>Tổng quan</span>
+              </a>
+            </li>
+            <li>
+              <a href="meetings.html" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <span>Cuộc họp</span>
+                <span class="nav-live-dot" title="Có 1 cuộc họp đang ghi"></span>
+                <span class="nav-badge">38</span>
+              </a>
+            </li>
+            <li>
+              <a href="minutes.html" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span>Biên bản mẫu</span>
+                <span class="nav-badge" style="background:var(--status-amber-bg);color:var(--status-amber);border:1px solid var(--status-amber-border)">Mới</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                <span>Thuật ngữ nhóm</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="nav-group-label">Hệ thống</div>
+          <ul class="nav-list">
+            <li>
+              <a href="#" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                <span>Mức dùng & Chi phí</span>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="nav-item-link">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                <span>Cài đặt</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="sidebar-quick-box">
+          <div class="sqb-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            Sẵn sàng ghi âm
+          </div>
+          <div class="sqb-desc">Kết nối âm thanh tab Zoom/Teams và mic 2 kênh riêng biệt.</div>
+          <a href="meetings.html" class="sqb-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Cuộc họp mới
+          </a>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-box">
+          <div class="avatar-circle">VV</div>
+          <div class="user-info-text">
+            <div class="user-name">Viet Vu</div>
+            <div class="user-role">Quản trị viên</div>
+          </div>
+        </div>
+        <button class="icon-btn" data-action="toggle-theme" title="Đổi giao diện sáng/tối" style="width:30px;height:30px">
+          <svg data-theme-icon width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Layout -->
+    <div class="app-main">
+      <!-- Topbar Header -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <div class="breadcrumbs">
+            <a href="dashboard.html">Biên bản</a>
+            <span class="sep">/</span>
+            <span class="current">Tổng quan</span>
+          </div>
+          <div class="global-search-wrapper">
+            <svg class="global-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="global-search-input" placeholder="Tìm cuộc họp, quyết định, nội dung...">
+            <span class="kbd-shortcut">⌘K</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="ai-status-pill" title="Deepgram, Gemini, OpenAI đều phản hồi tốt">
+            <span class="ai-status-dot"></span>
+            <span>Hệ thống AI ổn định</span>
+          </div>
+          <button class="icon-btn" title="Thông báo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span class="notif-badge-dot"></span>
+          </button>
+          <a href="meetings.html" class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Cuộc họp mới
+          </a>
+        </div>
+      </header>
+
+      <!-- Page Body -->
+      <main class="page-body">
+        <!-- Page Title & Quick Date Filter -->
+        <div class="page-header-row">
+          <div>
+            <h1 class="page-title">Tổng quan điều hành</h1>
+            <p class="page-subtitle">Thứ Năm, 22/10/2026 · Cập nhật tức thời qua WebSocket realtime</p>
+          </div>
+          <div class="segmented-control">
+            <button class="segment-btn">Hôm nay</button>
+            <button class="segment-btn">7 ngày</button>
+            <button class="segment-btn active">Tháng 10/2026</button>
+            <button class="segment-btn">Tùy chọn</button>
+          </div>
+        </div>
+
+        <!-- Live Meeting Ongoing Banner (Instant WOW) -->
+        <div class="card" style="margin-bottom:24px;border-left:4px solid var(--status-live);background:linear-gradient(90deg, var(--status-live-bg) 0%, var(--bg-card) 40%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span class="badge-pill live">
+              <span class="pulse-dot"></span>
+              ĐANG GHI ÂM
+            </span>
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--text-main);display:flex;align-items:center;gap:8px">
+                Rà soát hợp đồng cung ứng linh kiện Q4 với đối tác Đài Loan
+                <span class="lang-chip">VI <span class="lang-arrow">⇄</span> EN</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:12px;margin-top:2px">
+                <span>Chủ trì: <b>Minh Nguyen</b></span>
+                <span>·</span>
+                <span class="mono" style="color:var(--status-live);font-weight:600">● 00:24:05</span>
+                <span>·</span>
+                <span class="live-wave-bar">
+                  <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+                </span>
+                <span>Kênh âm thanh: Mic (Tôi) + Tab âm thanh (Đối tác)</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <a href="minutes.html" class="btn-primary" style="background-color:var(--status-live);border-color:var(--status-live);box-shadow:0 2px 6px rgba(225,29,72,0.3)">
+              Vào phòng họp trực tiếp
+            </a>
+          </div>
+        </div>
+
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Cuộc họp tháng này</span>
+              <div class="kpi-icon-pill" style="background:var(--brand-primary-light);color:var(--brand-primary)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val-row">
+              <span class="kpi-value">38</span>
+              <span class="kpi-unit">cuộc họp</span>
+              <span class="kpi-delta up">+18,8%</span>
+            </div>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 79%;"></div>
+            </div>
+            <div class="kpi-footer-meta">
+              <span>Mục tiêu: 48 cuộc</span>
+              <span>79% hoàn thành</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Tổng thời lượng chép lời</span>
+              <div class="kpi-icon-pill" style="background:#ecfdf5;color:#059669">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val-row">
+              <span class="kpi-value">79,2</span>
+              <span class="kpi-unit">giờ</span>
+              <span class="kpi-delta up">+13,4%</span>
+            </div>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 82%; background:#059669;"></div>
+            </div>
+            <div class="kpi-footer-meta">
+              <span>TB 1h 05m / cuộc</span>
+              <span>82% hạn mức gói</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Biên bản đã xuất Word</span>
+              <div class="kpi-icon-pill" style="background:#eff6ff;color:#2563eb">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val-row">
+              <span class="kpi-value">31</span>
+              <span class="kpi-unit">/ 38 cuộc</span>
+              <span class="kpi-delta up">81,6%</span>
+            </div>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 82%; background:#2563eb;"></div>
+            </div>
+            <div class="kpi-footer-meta">
+              <span>Tiết kiệm ~42 giờ chép tay</span>
+              <span>3 đang chờ duyệt</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-label">Việc cần làm & Kết luận</span>
+              <div class="kpi-icon-pill" style="background:var(--status-amber-bg);color:var(--status-amber)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val-row">
+              <span class="kpi-value">14</span>
+              <span class="kpi-unit">việc mở</span>
+              <span class="kpi-delta alert">5 quá hạn</span>
+            </div>
+            <div class="kpi-progress-bar">
+              <div class="kpi-progress-fill" style="width: 36%; background:var(--status-live);"></div>
+            </div>
+            <div class="kpi-footer-meta">
+              <span>9 đến hạn tuần này</span>
+              <span>5 đã xong</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Split: Activity Chart & Urgent Action Items -->
+        <div style="display:grid;grid-template-columns:7fr 5fr;gap:24px;margin-bottom:24px">
+          <!-- Activity 30 Days SVG Chart -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-icon-box">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <div>
+                  <h2 class="card-title">Tần suất cuộc họp 30 ngày qua</h2>
+                  <p class="card-subtitle">Từ 23/09 đến 22/10/2026 · Phân bố theo ngày làm việc</p>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text-muted)">
+                <span style="display:flex;align-items:center;gap:5px"><i style="width:8px;height:8px;background:var(--brand-primary);border-radius:2px"></i>Cuộc họp</span>
+                <span style="display:flex;align-items:center;gap:5px"><i style="width:8px;height:8px;background:var(--status-live);border-radius:2px"></i>Hôm nay</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <svg viewBox="0 0 680 230" style="width:100%;height:auto;overflow:visible">
+                <defs>
+                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3b82f6"/>
+                    <stop offset="100%" stop-color="#1d4ed8"/>
+                  </linearGradient>
+                  <linearGradient id="todayGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#f43f5e"/>
+                    <stop offset="100%" stop-color="#e11d48"/>
+                  </linearGradient>
+                </defs>
+                <!-- Grid Lines -->
+                <line x1="30" y1="20" x2="670" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+                <text x="20" y="24" font-size="11" fill="var(--text-subtle)" text-anchor="end" class="mono">8</text>
+                <line x1="30" y1="75" x2="670" y2="75" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+                <text x="20" y="79" font-size="11" fill="var(--text-subtle)" text-anchor="end" class="mono">6</text>
+                <line x1="30" y1="130" x2="670" y2="130" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+                <text x="20" y="134" font-size="11" fill="var(--text-subtle)" text-anchor="end" class="mono">4</text>
+                <line x1="30" y1="185" x2="670" y2="185" stroke="var(--border-subtle)"/>
+                <text x="20" y="189" font-size="11" fill="var(--text-subtle)" text-anchor="end" class="mono">0</text>
+
+                <!-- Chart Bars -->
+                <rect x="42" y="130" width="12" height="55" rx="3" fill="url(#barGrad)"/>
+                <rect x="64" y="105" width="12" height="80" rx="3" fill="url(#barGrad)"/>
+                <rect x="86" y="155" width="12" height="30" rx="3" fill="url(#barGrad)"/>
+                <rect x="108" y="180" width="12" height="5" rx="2" fill="var(--border-medium)"/>
+                <rect x="130" y="180" width="12" height="5" rx="2" fill="var(--border-medium)"/>
+                <rect x="152" y="75" width="12" height="110" rx="3" fill="url(#barGrad)"/>
+                <rect x="174" y="105" width="12" height="80" rx="3" fill="url(#barGrad)"/>
+                <rect x="196" y="130" width="12" height="55" rx="3" fill="url(#barGrad)"/>
+                <rect x="218" y="50" width="12" height="135" rx="3" fill="url(#barGrad)"/>
+                <rect x="240" y="105" width="12" height="80" rx="3" fill="url(#barGrad)"/>
+                <rect x="262" y="180" width="12" height="5" rx="2" fill="var(--border-medium)"/>
+                <rect x="284" y="180" width="12" height="5" rx="2" fill="var(--border-medium)"/>
+                <rect x="306" y="130" width="12" height="55" rx="3" fill="url(#barGrad)"/>
+                <rect x="328" y="75" width="12" height="110" rx="3" fill="url(#barGrad)"/>
+                <rect x="350" y="105" width="12" height="80" rx="3" fill="url(#barGrad)"/>
+                <rect x="372" y="25" width="12" height="160" rx="3" fill="url(#barGrad)"/>
+                <rect x="394" y="130" width="12" height="55" rx="3" fill="url(#barGrad)"/>
+                <rect x="416" y="180" width="12" height="5" rx="2" fill="var(--border-medium)"/>
+                <rect x="438" y="155" width="12" height="30" rx="3" fill="url(#barGrad)"/>
+                <rect x="460" y="105" width="12" height="80" rx="3" fill="url(#barGrad)"/>
+                <rect x="482" y="75" width="12" height="110" rx="3" fill="url(#barGrad)"/>
+                <rect x="504" y="50" width="12" height="135" rx="3" fill="url(#barGrad)"/>
+                <rect x="526" y="130" width="12" height="55" rx="3" fill="url(#barGrad)"/>
+                <rect x="548" y="105" width="12" height="80" rx="3" fill="url(#barGrad)"/>
+                <rect x="570" y="180" width="12" height="5" rx="2" fill="var(--border-medium)"/>
+                <rect x="592" y="75" width="12" height="110" rx="3" fill="url(#barGrad)"/>
+                <rect x="614" y="50" width="12" height="135" rx="3" fill="url(#barGrad)"/>
+                <!-- Today Bar Highlighted -->
+                <rect x="636" y="35" width="14" height="150" rx="3" fill="url(#todayGrad)"/>
+
+                <!-- X Axis Labels -->
+                <text x="48" y="205" font-size="11" fill="var(--text-subtle)" text-anchor="middle" class="mono">23/09</text>
+                <text x="158" y="205" font-size="11" fill="var(--text-subtle)" text-anchor="middle" class="mono">28/09</text>
+                <text x="312" y="205" font-size="11" fill="var(--text-subtle)" text-anchor="middle" class="mono">05/10</text>
+                <text x="488" y="205" font-size="11" fill="var(--text-subtle)" text-anchor="middle" class="mono">13/10</text>
+                <text x="643" y="205" font-size="11" fill="var(--status-live)" font-weight="700" text-anchor="middle" class="mono">Hôm nay</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Urgent Action Items / Decisions -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-icon-box" style="background:var(--status-amber-bg);color:var(--status-amber)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                </div>
+                <div>
+                  <h2 class="card-title">Việc cần làm ưu tiên</h2>
+                  <p class="card-subtitle">Trích xuất tự động từ kết luận cuộc họp</p>
+                </div>
+              </div>
+              <a href="#" class="btn-ghost">Xem tất cả 14</a>
+            </div>
+            <div class="card-body" style="padding:16px 20px">
+              <div class="action-item-row">
+                <div class="action-checkbox checked">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div class="action-body">
+                  <div class="action-title" style="text-decoration:line-through;opacity:0.6">Gửi báo giá bổ sung cho đối tác Đài Loan</div>
+                  <div class="action-meta-row">
+                    <span class="assignee-chip">
+                      <span class="avatar-circle" style="width:18px;height:18px;font-size:9px">MN</span>
+                      Minh Nguyen
+                    </span>
+                    <span class="due-chip">Đã xong 22/10</span>
+                    <span class="badge-pill amber" style="font-size:10px;padding:1px 6px">Đã chốt</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-item-row">
+                <div class="action-checkbox"></div>
+                <div class="action-body">
+                  <div class="action-title">Cập nhật kế hoạch triển khai giai đoạn 2 sang định dạng Word</div>
+                  <div class="action-meta-row">
+                    <span class="assignee-chip">
+                      <span class="avatar-circle" style="width:18px;height:18px;font-size:9px;background:#0d9488">LT</span>
+                      Lan Tran
+                    </span>
+                    <span class="due-chip overdue">Hôm nay (22/10)</span>
+                    <span class="badge-pill amber" style="font-size:10px;padding:1px 6px">Đã chốt</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-item-row">
+                <div class="action-checkbox"></div>
+                <div class="action-body">
+                  <div class="action-title">Xác nhận lịch họp kỹ thuật vòng hai với ứng viên Backend</div>
+                  <div class="action-meta-row">
+                    <span class="assignee-chip">
+                      <span class="avatar-circle" style="width:18px;height:18px;font-size:9px;background:#6366f1">HL</span>
+                      Hùng Lê
+                    </span>
+                    <span class="due-chip">Ngày mai (23/10)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-item-row">
+                <div class="action-checkbox"></div>
+                <div class="action-body">
+                  <div class="action-title">Gửi biên bản song ngữ Anh - Việt cho nhà cung cấp thiết bị</div>
+                  <div class="action-meta-row">
+                    <span class="assignee-chip">
+                      <span class="avatar-circle" style="width:18px;height:18px;font-size:9px;background:#0d9488">LT</span>
+                      Lan Tran
+                    </span>
+                    <span class="due-chip overdue">Quá hạn 2 ngày</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Meetings Table -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="card-icon-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+              </div>
+              <div>
+                <h2 class="card-title">Cuộc họp gần đây</h2>
+                <p class="card-subtitle">Hiển thị 5 cuộc họp mới nhất kèm trạng thái biên bản</p>
+              </div>
+            </div>
+            <a href="meetings.html" class="btn-secondary">
+              Xem tất cả 38 cuộc họp
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cuộc họp</th>
+                  <th>Chủ trì & Người tham dự</th>
+                  <th>Thời gian</th>
+                  <th>Thời lượng</th>
+                  <th>Ngôn ngữ</th>
+                  <th>Trạng thái</th>
+                  <th style="text-align:right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="highlight-live">
+                  <td>
+                    <div class="meeting-title-cell">
+                      <a href="minutes.html" class="meeting-title-text" style="color:var(--status-live)">
+                        ● Rà soát hợp đồng cung ứng linh kiện Q4
+                      </a>
+                      <div class="meeting-sub-tags">
+                        <span>Chủ đề: Báo giá linh kiện, điều khoản thanh toán</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar-stack">
+                        <div class="avatar-stack-item" style="background:#1d4ed8">MN</div>
+                        <div class="avatar-stack-item" style="background:#0d9488">LT</div>
+                        <div class="avatar-stack-item" style="background:#e11d48">DM</div>
+                      </div>
+                      <span style="font-size:12.5px;color:var(--text-muted)">Minh Nguyen (3 người)</span>
+                    </div>
+                  </td>
+                  <td class="mono">Hôm nay, 10:12</td>
+                  <td>
+                    <span class="mono" style="color:var(--status-live);font-weight:600">00:24:05</span>
+                  </td>
+                  <td>
+                    <span class="lang-chip">VI <span class="lang-arrow">⇄</span> EN</span>
+                  </td>
+                  <td>
+                    <span class="badge-pill live">
+                      <span class="pulse-dot"></span>
+                      Đang họp
+                    </span>
+                  </td>
+                  <td style="text-align:right">
+                    <a href="minutes.html" class="btn-primary" style="height:30px;padding:0 12px;font-size:12px">Vào phòng</a>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="meeting-title-cell">
+                      <a href="minutes.html" class="meeting-title-text">Họp chuẩn bị kế hoạch triển khai giai đoạn 2</a>
+                      <div class="meeting-sub-tags">
+                        <span>Đã chốt 3 kết luận</span>
+                        <span>·</span>
+                        <span>Đã xuất Word (.docx)</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar-stack">
+                        <div class="avatar-stack-item" style="background:#0d9488">LT</div>
+                        <div class="avatar-stack-item" style="background:#6366f1">HL</div>
+                      </div>
+                      <span style="font-size:12.5px;color:var(--text-muted)">Lan Tran</span>
+                    </div>
+                  </td>
+                  <td class="mono">22/10 08:30</td>
+                  <td class="mono">01:07:42</td>
+                  <td>
+                    <span class="lang-chip">VI thuần</span>
+                  </td>
+                  <td>
+                    <span class="badge-pill ended">Đã kết thúc</span>
+                  </td>
+                  <td style="text-align:right">
+                    <a href="minutes.html" class="btn-secondary" style="height:30px;padding:0 10px;font-size:12px">Xem biên bản</a>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="meeting-title-cell">
+                      <a href="minutes.html" class="meeting-title-text">Họp giá quý 4 với nhà cung cấp thiết bị ngoại vi</a>
+                      <div class="meeting-sub-tags">
+                        <span>Đã chốt 4 kết luận</span>
+                        <span>·</span>
+                        <span>Đã xuất song ngữ</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar-stack">
+                        <div class="avatar-stack-item" style="background:#0d9488">LT</div>
+                        <div class="avatar-stack-item" style="background:#1d4ed8">VV</div>
+                        <div class="avatar-stack-item" style="background:#f59e0b">JS</div>
+                      </div>
+                      <span style="font-size:12.5px;color:var(--text-muted)">Lan Tran (4 người)</span>
+                    </div>
+                  </td>
+                  <td class="mono">21/10 14:00</td>
+                  <td class="mono">00:52:18</td>
+                  <td>
+                    <span class="lang-chip">VI <span class="lang-arrow">⇄</span> EN</span>
+                  </td>
+                  <td>
+                    <span class="badge-pill ended">Đã kết thúc</span>
+                  </td>
+                  <td style="text-align:right">
+                    <a href="minutes.html" class="btn-secondary" style="height:30px;padding:0 10px;font-size:12px">Xem biên bản</a>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="meeting-title-cell">
+                      <a href="minutes.html" class="meeting-title-text">Đồng bộ roadmap sản phẩm AI Assistant Q1/2027</a>
+                      <div class="meeting-sub-tags">
+                        <span>Đã chốt 5 kết luận</span>
+                        <span>·</span>
+                        <span>Đã lưu biên bản</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar-stack">
+                        <div class="avatar-stack-item" style="background:#1d4ed8">VV</div>
+                        <div class="avatar-stack-item" style="background:#6366f1">HL</div>
+                      </div>
+                      <span style="font-size:12.5px;color:var(--text-muted)">Viet Vu</span>
+                    </div>
+                  </td>
+                  <td class="mono">21/10 09:00</td>
+                  <td class="mono">01:31:10</td>
+                  <td>
+                    <span class="lang-chip">EN <span class="lang-arrow">⇄</span> VI</span>
+                  </td>
+                  <td>
+                    <span class="badge-pill ended">Đã kết thúc</span>
+                  </td>
+                  <td style="text-align:right">
+                    <a href="minutes.html" class="btn-secondary" style="height:30px;padding:0 10px;font-size:12px">Xem biên bản</a>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="meeting-title-cell">
+                      <a href="#" class="meeting-title-text">Phỏng vấn ứng viên Senior Backend Engineer</a>
+                      <div class="meeting-sub-tags">
+                        <span style="color:var(--status-amber)">Chưa tạo biên bản tự động</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div class="avatar-stack">
+                        <div class="avatar-stack-item" style="background:#6366f1">HL</div>
+                      </div>
+                      <span style="font-size:12.5px;color:var(--text-muted)">Hùng Lê</span>
+                    </div>
+                  </td>
+                  <td class="mono">20/10 15:30</td>
+                  <td class="mono">00:48:55</td>
+                  <td>
+                    <span class="lang-chip">VI <span class="lang-arrow">⇄</span> EN</span>
+                  </td>
+                  <td>
+                    <span class="badge-pill draft">Chờ tạo biên bản</span>
+                  </td>
+                  <td style="text-align:right">
+                    <button class="btn-secondary" style="height:30px;padding:0 10px;font-size:12px">Tạo biên bản</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng họp, đang ghi · Biên bản</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="nav card" aria-label="Điều hướng chính">
+    <div class="mark">B</div>
+    <a href="index.html" aria-label="Tổng quan"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z"/></svg></a>
+    <a href="#" aria-current="page" aria-label="Cuộc họp"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 9h8M8 13h8M8 17h4"/></svg></a>
+    <a href="#" aria-label="Thuật ngữ"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg></a>
+    <a href="#" aria-label="Mức dùng"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17a8 8 0 1 1 16 0M12 17l4-5"/></svg></a>
+    <span class="grow"></span>
+    <button data-theme-toggle aria-label="Đổi giao diện sáng tối"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+    <a href="#" aria-label="Cài đặt"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></a>
+  </nav>
+  <div class="main">
+    <header class="topbar card">
+      <div class="topbar-row">
+        <div class="title-wrap">
+          <a class="icon-btn" href="index.html" aria-label="Về danh sách cuộc họp"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
+          <button class="title" aria-label="Đổi tên cuộc họp"><span class="t">Lập kế hoạch sản phẩm Lumo 2.0</span><svg class="i sm hint" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1zM14 7l3 3"/></svg></button>
+        </div>
+        <div class="status" aria-live="off"><span class="pill rec"><span class="dot"></span>REC</span><span class="clock">00:14:32</span></div>
+        <label class="search"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" placeholder="Tìm trong bản ghi" aria-label="Tìm trong bản ghi"><kbd>Ctrl F</kbd></label>
+        <div class="seg-ctl" role="group" aria-label="Chế độ hiển thị">
+          <button data-view="both" aria-pressed="true"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M12 4.5v15"/></svg>Song ngữ</button>
+          <button data-view="source" aria-pressed="false"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M3.5 12h17"/></svg>Gốc</button>
+          <button data-view="translation" aria-pressed="false"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M8.5 4v2M6 6c.5 3.5 3 6.5 6 8M11 6c-.5 3.5-3 6.5-6.5 8M13 20l4-9 4 9M14.5 17h5"/></svg>Bản dịch</button>
+        </div>
+        <button class="btn danger"><svg class="i fill" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>Dừng ghi</button>
+      </div>
+      <div class="sources">
+        <div class="meters"><div class="meter me"><span class="who-ic"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><b>Micro</b><span class="track" role="meter" aria-label="Micro" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62"><i style="width:62%"></i></span><span class="st ok">ổn</span></div><div class="meter tab"><span class="who-ic"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span><b>Âm thanh tab</b><span class="track" role="meter" aria-label="Âm thanh tab" aria-valuemin="0" aria-valuemax="100" aria-valuenow="38"><i style="width:38%"></i></span><span class="st ok">ổn</span></div></div>
+        <span class="provider">Nhận dạng: đang nối lại · Dịch: Gemini</span>
+      </div>
+    </header>
+    <div class="banners"><div class="banner warn" role="alert"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.2v.1"/></svg><p>Dịch vụ nhận dạng giọng nói đang kết nối lại. Âm thanh vẫn được ghi và sẽ được bổ sung vào bản ghi khi nối lại xong.</p><button class="x" data-dismiss aria-label="Ẩn thông báo"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+    <main class="body">
+      <section class="transcript card" data-view="both" aria-label="Bản ghi cuộc họp">
+        <div class="scroll"><div class="rows"><div class="topic" role="separator" aria-label="Chủ đề: Phạm vi bản 2.0"><span class="topic-pill"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 5h12l-2.5 4L17 13H5"/></svg><span class="time">00:00:40</span><span class="nm">Phạm vi bản 2.0</span></span></div><article class="seg others">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:00:48</span></div>
+    <div class="bubble"><p class="src">Thanks everyone for joining. Today I'd like to lock the scope for the 2.0 release and agree who owns what.</p><p class="trn"><span class="lang">VI</span>Cảm ơn mọi người đã tham gia. Hôm nay tôi muốn chốt phạm vi cho bản 2.0 và thống nhất ai phụ trách phần nào.</p></div>
+    
+  </div>
+</article>
+<article class="seg me">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Tôi</span><span class="time">00:01:06</span></div>
+    <div class="bubble"><p class="src">Em đồng ý. Trước hết em muốn rà lại danh sách tính năng mà khách hàng hỏi nhiều nhất.</p><p class="trn"><span class="lang">EN</span>I agree. First I'd like to review the features customers ask for the most.</p></div>
+    
+  </div>
+</article>
+<article class="seg others">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:01:31</span></div>
+    <div class="bubble"><p class="src">Offline mode is number one on the list. Almost forty percent of the feedback mentions it.</p><p class="trn"><span class="lang">VI</span>Chế độ ngoại tuyến đứng đầu danh sách. Gần bốn mươi phần trăm phản hồi có nhắc đến nó.</p></div>
+    
+  </div>
+</article>
+<article class="seg me">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Tôi</span><span class="time">00:02:17</span></div>
+    <div class="bubble"><p class="src">Can we ship offline mode with read-only access first, then add editing later?</p><p class="trn"><span class="lang">VI</span>Chúng ta có thể ra mắt chế độ ngoại tuyến chỉ đọc trước, rồi bổ sung chỉnh sửa sau không?</p></div>
+    
+  </div>
+</article>
+<article class="seg others marked">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:02:49</span></div>
+    <div class="bubble"><p class="src">That works. Read-only cuts the sync work by half, so we can keep the March date.</p><p class="trn"><span class="lang">VI</span>Được đấy. Chỉ đọc giúp giảm một nửa việc đồng bộ, nên ta giữ được mốc tháng Ba.</p></div>
+    <span class="mark-chip"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg>Kết luận<span class="time">00:02:58</span></span>
+  </div>
+</article>
+<article class="seg others">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:04:12</span></div>
+    <div class="bubble"><p class="src">What about the new onboarding flow? Design has two options ready for us to review.</p><p class="trn"><span class="lang">VI</span>Còn luồng làm quen mới thì sao? Bên thiết kế đã có sẵn hai phương án để mình xem.</p></div>
+    
+  </div>
+</article>
+<article class="seg me">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Tôi</span><span class="time">00:05:03</span></div>
+    <div class="bubble"><p class="src">Em nghiêng về phương án hai vì ít bước hơn, người dùng mới sẽ đỡ bỏ giữa chừng.</p><p class="trn"><span class="lang">EN</span>I lean toward option two because it has fewer steps, so new users drop off less.</p></div>
+    
+  </div>
+</article>
+<article class="seg others marked">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:06:40</span></div>
+    <div class="bubble"><p class="src">Fine by me. Let's drop option one and not spend any more time on it.</p><p class="trn"><span class="lang">VI</span>Tôi không phản đối. Ta bỏ phương án một và không tốn thêm thời gian cho nó nữa.</p></div>
+    <span class="mark-chip"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg>Kết luận<span class="time">00:06:50</span></span>
+  </div>
+</article>
+<div class="topic" role="separator" aria-label="Chủ đề: Lộ trình và nhân sự"><span class="topic-pill"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 5h12l-2.5 4L17 13H5"/></svg><span class="time">00:08:05</span><span class="nm">Lộ trình và nhân sự</span></span></div>
+<article class="seg others">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:08:20</span></div>
+    <div class="bubble"><p class="src">Now staffing. We have two engineers on mobile and one on the backend.</p><p class="trn"><span class="lang">VI</span>Giờ đến nhân sự. Chúng ta có hai kỹ sư mobile và một kỹ sư backend.</p></div>
+    
+  </div>
+</article>
+<article class="seg me">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Tôi</span><span class="time">00:09:36</span></div>
+    <div class="bubble"><p class="src">If we add offline mode, the backend engineer will become the bottleneck.</p><p class="trn"><span class="lang">VI</span>Nếu thêm chế độ ngoại tuyến, kỹ sư backend sẽ trở thành điểm nghẽn.</p></div>
+    
+  </div>
+</article>
+<article class="seg others">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:11:02</span></div>
+    <div class="bubble"><p class="src">I can borrow one engineer from the platform team for four weeks.</p><p class="trn"><span class="lang">VI</span>Tôi có thể mượn một kỹ sư từ nhóm nền tảng trong bốn tuần.</p></div>
+    
+  </div>
+</article>
+<article class="seg me">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Tôi</span><span class="time">00:12:45</span></div>
+    <div class="bubble"><p class="src">Vậy em sẽ gửi đề xuất nhân sự cho anh chị trước thứ Sáu.</p><p class="trn"><span class="lang">EN</span>Then I'll send the staffing proposal to you before Friday.</p></div>
+    
+  </div>
+</article>
+<article class="seg others">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main">
+    <div class="seg-meta"><span class="who">Người khác</span><span class="time">00:13:58</span></div>
+    <div class="bubble"><p class="src">Perfect. Let's also set a checkpoint review at the end of January.</p><p class="trn"><span class="lang">VI</span>Tuyệt. Ta cũng nên đặt một buổi rà soát giữa chặng vào cuối tháng Một.</p></div>
+    
+  </div>
+</article><article class="seg others interim" aria-live="polite">
+  <span class="avatar"><svg class="i " viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg></span>
+  <div class="seg-main"><div class="seg-meta"><span class="who">Người khác</span><span class="time">00:14:20</span></div>
+  <div class="bubble"><p class="src">And one more thing about the beta testers, we should<span class="typing"><i></i><i></i><i></i></span></p></div></div></article></div></div>
+        <div class="floatbar">
+          
+          <div class="float-inner" role="toolbar" aria-label="Đánh dấu trong lúc họp">
+            <button class="btn outline"><svg class="i blue" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 5h12l-2.5 4L17 13H5"/></svg>Chủ đề mới <kbd>T</kbd></button>
+            <button class="btn outline"><svg class="i amber" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg>Đánh dấu kết luận <kbd>K</kbd></button>
+          </div>
+        </div>
+      </section>
+      <aside class="side card" aria-label="Chủ đề, kết luận và thông tin phiên">
+        <div class="side-head">
+          <div class="tabs" role="tablist" aria-label="Thông tin cuộc họp">
+            <button class="tab" role="tab" data-tab="topics" aria-selected="true">Chủ đề<span class="count">2</span></button>
+            <button class="tab tab-conclusion" role="tab" data-tab="conclusions" aria-selected="false">Kết luận<span class="count">2</span></button>
+            <button class="tab" role="tab" data-tab="session" aria-selected="false">Phiên</button>
+            <span class="tip" data-tip="Sắp có"><button class="tab" role="tab" aria-selected="false" aria-disabled="true" tabindex="0">Ghi chú</button></span>
+          </div>
+        </div>
+        <div class="panels">
+          <div class="panel" data-panel="topics" role="tabpanel"><ul class="list">
+      <li class="item"><span class="ic"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 5h12l-2.5 4L17 13H5"/></svg></span><button class="nm">Phạm vi bản 2.0</button><span class="tools"><button class="icon-btn sm" aria-label="Đổi tên chủ đề"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1zM14 7l3 3"/></svg></button><button class="icon-btn sm" aria-label="Xóa chủ đề"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></span><span></span><span class="meta"><span class="mono">00:00:40</span><span>8 phút</span></span></li>
+      <li class="item now"><span class="ic"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 5h12l-2.5 4L17 13H5"/></svg></span><button class="nm">Lộ trình và nhân sự</button><span class="tools"><button class="icon-btn sm" aria-label="Đổi tên chủ đề"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1zM14 7l3 3"/></svg></button><button class="icon-btn sm" aria-label="Xóa chủ đề"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></span><span></span><span class="meta"><span class="mono">00:08:05</span><span class="chip-now">Đang bàn</span></span></li>
+    </ul><p class="panel-note">Bấm vào tên để nhảy tới đoạn đó trong bản ghi.</p></div>
+          <div class="panel" data-panel="conclusions" role="tabpanel" hidden><ul class="list"><li class="concl"><div class="concl-head"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg><b>Kết luận</b><span class="time mono">00:02:58</span><span class="tools"><button class="icon-btn sm" aria-label="Xóa kết luận"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></span></div><p>Ra mắt chế độ ngoại tuyến chỉ đọc trước, giữ mốc tháng Ba.</p><div class="concl-foot"><button class="link-btn"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>Xem trong bản ghi</button></div></li><li class="concl"><div class="concl-head"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg><b>Kết luận</b><span class="time mono">00:06:50</span><span class="tools"><button class="icon-btn sm" aria-label="Xóa kết luận"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg></button></span></div><p>Bỏ phương án làm quen số một, chọn phương án hai ít bước hơn.</p><div class="concl-foot"><button class="link-btn"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>Xem trong bản ghi</button></div></li></ul></div>
+          <div class="panel" data-panel="session" role="tabpanel" hidden><div class="tiles">
+    <div class="tile"><div class="k">Độ trễ dịch</div><div class="v">0,9<small>giây</small></div></div>
+    <div class="tile"><div class="k">Số đoạn</div><div class="v">13</div></div>
+    <div class="tile"><div class="k">Số từ</div><div class="v">214</div></div>
+    <div class="tile"><div class="k">Đã dịch</div><div class="v">13/13</div></div></div>
+  <div class="svc">
+    <div class="svc-row"><span>Nhận dạng giọng nói</span><span class="pill sm warn"><span class="dot"></span>Đang nối lại</span></div>
+    <div class="svc-row"><span>Dịch</span><span class="pill sm ok"><span class="dot"></span>Gemini</span></div>
+  </div></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
