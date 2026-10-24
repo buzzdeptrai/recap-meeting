@@ -5,13 +5,14 @@ import type { ReactNode, RefObject } from "react";
 import type { Mark, TargetLang } from "@recap/core";
 import type { Density } from "./density";
 import type { MarkTarget } from "./marks";
+import type { MinutesSuggestions } from "./minutes-suggestions";
 import { MarkBar } from "./mark-bar";
 import { RightRail } from "./right-rail";
 import type { ViewMode } from "./segment-row";
 import { SetupChecklist } from "./setup-checklist";
 import { Transcript, type TranscriptHandle } from "./transcript";
 import { TranscriptSearch } from "./transcript-search";
-import { conclusionRequest, topicRequest } from "./use-transcript-jump";
+import { conclusionRequest, timeRequest, topicRequest } from "./use-transcript-jump";
 import type { useRoomController } from "./use-room-controller";
 import type { useRoomSearch } from "./use-room-search";
 
@@ -24,6 +25,7 @@ interface RoomBodyProps {
   focusMs: number | null;
   transcript: RefObject<TranscriptHandle | null>;
   search: ReturnType<typeof useRoomSearch>;
+  suggestions: MinutesSuggestions;
 }
 
 /** Jump callbacks for the side panel (divider from a conclusion, boundary from a topic). */
@@ -31,7 +33,8 @@ function useJumps(transcript: RefObject<TranscriptHandle | null>) {
   const jumpToSegment = (mark: Mark, target: MarkTarget) =>
     transcript.current?.jump(conclusionRequest(mark, target));
   const jumpToTopic = (mark: Mark) => transcript.current?.jump(topicRequest(mark));
-  return { jumpToSegment, jumpToTopic };
+  const jumpToTime = (atMs: number) => transcript.current?.jump(timeRequest(atMs));
+  return { jumpToSegment, jumpToTopic, jumpToTime };
 }
 
 function TranscriptCard({
@@ -43,7 +46,7 @@ function TranscriptCard({
   focusMs,
   transcript,
   search,
-}: RoomBodyProps) {
+}: Omit<RoomBodyProps, "suggestions">) {
   const { socket, recording, ended } = controller;
   return (
     <FloatCard
@@ -91,9 +94,10 @@ export function RoomBody({
   focusMs,
   transcript,
   search,
+  suggestions,
 }: RoomBodyProps) {
   const { socket } = controller;
-  const { jumpToSegment, jumpToTopic } = useJumps(transcript);
+  const { jumpToSegment, jumpToTopic, jumpToTime } = useJumps(transcript);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 min-[1360px]:flex-row">
       <TranscriptCard
@@ -110,6 +114,8 @@ export function RoomBody({
         room={socket.room}
         onJump={jumpToSegment}
         onJumpTopic={jumpToTopic}
+        onJumpTime={jumpToTime}
+        suggestions={suggestions}
         editingId={controller.topics.editingId}
         onEdit={controller.topics.edit}
         onRename={controller.renameMark}

@@ -4,6 +4,7 @@ import { Info } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import type { MeetingDto } from "@/lib/api-types";
 import { Banner, ConfirmDialog } from "@recap/admin-ui";
+import { NO_SUGGESTIONS, type MinutesSuggestions } from "./minutes-suggestions";
 import { RESUME_HINT } from "./session-phase";
 import { useDensity } from "./use-density";
 import { RoomBanners } from "./room-banners";
@@ -20,15 +21,22 @@ interface MeetingRoomProps {
   initial: InitialRoomData;
   /** Offset (ms) to scroll to and highlight, from a minutes timestamp link. */
   focusMs?: number | null;
+  /** Read-only candidates from the stored minutes (side panel "Gợi ý từ biên bản"). */
+  suggestions?: MinutesSuggestions;
 }
 
 /** Floating cards on the tinted page: header, banners, transcript + side panel (16px gaps). */
-export function MeetingRoom({ meeting, initial, focusMs = null }: MeetingRoomProps) {
+export function MeetingRoom({
+  meeting,
+  initial,
+  focusMs = null,
+  suggestions = NO_SUGGESTIONS,
+}: MeetingRoomProps) {
   const [view, setView] = useState<ViewMode>("both");
   const [density, setDensity] = useDensity();
   const [stopOpen, setStopOpen] = useState(false);
   const controller = useRoomController(meeting, initial, () => setStopOpen(false));
-  const { socket, capture, recording, ended } = controller;
+  const { socket, recording, ended } = controller;
   const root = useRef<HTMLDivElement>(null);
   const transcript = useRef<TranscriptHandle>(null);
   const search = useRoomSearch({ meetingId: meeting.id, room: socket.room, root, transcript });
@@ -49,17 +57,7 @@ export function MeetingRoom({ meeting, initial, focusMs = null }: MeetingRoomPro
         onStop={() => setStopOpen(true)}
       />
       {ended && !recording && <ResumeHint />}
-      <RoomBanners
-        phase={capture.phase}
-        sources={capture.sources}
-        captureError={capture.error}
-        connection={socket.connection}
-        room={socket.room}
-        onReshare={capture.reshareTab}
-        onRetry={socket.retry}
-        onRetryStt={socket.retryStt}
-        onDismissError={socket.clearError}
-      />
+      <ControllerBanners controller={controller} />
       <RoomBody
         controller={controller}
         meetingId={meeting.id}
@@ -69,6 +67,7 @@ export function MeetingRoom({ meeting, initial, focusMs = null }: MeetingRoomPro
         focusMs={focusMs}
         transcript={transcript}
         search={search}
+        suggestions={suggestions}
       />
       <StopDialog open={stopOpen} onOpenChange={setStopOpen} onConfirm={controller.confirmStop} />
     </div>
@@ -92,6 +91,23 @@ function StopDialog({ open, onOpenChange, onConfirm }: StopDialogProps) {
       cancelLabel="Tiếp tục ghi"
       destructive
       onConfirm={onConfirm}
+    />
+  );
+}
+
+function ControllerBanners({ controller }: { controller: ReturnType<typeof useRoomController> }) {
+  const { socket, capture } = controller;
+  return (
+    <RoomBanners
+      phase={capture.phase}
+      sources={capture.sources}
+      captureError={capture.error}
+      connection={socket.connection}
+      room={socket.room}
+      onReshare={capture.reshareTab}
+      onRetry={socket.retry}
+      onRetryStt={socket.retryStt}
+      onDismissError={socket.clearError}
     />
   );
 }

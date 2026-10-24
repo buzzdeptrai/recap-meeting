@@ -5,7 +5,7 @@
  * Rules
  * - green = done / healthy / configured, grey = not started or not set, magenta = live (REC),
  *   red = failed or missing, purple = AI / example data.
- * - amber (`conclusion`) belongs to conclusions and decisions only: topic "Đã chốt" in minutes and the room.
+ * - amber (`conclusion`) belongs to conclusions and decisions only: topic "Đã thống nhất" in minutes and the room.
  *   Warnings that are not decisions use `warn` (yellow, warning icon colour), never `conclusion`.
  */
 import type { TopicStatus } from "@recap/core";
@@ -26,9 +26,9 @@ export const MEETING_STATUS: Record<MeetingStatus, StatusSpec> = {
 };
 
 export const TOPIC_STATUS: Record<TopicStatus, StatusSpec> = {
-  decided: { label: "Đã chốt", tone: "conclusion" },
-  open: { label: "Chưa chốt", tone: "neutral" },
-  rejected: { label: "Bác bỏ", tone: "error" },
+  decided: { label: "Đã thống nhất", tone: "conclusion" },
+  open: { label: "Còn bỏ ngỏ", tone: "neutral" },
+  rejected: { label: "Đã loại", tone: "error" },
 };
 
 export type RecordingState = "idle" | "recording" | "reconnecting";

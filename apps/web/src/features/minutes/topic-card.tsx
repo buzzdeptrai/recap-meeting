@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Trash } from "@phosphor-icons/react";
 import clsx from "clsx";
 import type { MinutesTopic, TopicStatus } from "@recap/core";
-import { IconButton, SegmentedControl, type SegmentOption } from "@recap/admin-ui";
+import { IconButton, SegmentedControl, Tooltip, type SegmentOption } from "@recap/admin-ui";
 import { TOPIC_STATUS } from "@/lib/status";
 import { AutoTextarea } from "./auto-textarea";
 import { ConclusionBox } from "./conclusion-box";
@@ -9,9 +9,14 @@ import type { EditAction } from "./edit-reducer";
 import { KeyPoints } from "./key-points";
 
 const STATUS_ORDER: ReadonlyArray<TopicStatus> = ["decided", "open", "rejected"];
+const STATUS_HINT: Record<TopicStatus, string> = {
+  decided: "Cả nhóm đã đồng ý hoặc ra quyết định",
+  open: "Đã bàn nhưng chưa có quyết định",
+  rejected: "Có phương án được nêu ra nhưng bị từ chối",
+};
 const STATUS_OPTIONS: ReadonlyArray<SegmentOption<TopicStatus>> = STATUS_ORDER.map((value) => ({
   value,
-  label: TOPIC_STATUS[value].label,
+  label: <Tooltip content={STATUS_HINT[value]}>{<span>{TOPIC_STATUS[value].label}</span>}</Tooltip>,
 }));
 
 interface TopicCardProps {
@@ -37,6 +42,7 @@ export function TopicCard(props: TopicCardProps) {
     >
       <TopicHeader {...props} />
       <div className="mt-2 px-2">
+        <p className="mb-1 text-xs font-semibold text-soft-muted">Kết quả thảo luận</p>
         <SegmentedControl
           variant="tabs"
           ariaLabel={`Trạng thái của ${name}`}

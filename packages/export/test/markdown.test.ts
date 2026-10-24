@@ -13,8 +13,8 @@ describe("exportMinutesMarkdown", () => {
     expect(md).toContain("## Tóm tắt");
     expect(md).toContain("## Nội dung thảo luận");
     expect(md).toContain("### Chính sách giá");
-    expect(md).toContain("Đã chốt");
-    expect(md).toContain("Chưa chốt");
+    expect(md).toContain("Đã thống nhất");
+    expect(md).toContain("Còn bỏ ngỏ");
     expect(md).toContain("- Giảm giá 5% từ quý sau `[01:05]`");
     expect(md).toContain("> **Chốt mức 95 triệu đồng** `[02:05]`");
     expect(md).toContain("| Công việc | Phụ trách | Hạn |");
@@ -28,7 +28,7 @@ describe("exportMinutesMarkdown", () => {
     const md = exportMinutesMarkdown({ meeting: MEETING, minutes: { en: EN }, mode: "en" });
     expect(md).toContain("## Summary");
     expect(md).toContain("### Pricing policy");
-    expect(md).toContain("Rejected");
+    expect(md).toContain("Dismissed");
     expect(md).toContain("> Settled on 95M");
     expect(md).toContain("## Action items");
     expect(md).not.toContain("Tóm tắt");

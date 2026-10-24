@@ -73,7 +73,7 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - Vietnamese / mixed EN–VI STT quality is **unmeasured** — needs the owner's real recording + reference text (Phase 0 exit criteria).
 
 ## Open items (details in the ledger)
-Owner real-meeting test (Win + Mac) · mixed EN–VI benchmark · "Đã chốt" over-assigned by the minutes prompt (idea: typed notes as must-keep signal, B1) ·
+Owner real-meeting test (Win + Mac) · mixed EN–VI benchmark · "Đã thống nhất" (was "Đã chốt") over-assigned by the minutes prompt (idea: typed notes as must-keep signal, B1) ·
 T12 re-transcription · delete meeting · pause · toast · glossary page · per-meeting keyterm priority (Deepgram cap 30 terms) ·
 backlog B1 notes tab ("Ghi chú", disabled in the room) / B2 minutes templates / B3+ Q&A from documents · rename speakers · word-level storage ·
 **unverified live:** new room recording/draft states + dark mode, STT retry against real Deepgram/AssemblyAI, minutes progress with the real LLM, touch-device gutter times.

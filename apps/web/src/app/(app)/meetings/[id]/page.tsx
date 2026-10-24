@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MeetingRoom } from "@/features/meeting-room/meeting-room";
+import { loadMinutesSuggestions } from "@/server/minutes-suggestions-service";
 import { getMeetingById, getMeetingDetail } from "@/server/meetings-service";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,7 @@ export default async function MeetingRoomPage({ params, searchParams }: MeetingR
     <MeetingRoom
       meeting={meeting}
       focusMs={focusMs}
+      suggestions={loadMinutesSuggestions(meeting)}
       initial={{ page, marks, markAnchors, stats, startedAt: meeting.startedAt }}
     />
   );

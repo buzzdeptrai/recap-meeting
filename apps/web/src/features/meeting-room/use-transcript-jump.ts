@@ -21,6 +21,13 @@ export const topicRequest = (mark: Mark): JumpRequest => ({
   atMs: mark.atMs,
 });
 
+/** Lands on the transcript at `atMs` (no marker of its own, e.g. a minutes suggestion). */
+export const timeRequest = (atMs: number): JumpRequest => ({
+  kind: "topic",
+  markId: "minutes-suggestion",
+  atMs,
+});
+
 /** Lands on the conclusion divider; its anchor segment is the fallback (and gets the highlight). */
 export const conclusionRequest = (mark: Mark, target: MarkTarget): JumpRequest => ({
   kind: "conclusion",

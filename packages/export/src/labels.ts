@@ -32,7 +32,7 @@ export const LABELS: Record<MinutesLang, Labels> = {
     page: "Trang",
     of: "/",
     noActions: "Không có",
-    status: { decided: "Đã chốt", open: "Chưa chốt", rejected: "Bác bỏ" },
+    status: { decided: "Đã thống nhất", open: "Còn bỏ ngỏ", rejected: "Đã loại" },
   },
   en: {
     minutes: "Meeting minutes",
@@ -48,6 +48,6 @@ export const LABELS: Record<MinutesLang, Labels> = {
     page: "Page",
     of: "/",
     noActions: "None",
-    status: { decided: "Decided", open: "Open", rejected: "Rejected" },
+    status: { decided: "Agreed", open: "Still open", rejected: "Dismissed" },
   },
 };

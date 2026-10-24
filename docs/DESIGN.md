@@ -126,14 +126,14 @@ Primitive: kit `ActionGroup` (`placement`: `toolbar` | `end` | `start` | `center
 | Domain | Status -> label (tone) |
 |---|---|
 | Meeting | draft "Nháp" (grey) · live "Đang họp" (magenta) · ended "Đã kết thúc" (green) |
-| Topic | decided "Đã chốt" (**amber**) · open "Chưa chốt" (grey) · rejected "Bác bỏ" (red) |
+| Topic | decided "Đã thống nhất" (**amber**) · open "Còn bỏ ngỏ" (grey) · rejected "Đã loại" (red) |
 | Recording | idle "Chưa bắt đầu" (grey) · recording "REC" (magenta) · reconnecting "Mất kết nối" (red) |
 | Service health | ok "Hoạt động" (green) · warn "Có lỗi" (yellow) · bad "Lỗi nhiều" (red) · idle "Chưa có dữ liệu" (grey) |
 | Provider | configured "Đã cấu hình" (green) · missing "Thiếu khóa" (red) · unused "Chưa dùng" (grey) |
 | User | active "Hoạt động" (green) · disabled "Đã khóa" (grey) |
 | Pricing | verified "Đã xác minh" (green) · example "Ví dụ" (blue accent) |
 | Minutes source | ai "AI tạo" (blue accent) · edited "Đã chỉnh sửa" (grey) · unsaved "Chưa lưu" (yellow) |
-Amber (`conclusion` tone, `--decision*`) belongs to conclusions and decisions only: the "Đã chốt" topic status, the conclusion box in minutes, the "Kết luận" tags and rail in the room. Warnings that are not decisions are yellow `warn`. A test (`lib/status.test.ts`) fails if another domain uses the amber tone.
+Amber (`conclusion` tone, `--decision*`) belongs to conclusions and decisions only: the "Đã thống nhất" topic status, the conclusion box in minutes, the "Kết luận" tags and rail in the room. Warnings that are not decisions are yellow `warn`. A test (`lib/status.test.ts`) fails if another domain uses the amber tone.
 
 **Copy.** Vietnamese, new-style tone marks: Hủy, xóa, khóa, hóa, tùy. Cancel is "Hủy", never "Huỷ". Numbers vi-VN (`1.234,5`), dates `dd/mm/yyyy` (ISO strings go through `formatIsoDate`), timestamps `hh:mm:ss` in mono. No exclamation marks.
 

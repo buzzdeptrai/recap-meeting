@@ -15,8 +15,8 @@ describe("buildMinutesDocx", () => {
     for (const s of [
       "Họp giá Q4",
       "Chính sách giá",
-      "ĐÃ CHỐT",
-      "CHƯA CHỐT",
+      "ĐÃ THỐNG NHẤT",
+      "CÒN BỎ NGỎ",
       "Chốt mức 95 triệu đồng",
       "[01:05]",
       "[02:05]",
@@ -46,7 +46,7 @@ describe("buildMinutesDocx", () => {
     const t = text(
       documentXml(await buildMinutesDocx({ meeting: MEETING, minutes: { en: EN }, mode: "en" })),
     );
-    expect(t).toContain("REJECTED");
+    expect(t).toContain("DISMISSED");
     expect(t).toContain("Meeting minutes".toUpperCase());
     expect(t).toContain("None");
   });

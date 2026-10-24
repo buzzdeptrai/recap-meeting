@@ -6,6 +6,7 @@ import type { Mark, Segment } from "@recap/core";
 import { IconButton } from "@recap/admin-ui";
 import { formatClock } from "@/lib/format";
 import { markTarget, type MarkTarget } from "./marks";
+import { SectionHeading } from "./suggestion-sections";
 import { TopicNameInput } from "./topic-name-input";
 import { topicName, topicMarks, conclusionMarks } from "./topics";
 
@@ -35,20 +36,23 @@ const CARD = "rounded-soft-inner bg-soft-inset px-3 py-2.5";
 interface TopicListProps extends MarkEditing {
   marks: Mark[];
   onJumpTopic: (mark: Mark) => void;
+  /** Show the "Mốc chủ đề" heading (when minutes suggestions follow the list). */
+  withHeading?: boolean;
 }
 
-/** Content of the "Chủ đề" tab (the tab itself is the heading). */
-export function TopicList({ marks, ...editing }: TopicListProps) {
+/** Hand-made topic markers ("Mốc chủ đề", key T) in the "Chủ đề" tab. */
+export function TopicList({ marks, withHeading = false, ...editing }: TopicListProps) {
   const topics = topicMarks(marks);
   if (topics.length === 0) {
     return (
       <PanelEmpty icon={<Flag size={22} />}>
-        Chưa có chủ đề nào. Bấm T khi cuộc họp chuyển sang chủ đề mới.
+        Chưa có mốc chủ đề nào. Bấm T khi cuộc họp chuyển sang chủ đề mới.
       </PanelEmpty>
     );
   }
   return (
     <>
+      {withHeading && <SectionHeading count={topics.length}>Mốc chủ đề</SectionHeading>}
       <ul className="flex flex-col gap-2">
         {topics.map((mark) => (
           <TopicRow key={mark.id} mark={mark} name={topicName(mark, topics)} {...editing} />
@@ -143,36 +147,44 @@ interface ConclusionListProps {
   anchors: Record<string, MarkTarget | undefined>;
   onJump: (mark: Mark, target: MarkTarget) => void;
   onRemove: (id: string) => void;
+  /** Show the "Kết luận đã đánh dấu" heading (when minutes suggestions follow the list). */
+  withHeading?: boolean;
 }
 
-/** Content of the "Kết luận" tab. */
+/** Hand-marked conclusions ("Kết luận đã đánh dấu", key K) in the "Kết luận" tab. */
 export function ConclusionList({
   marks,
   segments,
   anchors,
   onJump,
   onRemove,
+  withHeading = false,
 }: ConclusionListProps) {
   const conclusions = conclusionMarks(marks);
   if (conclusions.length === 0) {
     return (
       <PanelEmpty icon={<BookmarkSimple size={22} />}>
-        Chưa có kết luận nào. Bấm K khi cuộc họp chốt một việc.
+        Chưa có kết luận đã đánh dấu nào. Bấm K khi cuộc họp chốt một việc.
       </PanelEmpty>
     );
   }
   return (
-    <ul className="flex flex-col gap-2">
-      {conclusions.map((mark) => (
-        <ConclusionItem
-          key={mark.id}
-          mark={mark}
-          target={markTarget(mark, anchors, segments)}
-          onJump={onJump}
-          onRemove={onRemove}
-        />
-      ))}
-    </ul>
+    <>
+      {withHeading && (
+        <SectionHeading count={conclusions.length}>Kết luận đã đánh dấu</SectionHeading>
+      )}
+      <ul className="flex flex-col gap-2">
+        {conclusions.map((mark) => (
+          <ConclusionItem
+            key={mark.id}
+            mark={mark}
+            target={markTarget(mark, anchors, segments)}
+            onJump={onJump}
+            onRemove={onRemove}
+          />
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -188,7 +200,7 @@ function ConclusionItem({ mark, target, onJump, onRemove }: ConclusionItemProps)
     <li className={CARD}>
       <div className="flex items-center gap-2 text-soft-conclusion">
         <BookmarkSimple size={14} aria-hidden />
-        <span className="text-[13px] font-semibold">Kết luận</span>
+        <span className="text-[13px] font-semibold">Kết luận đã đánh dấu</span>
         <span className="font-soft-mono text-meta opacity-80">{formatClock(mark.atMs)}</span>
         <IconButton
           size="sm"

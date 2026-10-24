@@ -5,7 +5,7 @@ export const MINUTES_LANGS = ["vi", "en"] as const;
 export const minutesLangSchema = z.enum(MINUTES_LANGS);
 export type MinutesLang = z.infer<typeof minutesLangSchema>;
 
-/** UI labels: decided = Đã chốt, open = Chưa chốt, rejected = Bác bỏ. */
+/** UI labels: decided = Đã thống nhất, open = Còn bỏ ngỏ, rejected = Đã loại. */
 export const topicStatusSchema = z.enum(["decided", "open", "rejected"]);
 export type TopicStatus = z.infer<typeof topicStatusSchema>;
 
