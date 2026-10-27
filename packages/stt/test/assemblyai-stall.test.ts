@@ -98,6 +98,17 @@ describe("AssemblyAI stall watchdog", () => {
     expect((sockets[0] as FakeSocket).terminated).toBe(1);
   });
 
+  it("reports which channel is reconnecting so its unfinished turn can be flushed", async () => {
+    await setup();
+    const activity: unknown[] = [];
+    provider?.on("activity", (a) => activity.push(a));
+    beat(sockets[1] as FakeSocket);
+    await advance(HEARTBEAT_MS * 2);
+    beat(sockets[1] as FakeSocket);
+    await advance(STALL_MS - HEARTBEAT_MS * 2 + 1);
+    expect(activity).toEqual([{ channel: 0, state: "reconnecting" }]);
+  });
+
   it("replays audio sent while reconnecting to the new socket", async () => {
     await setup();
     await advance(STALL_MS + 1);

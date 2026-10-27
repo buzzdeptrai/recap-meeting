@@ -50,6 +50,8 @@ const envSchema = z.object({
     .min(0)
     .max(MAX_IDLE_AFTER_MS)
     .default(DEFAULT_IDLE_AFTER_MS),
+  /** Debug capture of raw AssemblyAI frames: a file or a directory (one file per session). Unset = off. */
+  RECAP_STT_CAPTURE: optionalString,
   /** Optional bearer token that lets tools (stream-file) open the WebSocket without a login. */
   RECAP_SERVICE_TOKEN: optionalString.refine(
     (value) => value === undefined || value.length >= MIN_SERVICE_TOKEN_LENGTH,

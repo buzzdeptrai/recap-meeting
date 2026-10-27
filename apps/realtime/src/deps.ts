@@ -14,6 +14,7 @@ import {
   type SttLanguage,
   type SttProvider,
   type SttProviderConfig,
+  createCaptureRecorder,
 } from "@recap/stt";
 import { EnvError, type Env } from "./env";
 import { createRealtimeMinutesWorker } from "./minutes-worker";
@@ -88,6 +89,7 @@ export function buildSttConfig(env: Env, request: SttRequest): SttProviderConfig
       minTurnSilenceMs: env.ASSEMBLYAI_MIN_TURN_SILENCE_MS,
       maxTurnSilenceMs: env.ASSEMBLYAI_MAX_TURN_SILENCE_MS,
       idleAfterMs: env.STT_IDLE_AFTER_MS,
+      captureRecorder: createCaptureRecorder(env.RECAP_STT_CAPTURE),
     };
   }
   return {

@@ -221,6 +221,7 @@ export class ChannelSession {
 
   private handleMessage(socket: SttSocket, data: string): void {
     if (socket !== this.socket) return;
+    this.config.captureRecorder?.record(this.channel, data, this.connectionBaseMs);
     this.watchdog.touch(); // any inbound message proves the session is alive
     const parsed = parseAssemblyAiMessage(
       data,

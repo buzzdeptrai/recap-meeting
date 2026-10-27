@@ -55,6 +55,12 @@ export const ALIGN_MIN_ANCHOR_CHARS = 6;
 /** Longest phrase repeated across two turns that is still recognised as an overlap. */
 export const OVERLAP_MAX_WORDS = 6;
 export const OVERLAP_MIN_SINGLE_WORD_CHARS = 3;
+/**
+ * A single repeated word shorter than this is a vendor duplicate (a syllable split across two
+ * turns, "bác sĩ" | "sĩ vâng ạ") only if it restarts at the very instant the previous word ended;
+ * a person saying the same syllable again leaves a gap.
+ */
+export const OVERLAP_SHORT_WORD_MAX_GAP_MS = 100;
 
 const SILENCE_MS = 600;
 const SILENCE_SHORT_MS = 1_000;

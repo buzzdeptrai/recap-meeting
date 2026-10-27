@@ -1,5 +1,5 @@
 import { SttEmitter } from "../emitter";
-import type { SttProvider, SttResult, SttStatus } from "../types";
+import type { SttChannelState, SttProvider, SttResult, SttStatus } from "../types";
 
 export interface FakeSttOptions {
   /** When set, `open()` rejects with this message (simulates an unreachable provider). */
@@ -58,6 +58,10 @@ export class FakeSttProvider extends SttEmitter implements SttProvider {
 
   emitError(message: string, fatal = false): void {
     this.emit("error", { message, fatal });
+  }
+
+  emitActivity(channel: 0 | 1, state: SttChannelState): void {
+    this.emit("activity", { channel, state });
   }
 
   setStatus(next: SttStatus): void {

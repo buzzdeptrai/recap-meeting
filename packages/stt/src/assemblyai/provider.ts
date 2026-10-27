@@ -98,6 +98,7 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
   private onChannelStatus(channel: Channel, status: SttStatus): void {
     this.statuses[channel] = status;
     if (this.ending) return;
+    if (status === "reconnecting") this.emit("activity", { channel, state: "reconnecting" });
     this.setStatus(this.mergedStatus());
   }
 

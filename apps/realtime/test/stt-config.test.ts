@@ -19,6 +19,15 @@ describe("buildSttConfig", () => {
     });
   });
 
+  it("enables the raw-frame capture only when RECAP_STT_CAPTURE is set", () => {
+    const keys = { ...base, STT_PROVIDER: "assemblyai", ASSEMBLYAI_API_KEY: SECRET };
+    const off = buildSttConfig(parseEnv(keys), request);
+    expect(off).toMatchObject({ provider: "assemblyai", captureRecorder: undefined });
+    const on = buildSttConfig(parseEnv({ ...keys, RECAP_STT_CAPTURE: "/tmp/x.jsonl" }), request);
+    expect(on).toMatchObject({ provider: "assemblyai" });
+    expect((on as { captureRecorder?: unknown }).captureRecorder).toBeDefined();
+  });
+
   it("selects AssemblyAI with its model, key and the resolved language", () => {
     const env = parseEnv({ ...base, STT_PROVIDER: "assemblyai", ASSEMBLYAI_API_KEY: SECRET });
     expect(buildSttConfig(env, { ...request, sourceLang: "vi" })).toMatchObject({

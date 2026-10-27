@@ -169,6 +169,22 @@ describe("AssemblyAiProvider results", () => {
   });
 });
 
+describe("AssemblyAiProvider capture", () => {
+  it("hands every raw frame, its channel and the socket base to the recorder", async () => {
+    const calls: Array<[number, string, number]> = [];
+    const captureRecorder = {
+      record: (ch: 0 | 1, raw: string, base: number) => calls.push([ch, raw, base]),
+    };
+    const ctx = await setup({ captureRecorder });
+    await openAndIdentify(ctx);
+    const raw = turn("hello", { end_of_turn: false });
+    server.conn(1)?.ws.send(raw);
+    await until(() => calls.some(([, text]) => text === raw));
+    expect(calls).toContainEqual([1, raw, 0]);
+    expect(JSON.stringify(calls)).not.toContain("k-secret-123");
+  });
+});
+
 describe("AssemblyAiProvider reconnect", () => {
   it("reconnects one channel, replays its buffered audio and offsets timestamps", async () => {
     // Slow backoff (~100 ms with zero jitter) so the "reconnecting" window is observable.

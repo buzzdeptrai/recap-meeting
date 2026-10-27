@@ -106,6 +106,37 @@ describe("words repeated by the vendor at a turn join", () => {
   });
 });
 
+describe("short syllable repeated at a turn join (Vietnamese)", () => {
+  const FIRST = "tôi đã hẹn gặp bác sĩ";
+  const SECOND = "vâng ạ";
+
+  function join(secondStartMs: number, secondFirst: string, first = FIRST) {
+    const { segmenter, segments } = setup();
+    segmenter.onFinal(fakeResult(1, first, 0, 5000));
+    segmenter.onFinal(
+      fakeResult(1, `${secondFirst} ${SECOND}`, secondStartMs, secondStartMs + 1500),
+    );
+    vi.advanceTimersByTime(3000);
+    return segments.map((s) => s.text);
+  }
+
+  it("drops a 2-letter syllable that restarts exactly where the last one ended", () => {
+    expect(join(5000, "sĩ")).toEqual([FIRST, SECOND]);
+  });
+
+  it("keeps the same syllable when it is spoken again after a pause", () => {
+    expect(join(5300, "sĩ")).toEqual([FIRST, `sĩ ${SECOND}`]);
+  });
+
+  it("never drops a repeated interjection (vâng vâng, no no, dạ dạ)", () => {
+    // the segmenter may merge both results into one segment; the repeated word must survive
+    const text = (word: string, first: string) => join(5000, word, first).join(" ");
+    expect(text("vâng", "chị nói đúng rồi vâng")).toBe(`chị nói đúng rồi vâng vâng ${SECOND}`);
+    expect(text("no", "I said no no")).toBe(`I said no no no ${SECOND}`);
+    expect(text("dạ", "em hiểu rồi dạ")).toBe(`em hiểu rồi dạ dạ ${SECOND}`);
+  });
+});
+
 describe("timeline and fragments", () => {
   it("never starts a segment before the previous one ended, without dropping words", () => {
     const { segmenter, segments } = setup();

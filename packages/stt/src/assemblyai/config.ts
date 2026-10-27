@@ -1,4 +1,5 @@
 import { DEFAULT_RECONNECT, type ReconnectConfig } from "../deepgram/config";
+import type { SttCaptureRecorder } from "../capture-recorder";
 import type { SttLanguage } from "../types";
 
 export const ASSEMBLYAI_STREAM_URL = "wss://streaming.assemblyai.com/v3/ws";
@@ -48,6 +49,8 @@ export interface AssemblyAiConfig {
    * Unset or 0 = never (every frame is streamed, as before).
    */
   idleAfterMs?: number;
+  /** Debug only: receives every raw provider frame (replay-segmenter input). Absent = off. */
+  captureRecorder?: SttCaptureRecorder;
   /** Minimum retry delay after the per-minute session-start limit (default 5 s; tests shorten it). */
   rateLimitRetryMs?: number;
 }

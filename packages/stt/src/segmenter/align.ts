@@ -3,6 +3,7 @@ import {
   ALIGN_TAIL_CHARS,
   OVERLAP_MAX_WORDS,
   OVERLAP_MIN_SINGLE_WORD_CHARS,
+  OVERLAP_SHORT_WORD_MAX_GAP_MS,
 } from "./config";
 
 const NON_WORD_CHARS = /[^\p{L}\p{N}]/gu;
@@ -10,6 +11,21 @@ const NON_WORD_CHARS = /[^\p{L}\p{N}]/gu;
 /** Comparison key of a token: letters/digits only, lowercase (so "CloudBees," == "cloudbees"). */
 export function wordKey(token: string): string {
   return token.normalize("NFC").replace(NON_WORD_CHARS, "").toLowerCase();
+}
+
+/** Words people genuinely say twice in a row ("vâng vâng", "no no"); never treated as a duplicate. */
+const REPEATABLE_WORDS: ReadonlySet<string> = new Set(
+  [
+    ...["vâng", "dạ", "ừ", "ờ", "ừm", "ạ", "rồi", "ok", "okay", "no", "yes", "yeah", "yep"],
+    ...["right", "sure", "well", "so", "very", "really", "đúng", "phải", "có", "không"],
+  ].map(wordKey),
+);
+
+/** Whether a lone repeated word at the join is a vendor duplicate rather than speech. */
+function isSingleWordDuplicate(head: string, gapMs: number): boolean {
+  if (REPEATABLE_WORDS.has(head)) return false;
+  if (head.length >= OVERLAP_MIN_SINGLE_WORD_CHARS) return true;
+  return gapMs <= OVERLAP_SHORT_WORD_MAX_GAP_MS;
 }
 
 /** Concatenated key of several tokens (token boundaries do not matter: "cloud bees" == "CloudBees"). */
@@ -60,7 +76,7 @@ export function overlapPrefixLength(
   for (let k = limit; k >= 1; k--) {
     const head = joinedKey(tokens.slice(0, k));
     if (head !== joinedKey(previous.slice(-k))) continue;
-    if (k === 1 && head.length < OVERLAP_MIN_SINGLE_WORD_CHARS) continue;
+    if (k === 1 && !isSingleWordDuplicate(head, gapMs)) continue;
     return k;
   }
   return 0;

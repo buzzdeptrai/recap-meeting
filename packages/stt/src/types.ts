@@ -33,8 +33,11 @@ export interface SttError {
   fatal: boolean;
 }
 
-/** Per-channel streaming state: `idle` = the channel is not being sent to the vendor (silence). */
-export type SttChannelState = "active" | "idle";
+/**
+ * Per-channel streaming state: `idle` = the channel is not being sent to the vendor (silence);
+ * `reconnecting` = its socket was lost, so any unfinished turn will never get a final.
+ */
+export type SttChannelState = "active" | "idle" | "reconnecting";
 
 export interface SttChannelActivity {
   channel: Channel;
@@ -52,7 +55,7 @@ export interface SttEvents {
   final: SttResult;
   status: SttStatus;
   error: SttError;
-  /** Only providers with silence gating emit this (AssemblyAI). */
+  /** Per-channel state changes; only AssemblyAI emits it (silence gating, socket reconnect). */
   activity: SttChannelActivity;
 }
 

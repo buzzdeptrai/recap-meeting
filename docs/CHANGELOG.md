@@ -3,6 +3,15 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-27 · STT: flush khi reconnect, ghi capture, bớt chữ lặp ở ranh giới
+**Vì sao:** test thật phiên "TODAY 27102026" có chữ "sĩ" lặp ở ranh giới, và reconnect có thể làm mất đuôi chưa cắt của kênh bị rớt.
+
+**Làm gì:** `SttChannelState` thêm `reconnecting`, provider AssemblyAI phát sự kiện activity theo kênh; `apps/realtime/src/session/channel-activity.ts` gọi `segmenter.flush()` đúng kênh đó (phát đúng 1 lần, `flushAbandonedTurn` giữ làm lớp thứ hai). `packages/stt/src/capture-recorder.ts` ghi JSONL `{tMs,ch,base,raw}` cho `tools/replay-segmenter`, bật bằng env `RECAP_STT_CAPTURE` (file hoặc thư mục), mặc định tắt, không chứa key/URL, lỗi ghi tự tắt. `align.ts`: từ lặp đơn dưới 3 ký tự chỉ bị bỏ nếu bắt đầu trong 100 ms sau từ trước; từ hay nói lặp (vâng, dạ, ừ, ok, no, yes...) không bao giờ bị coi là trùng (sửa luôn lỗi "vâng vâng" bị nuốt một chữ).
+
+**Quyết định:** không đổi luật cho từ ghép bị cắt kiểu "the spread." | "to docs." vì không có luật an toàn (chữ thường đầu chunk không đủ tin với tiếng Việt). Keyterm đã chảy từ `glossary_terms` sang `keyterms_prompt`; trang `/glossary` vẫn chưa làm, hiện thêm từ bằng sqlite3.
+
+**Chưa kiểm chứng:** flush khi reconnect và capture trên AssemblyAI thật; ngưỡng 100 ms là ước lượng; keyterm có làm nghe đúng "Streptococcus" hay không.
+
 ## 2026-10-27 · Bôi đen transcript rồi "Thêm vào ghi chú"
 **Vì sao:** test thật cho thấy chủ phải gõ/chép ghi chú tay từ transcript. Bôi đen một đoạn thì có nút nổi để đẩy thẳng thành ghi chú (B1 follow-up), ghi chú vẫn là tín hiệu "phải giữ" cho biên bản.
 

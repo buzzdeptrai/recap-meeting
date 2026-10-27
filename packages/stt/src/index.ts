@@ -32,3 +32,8 @@ export type {
 } from "./silence-gate";
 export { rmsLevel } from "./audio-level";
 export { GhostLineFilter, type GhostFilterOptions } from "./ghost-filter";
+export {
+  createCaptureRecorder,
+  type FileCaptureRecorder,
+  type SttCaptureRecorder,
+} from "./capture-recorder";

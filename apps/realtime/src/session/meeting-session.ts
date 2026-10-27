@@ -13,6 +13,7 @@ import {
   type SttStatus,
   type TimeRange,
 } from "@recap/stt";
+import { handleChannelActivity } from "./channel-activity";
 import { waitBounded } from "./drain";
 import { meterAcceptedFrame } from "./frame-metering";
 import { endMeetingRecorded, snapshotEnd, type EndSnapshot } from "./end-snapshot";
@@ -263,7 +264,7 @@ export class MeetingSession {
       this.sttStatus = status;
       if (this.state === "live") this.sendStatus();
     });
-    stt.on("activity", ({ channel, state }) => log(`${this.meetingId} STT ch${channel} ${state}`));
+    stt.on("activity", (a) => handleChannelActivity(this.meetingId, a, this.segmenters));
     stt.on("error", (error) => {
       log(`STT error (fatal=${error.fatal})`, error.message);
       if (error.fatal) this.sendError("STT_UNAVAILABLE", "Speech recognition connection lost");
