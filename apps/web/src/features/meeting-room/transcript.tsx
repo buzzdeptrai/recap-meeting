@@ -1,10 +1,19 @@
 "use client";
 
-import { useImperativeHandle, useMemo, type Dispatch, type ReactNode, type Ref } from "react";
+import {
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  type Dispatch,
+  type ReactNode,
+  type Ref,
+} from "react";
 import type { TargetLang } from "@recap/core";
 import type { Density } from "./density";
 import { isAtTail } from "./paging";
 import type { ViewMode } from "./segment-row";
+import { SelectionNoteAction } from "./selection-note-action";
+import type { MeetingNotesApi } from "./use-meeting-notes";
 import type { RoomAction, RoomState } from "./state";
 import { LatestPill, VirtualRowView, type RowViewContext } from "./transcript-parts";
 import {
@@ -41,6 +50,8 @@ interface TranscriptProps {
   focusMs?: number | null;
   /** Folded words of the active in-transcript search, marked inside rows. */
   searchTerms?: readonly string[];
+  /** Hand notes: when given, selecting transcript text offers "Thêm vào ghi chú". */
+  notes?: MeetingNotesApi;
   ref?: Ref<TranscriptHandle>;
 }
 
@@ -120,12 +131,13 @@ function useTranscriptModel(props: TranscriptProps) {
 export function Transcript(props: TranscriptProps) {
   const { room, empty, ended, recording } = props;
   const { rows, pager, list, jumper, ctx } = useTranscriptModel(props);
+  const frame = useRef<HTMLDivElement>(null);
   const hasContent = room.segments.length > 0 || room.interim[0] || room.interim[1];
   const onKeyDown = useListKeys(rows, list, jumper.jump);
   const pill = !list.following && hasContent && (!list.nearBottom || !isAtTail(room.window));
 
   return (
-    <div className="relative min-h-0 flex-1">
+    <div ref={frame} className="relative min-h-0 flex-1">
       <div
         ref={list.scroller}
         onScroll={list.onScroll}
@@ -143,6 +155,9 @@ export function Transcript(props: TranscriptProps) {
           empty
         )}
       </div>
+      {props.notes && (
+        <SelectionNoteAction scrollerRef={list.scroller} frameRef={frame} notes={props.notes} />
+      )}
       {jumper.error && (
         <p role="alert" className="absolute inset-x-0 top-2 text-center text-small text-err">
           {jumper.error}

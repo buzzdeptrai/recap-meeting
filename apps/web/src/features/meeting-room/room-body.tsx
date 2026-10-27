@@ -12,7 +12,7 @@ import type { ViewMode } from "./segment-row";
 import { SetupChecklist } from "./setup-checklist";
 import { Transcript, type TranscriptHandle } from "./transcript";
 import { TranscriptSearch } from "./transcript-search";
-import { useMeetingNotes } from "./use-meeting-notes";
+import { useMeetingNotes, type MeetingNotesApi } from "./use-meeting-notes";
 import { noteOffset } from "./notes-state";
 import { conclusionRequest, timeRequest, topicRequest } from "./use-transcript-jump";
 import type { useRoomController } from "./use-room-controller";
@@ -48,7 +48,8 @@ function TranscriptCard({
   focusMs,
   transcript,
   search,
-}: Omit<RoomBodyProps, "suggestions">) {
+  notes,
+}: Omit<RoomBodyProps, "suggestions"> & { notes: MeetingNotesApi }) {
   const { socket, recording, ended } = controller;
   const canTestMic = controller.capture.phase === "idle" || controller.capture.phase === "error";
   return (
@@ -76,6 +77,7 @@ function TranscriptCard({
         recording={recording}
         focusMs={focusMs}
         searchTerms={search.terms}
+        notes={notes}
       />
       <MarkBar
         canMark={controller.canMark}
@@ -115,6 +117,7 @@ export function RoomBody({
         focusMs={focusMs}
         transcript={transcript}
         search={search}
+        notes={notes}
       />
       <RightRail
         room={socket.room}

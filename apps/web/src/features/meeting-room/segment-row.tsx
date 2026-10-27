@@ -54,6 +54,7 @@ function RowFrame({
       id={id}
       tabIndex={navigable ? -1 : undefined}
       data-seg-row={navigable ? "" : undefined}
+      data-start-ms={navigable ? Math.floor(startMs) : undefined}
       className={clsx(
         "group/row outline-none focus-visible:bg-soft-inset focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset",
         style.rowX,

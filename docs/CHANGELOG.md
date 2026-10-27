@@ -3,6 +3,15 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-27 · Bôi đen transcript rồi "Thêm vào ghi chú"
+**Vì sao:** test thật cho thấy chủ phải gõ/chép ghi chú tay từ transcript. Bôi đen một đoạn thì có nút nổi để đẩy thẳng thành ghi chú (B1 follow-up), ghi chú vẫn là tín hiệu "phải giữ" cho biên bản.
+
+**Làm gì (`apps/web/src/features/meeting-room/`):** `selection-note.ts` (hàm thuần: chuẩn hóa, cắt còn 1000 ký tự kèm "…", đọc `data-start-ms`, chống trùng, đặt vị trí nút), `use-transcript-selection.ts`, `selection-note-action.tsx` (nút nổi, không giữ focus, giữ nguyên vùng bôi), `segment-row.tsx` thêm `data-start-ms` cho dòng đã chốt, `transcript.tsx` nhận `notes`, `room-body.tsx` nối lại. 14 test cho phần thuần.
+
+**Quyết định:** mốc giờ = bắt đầu dòng nơi vùng bôi bắt đầu (dòng interim thì không có mốc); trùng nội dung báo "Đoạn này đã có trong ghi chú."; quá 150 ghi chú báo lỗi; không thêm phím tắt mới.
+
+**Chưa kiểm chứng:** chưa thử trên trình duyệt thật (bôi qua nhiều dòng ảo hóa, cảm ứng/Safari, nút bị cắt trong FloatCard); ở chế độ xem "cả hai" dòng dịch được bôi cũng vào ghi chú (chưa lọc).
+
 ## 2026-10-27 · Ghi chú chỉ bổ sung (PROMPT_VERSION 5) và tab phòng họp bớt chật
 **Vì sao:** test thật phiên "TODAY 27102026" (2 ghi chú chép từ transcript) rồi A/B 4 lần mỗi nhánh trên bản sao DB: có ghi chú thì 2/4 lần biên bản **bỏ hẳn chủ đề phế cầu** (không ghi chú: 4/4 giữ). Ghi chú về top 5 kéo mô hình nghiêng hẳn về phần đó.
 
