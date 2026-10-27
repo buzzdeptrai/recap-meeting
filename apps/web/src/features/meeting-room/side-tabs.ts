@@ -7,8 +7,8 @@ export type SideTabId = (typeof SIDE_TAB_IDS)[number];
 
 export const SIDE_TABS_ID_BASE = "room-side";
 
-/** Tabs of the right panel: counts on Chủ đề / Kết luận, Ghi chú not available yet. */
-export function buildSideTabs(marks: Mark[]): PillTab[] {
+/** Tabs of the right panel: counts on Chủ đề / Kết luận / Ghi chú. */
+export function buildSideTabs(marks: Mark[], noteCount = 0): PillTab[] {
   return [
     { id: "topics", label: "Chủ đề", count: topicMarks(marks).length },
     {
@@ -18,6 +18,6 @@ export function buildSideTabs(marks: Mark[]): PillTab[] {
       countTone: "decision",
     },
     { id: "session", label: "Phiên" },
-    { id: "notes", label: "Ghi chú", disabled: true, disabledReason: "Sắp có" },
+    { id: "notes", label: "Ghi chú", count: noteCount },
   ];
 }

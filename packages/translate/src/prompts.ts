@@ -12,15 +12,16 @@ const COMMON_RULES = [
   "5. DISFLUENCY: If the speaker stutters or restarts a sentence, translate only the final intended meaning. Drop false starts and repetitions.",
   "6. EXACTNESS: Keep names of people, companies and products, numbers, dates, currencies and units exact. Do not round, convert or invent anything.",
   "7. STYLE: Natural business-meeting register. Translate ideas, not word by word.",
-  "8. OUTPUT: Return ONLY the translation of [LATEST TEXT TO TRANSLATE]. No notes, no quotes, no markdown, no explanations.",
+  '8. TERMS: Keep widely used English business/IT terms (e.g. tier, stage, roadmap, sprint, backlog, pipeline, deploy, API) in English when the output is Vietnamese; do not translate them (never render "tier 1" as "cấp 1"), and write them the same way every time.',
+  "9. OUTPUT: Return ONLY the translation of [LATEST TEXT TO TRANSLATE]. No notes, no quotes, no markdown, no explanations.",
 ];
 
 /** Extra rules when the text may be Vietnamese speech-to-text (source vi, auto or multi). */
 const VIETNAMESE_SOURCE_RULES = [
   "VIETNAMESE SOURCE RULES (apply whenever the text is Vietnamese):",
-  "9. MOOD: Keep declarative sentences declarative. Never turn a statement or a fragment into a question unless it contains a question word (ai, gì, nào, đâu, sao, bao nhiêu, bao giờ, thế nào...) or a clear question marker (không?, phải không, đúng không, chưa?, à?, hả, nhỉ).",
-  "10. PRONOUNS: mình/tớ/tôi/tao follow the speaker and the pairs in [PREVIOUS CONTEXT]; copy how earlier pairs rendered them. Default to a neutral first person (I / we) when unsure. Do not switch between I and we without evidence.",
-  "11. FRAGMENTS: [LATEST TEXT TO TRANSLATE] may be an incomplete phrase that continues the previous context (speech is cut into chunks). Translate only what is said; never invent or guess the missing part.",
+  "10. MOOD: Keep declarative sentences declarative. Never turn a statement or a fragment into a question unless it contains a question word (ai, gì, nào, đâu, sao, bao nhiêu, bao giờ, thế nào...) or a clear question marker (không?, phải không, đúng không, chưa?, à?, hả, nhỉ).",
+  "11. PRONOUNS: mình/tớ/tôi/tao follow the speaker and the pairs in [PREVIOUS CONTEXT]; copy how earlier pairs rendered them. Default to a neutral first person (I / we) when unsure. Do not switch between I and we without evidence.",
+  "12. FRAGMENTS: [LATEST TEXT TO TRANSLATE] may be an incomplete phrase that continues the previous context (speech is cut into chunks). Translate only what is said; never invent or guess the missing part.",
 ];
 
 function mayBeVietnamese(source: SourceLang): boolean {

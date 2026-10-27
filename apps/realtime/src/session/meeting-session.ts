@@ -6,6 +6,7 @@ import {
   type ServerMessage,
 } from "@recap/core";
 import {
+  GhostLineFilter,
   Segmenter,
   type RawSegment,
   type SttResult,
@@ -14,6 +15,7 @@ import {
 } from "@recap/stt";
 import { waitBounded } from "./drain";
 import { meterAcceptedFrame } from "./frame-metering";
+import { endMeetingRecorded, snapshotEnd, type EndSnapshot } from "./end-snapshot";
 import { runMarkAction } from "./mark-action";
 import { log, safely, safelySync } from "./safe";
 import type { MeetingSessionOptions } from "./session-options";
@@ -40,11 +42,14 @@ export class MeetingSession {
   private sttStatus: SttStatus = "connecting";
   private readonly recorder: TranscriptRecorder;
   private readonly segmenters: Segmenter[];
+  private readonly ghostFilter: GhostLineFilter;
   private stopPromise: Promise<void> | null = null;
   private framesAccepted = 0;
   private framesRejected = 0;
   private readonly usageMeter: SttUsageMeter | null;
   private readonly retry: SttRetry;
+  /** End state of the meeting before this session re-opened it (resume of an ended meeting). */
+  private previousEnd: EndSnapshot | null = null;
 
   constructor(private readonly options: MeetingSessionOptions) {
     this.hooks = options.hooks ?? {};
@@ -52,6 +57,7 @@ export class MeetingSession {
       ? new SttUsageMeter({ ...options.usage, meetingId: options.meeting.id })
       : null;
     this.recorder = new TranscriptRecorder(options.repos, options.meeting.id, options.baseMs);
+    this.ghostFilter = new GhostLineFilter({ sourceLang: options.sourceLang });
     this.segmenters = [0, 1].map((channel) => this.createSegmenter(channel as 0 | 1));
     this.attachProviderEvents();
     this.retry = new SttRetry(
@@ -123,6 +129,7 @@ export class MeetingSession {
   /** Marks the meeting live, connects STT and tells the client it may stream audio. */
   async start(): Promise<void> {
     const { repos, meeting, stt } = this.options;
+    this.previousEnd = snapshotEnd(repos.meetings.get(meeting.id));
     repos.meetings.start(meeting.id);
     let sttError: string | null = null;
     try {
@@ -231,12 +238,8 @@ export class MeetingSession {
 
   /** Duration = total recorded audio (all runs), not wall clock which includes pauses between runs. */
   private endMeeting(): void {
-    const recordedMs = this.options.audio.durationMs;
-    this.options.repos.meetings.end(
-      this.meetingId,
-      undefined,
-      recordedMs > 0 ? recordedMs : undefined,
-    );
+    const keep = this.framesAccepted === 0 ? this.previousEnd : null;
+    endMeetingRecorded(this.options.repos, this.meetingId, this.options.audio.durationMs, keep);
   }
 
   private createSegmenter(channel: 0 | 1): Segmenter {
@@ -246,6 +249,7 @@ export class MeetingSession {
       config: this.options.segmenterConfig,
       clock: this.options.clock,
       variants: variants ? () => variants : undefined,
+      ghostFilter: this.ghostFilter,
       onSegment: (raw) => this.commitSegment(raw),
       onInterim: (text, range) => this.sendInterim(channel, text, range),
     });

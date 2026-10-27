@@ -5,6 +5,9 @@ describe("staleBannerText", () => {
   it("names every reason in plain Vietnamese", () => {
     expect(STALE_REASON_COPY.prompt_updated).toBe("Biên bản được tạo bằng phiên bản prompt cũ");
     expect(STALE_REASON_COPY.marks_removed).toBe("Đã xoá hoặc đổi dấu mốc sau khi tạo");
+    expect(STALE_REASON_COPY.notes_changed).toBe(
+      "Ghi chú tay đã được thêm, sửa hoặc xoá sau khi tạo biên bản",
+    );
     for (const text of Object.values(STALE_REASON_COPY)) expect(text.length).toBeGreaterThan(10);
   });
 

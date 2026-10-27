@@ -65,6 +65,18 @@ export interface StoredMark {
   createdAt: string;
 }
 
+export interface StoredNote {
+  id: string;
+  meetingId: string;
+  /** Offset into the meeting (ms); null = not time-stamped. */
+  atMs: number | null;
+  content: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+  lastManualEdit: string;
+}
+
 export type GlossaryLang = "vi" | "en";
 
 export interface TermVariant {
@@ -94,6 +106,8 @@ export interface StoredMinutes {
   promptVersion: string | null;
   /** Fingerprint of the marks used at generation; null for rows from before versioning. */
   marksFingerprint: string | null;
+  /** Fingerprint of the hand notes used at generation; null for rows from before notes existed. */
+  notesFingerprint: string | null;
   /** Set when this row is a translation of the other language's minutes; null for a source row. */
   derivedFromLang: MinutesLang | null;
   /** Hash of the source content this translation was made from (null for source rows). */

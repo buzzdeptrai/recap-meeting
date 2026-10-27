@@ -3,6 +3,7 @@ import {
   derivedStaleReasons,
   marksFingerprint,
   minutesStaleReasons,
+  notesFingerprint,
   type Repositories,
   type StaleReason,
   type StoredMinutes,
@@ -24,8 +25,8 @@ function defaultDeps(): MinutesServiceDeps {
 }
 
 /**
- * Why the minutes are stale (empty = fresh): timestamps (transcript / marks changed), the set of
- * marks (one was deleted), the prompt version and the configured model. See `@recap/db`
+ * Why the minutes are stale (empty = fresh): timestamps (transcript / marks / notes changed), the set of
+ * marks and notes (one was deleted), the prompt version and the configured model. See `@recap/db`
  * minutes-staleness for the rule; NULL stored fields never flag stale.
  */
 export function minutesStaleReasonsOf(
@@ -43,15 +44,18 @@ export function minutesStaleReasonsOf(
     generatedAt: stored.generatedAt,
     latestSegmentAt: repos.segments.latestCreatedAt(stored.meetingId),
     latestMarkChangeAt: repos.marks.latestChangeAt(stored.meetingId),
+    latestNoteChangeAt: repos.notes.latestChangeAt(stored.meetingId),
     stored: {
       promptVersion: stored.promptVersion,
       model: stored.model,
       marksFingerprint: stored.marksFingerprint,
+      notesFingerprint: stored.notesFingerprint,
     },
     current: {
       promptVersion: PROMPT_VERSION,
       model: currentModel,
       marksFingerprint: marksFingerprint(repos.marks.list(stored.meetingId)),
+      notesFingerprint: notesFingerprint(repos.notes.list(stored.meetingId)),
     },
   });
 }

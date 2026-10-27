@@ -56,3 +56,20 @@ describe("English technical terms", () => {
     }
   });
 });
+
+describe("decision-status rules", () => {
+  const system = singlePassSystem("en", null);
+
+  it("requires explicit agreement for 'decided' and treats a lone proposal as open", () => {
+    expect(system).toContain('Be strict with "decided"');
+    expect(system).toContain('nobody confirmed is "open"');
+  });
+
+  it("makes an open conclusion say what is unresolved", () => {
+    expect(system).toContain("must say plainly what remains unresolved");
+  });
+
+  it("requires scope decisions to be recorded", () => {
+    expect(system).toContain("Scope decisions");
+  });
+});

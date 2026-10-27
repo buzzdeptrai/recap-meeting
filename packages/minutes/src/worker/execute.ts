@@ -34,6 +34,7 @@ async function runGeneration(
     model: result.model,
     promptVersion: result.promptVersion,
     marksFingerprint: result.marksFingerprint,
+    notesFingerprint: result.notesFingerprint,
     derivedFromLang: null,
     sourceHash: null,
   });

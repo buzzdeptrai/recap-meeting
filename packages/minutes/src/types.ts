@@ -29,7 +29,7 @@ export interface MinutesLlm {
 
 export type MinutesRepos = Pick<
   Repositories,
-  "meetings" | "segments" | "translations" | "marks" | "glossary"
+  "meetings" | "segments" | "translations" | "marks" | "notes" | "glossary"
 >;
 
 export interface GeneratorConfig {
@@ -75,4 +75,6 @@ export interface GeneratedMinutes {
   promptVersion: string;
   /** Fingerprint of the marks (conclusions + topic markers) the minutes were built from. */
   marksFingerprint: string;
+  /** Fingerprint of the hand notes the minutes were built from. */
+  notesFingerprint: string;
 }

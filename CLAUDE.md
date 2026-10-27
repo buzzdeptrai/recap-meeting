@@ -41,8 +41,8 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
   `MINUTES_RUN_STALE_MS`. If realtime is down the UI shows "Đang chờ xử lý" then a failure. Map-reduce for long meetings is in `packages/minutes/src/generate.ts`.
   **Generate once, translate the rest (migration 012):** a generate run produces the SOURCE minutes (default `en`, owner picks per run); the worker then queues a `kind='translate'` run for the other language (`packages/minutes/src/translate*.ts`, model `OPENAI_MINUTES_TRANSLATE_MODEL`, default gpt-4.1-mini, usage `service=translate`). Derived rows carry `derived_from_lang` + `source_hash`; stale reason `source_edited`; hand-edited translations are overwritten only with explicit confirm (`confirmOverwrite`).
 - **Stale minutes** are detected by version, not only timestamps: `minutes.prompt_version` (`PROMPT_VERSION` in `packages/minutes`; a test pins a hash of the prompts —
-  bump it when `prompts.ts` changes), model, `marks_fingerprint` → typed reasons (`transcript_changed|marks_changed|marks_removed|prompt_updated|model_changed`).
-  The meetings-list stale badge is still timestamp-only.
+  bump it when `prompts.ts` changes), model, `marks_fingerprint` + `notes_fingerprint` → typed reasons (`transcript_changed|marks_changed|marks_removed|notes_changed|prompt_updated|model_changed`).
+  The meetings-list stale badge is still timestamp-only (marks and transcript; hand notes are not in the SQL predicate).
 - **STT silence gate (AssemblyAI only):** a channel silent for `STT_IDLE_AFTER_MS` (default 30000, 0 disables) stops sending audio to STT; 1.5 s pre-roll on resume; usage counts frames actually sent (`stt.usage`). Deepgram is untouched (stereo, 2x billing). Thresholds 0.005/0.012 are guesses. Client side: mic/tab silence + speaker-echo banners, mic picker/hot-swap in `apps/web/src/audio/`.
 - **Prompts:** transcript is wrapped in `<transcript>` tags and escaped (anti prompt-injection); Vietnamese output keeps English technical terms.
 - **Realtime protocol additions:** client `stt_retry` (restarts the STT provider when status `closed`; errors `NOT_RECORDING|STT_ALREADY_OPEN|RATE_LIMITED`; audio sent while
@@ -50,9 +50,10 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - **UI kit `@recap/admin-ui` v0.2.2 ("Soft v2"):** brand colour is **blue** (`--soft-brand`; `purple` names are deprecated aliases), floating cards + tonal secondary buttons +
   solid-brand selected states. Room = transcript turns (header only on a new speaker/gap > 30 s), density Gọn/Thoải mái, conclusions are **divider rows** (not per-segment tint),
   topic markers likewise. Row heights are measured constants pinned in `virtual-rows.test.ts` — re-measure if row markup changes. Static look reference: `design/room-preview-v1/`.
+- **Hand notes (B1, `meeting_notes`, REST `/api/meetings/:id/notes`, room tab "Ghi chú"):** stored apart from AI output; minutes get them as an escaped `<notes>` block (PROMPT_VERSION 4) = owner-confirmed key points, never proof of a decision.
 - **Marks vs minutes (two different sources):** the room's counts come from hand marks only (`marks`: T topic marker, K conclusion = timestamp). Minutes (AI) topics/conclusions appear in the room only as "Gợi ý từ biên bản" (`minutes-suggestions.ts`, dedupe window 30 s, `marked:true` hidden, `marked:false` chip "AI đề xuất", never amber). Topic outcome labels: Đã thống nhất / Còn bỏ ngỏ / Đã loại (values `decided|open|rejected`).
 - **Local `.env` uses `STT_PROVIDER=assemblyai`** (code default is deepgram); live sessions ran AssemblyAI.
-- **Reference scan of Foresight / Meetily / Anarlog + backlog (A = upgrades, B = new features):** `docs/REFERENCE-competitor-scan.md`. Done so far: A1, A2, A3, A4, A5, A8.
+- **Reference scan of Foresight / Meetily / Anarlog + backlog (A = upgrades, B = new features):** `docs/REFERENCE-competitor-scan.md`. Done so far: A1, A2, A3, A4, A5, A8; B1 first slice (hand notes tab + minutes must-keep signal).
 
 ## Hard rules (owner preferences — keep applying)
 - **Before every commit (via `/commit`): add an entry on top of `docs/CHANGELOG.md` (what + why, decisions, unverified) and update the "Core architecture" / "Open items" blocks here if they changed; include these files in the same commit.**
@@ -64,7 +65,7 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 - Use implementation **agents with model Sonnet** (token saving) for multi-file work; verify their output yourself (run `npm run verify`, look at screenshots).
 - Observe before editing; plans/state go in files (ledger/PLAN), not memory.
 - Code: files ≤300 lines, functions ≤50 (off only for admin-ui `.tsx` and tests), early returns, no magic numbers, every external service behind an interface, vitest tests.
-- **DB migrations are immutable once applied** — add a new numbered migration (latest: 012 minutes translation; 011 = soft delete `meetings.deleted_at`: filter every meetings query on it; `meetings.get()` hides deleted rows). A test pins their checksums.
+- **DB migrations are immutable once applied** — add a new numbered migration (latest: 013 hand notes `meeting_notes` + `minutes.notes_fingerprint`; 012 minutes translation; 011 = soft delete `meetings.deleted_at`: filter every meetings query on it; `meetings.get()` hides deleted rows). A test pins their checksums.
 - Money/token/usage numbers live **only** on `/usage` (+ Settings pricing/budget), not on dashboard or lists.
 - Amber is reserved for conclusions/decisions; no gradients except the Soft signature ones; no emoji; statuses via `apps/web/src/lib/status.ts`.
 - Don't kill the owner's dev servers with `pkill`; check ports with `curl` first.
@@ -81,6 +82,6 @@ STT: Deepgram first (server-side only), AssemblyAI plan B behind the adapter. Tw
 ## Open items (details in the ledger)
 Owner real-meeting test (Win + Mac) · tune silence/echo thresholds · transcript echo dedupe (deferred until real data) · Deepgram per-channel saving needs two mono sockets · purge/hard delete of soft-deleted meetings (needs audio-file policy) · mixed EN–VI benchmark · "Đã thống nhất" (was "Đã chốt") over-assigned by the minutes prompt (idea: typed notes as must-keep signal, B1) ·
 T12 re-transcription · delete meeting · pause · toast · glossary page · per-meeting keyterm priority (Deepgram cap 30 terms) ·
-backlog B1 notes tab ("Ghi chú", disabled in the room) / B2 minutes templates / B3+ Q&A from documents · rename speakers · word-level storage ·
+B1 follow-ups (note timestamp picker in ended meetings, notes in the Word export, notes in the list stale badge, AI "expand" of notes) / B2 minutes templates / B3+ Q&A from documents · rename speakers · word-level storage ·
 **unverified live:** new room recording/draft states + dark mode, STT retry against real Deepgram/AssemblyAI, minutes progress with the real LLM, touch-device gutter times.
 (Long-meeting background minutes + progress: **done** 2026-10-24.)

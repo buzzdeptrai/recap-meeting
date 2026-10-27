@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { marksFingerprint } from "@recap/db";
+import { marksFingerprint, notesFingerprint } from "@recap/db";
 import { DEFAULT_GENERATOR_CONFIG } from "./config";
 import { MinutesError } from "./errors";
 import { glossaryLines } from "./glossary-lines";
 import type { LlmMinutes } from "./llm-schema";
+import { buildNoteLines, notesOfChunk, untimedNotes, type NoteLine } from "./notes";
 import { postProcess } from "./postprocess";
 import { PROMPT_VERSION } from "./prompt-version";
 import * as prompts from "./prompts";
@@ -34,6 +35,7 @@ interface Plan {
   lines: TranscriptLine[];
   marks: number[];
   topics: TopicMarker[];
+  notes: NoteLine[];
   report: (progress: MinutesProgress) => void;
 }
 
@@ -70,8 +72,14 @@ async function singlePass(plan: Plan): Promise<LlmMinutes> {
       plan.lang,
       plan.marks.length > 0 ? windowSpec(plan) : null,
       plan.topics.length > 0,
+      plan.notes.length > 0,
     ),
-    user: prompts.transcriptPrompt(plan.ctx, text, windowsFor(plan, plan.marks)),
+    user: prompts.transcriptPrompt(
+      plan.ctx,
+      text,
+      windowsFor(plan, plan.marks),
+      plan.notes.map((n) => n.text),
+    ),
   });
   plan.report({ phase: "finalize", done: 1, total: 1 });
   return result;
@@ -91,16 +99,19 @@ async function mapReduce(plan: Plan): Promise<LlmMinutes> {
   plan.report({ phase: "map", done: 0, total });
   for (const [index, chunk] of chunks.entries()) {
     const marks = marksOfChunk(chunks, index, plan.marks);
+    const notes = notesOfChunk(chunks, index, plan.notes);
     const part = await callStructured(plan.llm, {
       system: prompts.chunkSystem(
         plan.lang,
         marks.length > 0 ? windowSpec(plan) : null,
         plan.topics.length > 0,
+        notes.length > 0,
       ),
       user: prompts.transcriptPrompt(
         plan.ctx,
         chunk.map((l) => l.text),
         windowsFor(plan, marks),
+        notes.map((n) => n.text),
       ),
     });
     parts.push(JSON.stringify(part));
@@ -108,12 +119,13 @@ async function mapReduce(plan: Plan): Promise<LlmMinutes> {
   }
   plan.report({ phase: "reduce", done: total, total });
   const reduced = await callStructured(plan.llm, {
-    system: prompts.reduceSystem(plan.lang, plan.topics.length > 0),
+    system: prompts.reduceSystem(plan.lang, plan.topics.length > 0, plan.notes.length > 0),
     user: prompts.reducePrompt(
       plan.ctx,
       parts,
       plan.marks.map(formatTimestamp),
       plan.topics.map(formatBoundary),
+      untimedNotes(plan.notes).map((n) => n.text),
     ),
   });
   plan.report({ phase: "finalize", done: total, total });
@@ -125,13 +137,23 @@ function groundingText(
   meeting: { title: string; agenda: string | null },
   segments: ReadonlyArray<{ text: string }>,
   lines: ReadonlyArray<TranscriptLine>,
+  notes: ReadonlyArray<NoteLine>,
 ): string {
   return [
     meeting.title,
     meeting.agenda ?? "",
+    ...notes.map((n) => n.text),
     ...segments.map((s) => s.text),
     ...lines.map((l) => l.text),
   ].join("\n");
+}
+
+/** Conclusion marks as offsets, topic markers as boundaries. */
+function splitMarks(stored: ReadonlyArray<{ kind: string; atMs: number; label: string | null }>) {
+  return {
+    marks: stored.filter((m) => m.kind === "conclusion").map((m) => m.atMs),
+    topics: stored.filter((m) => m.kind === "topic").map((m) => ({ atMs: m.atMs, label: m.label })),
+  };
 }
 
 /** Builds the minutes of an ended meeting. Reads via `deps.repos`; does not store the result. */
@@ -152,10 +174,9 @@ export async function generateMinutes(
   if (spoken.length === 0) throw new MinutesError("Meeting has no transcript", "EMPTY_TRANSCRIPT");
 
   const storedMarks = deps.repos.marks.list(meetingId);
-  const marks = storedMarks.filter((m) => m.kind === "conclusion").map((m) => m.atMs);
-  const topics = storedMarks
-    .filter((m) => m.kind === "topic")
-    .map((m) => ({ atMs: m.atMs, label: m.label }));
+  const { marks, topics } = splitMarks(storedMarks);
+  const storedNotes = deps.repos.notes.list(meetingId);
+  const notes = buildNoteLines(storedNotes);
   const lines = withTopicBoundaries(spoken, topics);
   const ctx = {
     title: meeting.title,
@@ -163,13 +184,13 @@ export async function generateMinutes(
     glossary: glossaryLines(deps.repos, config.maxGlossaryTerms),
   };
   const report = safeReporter(deps.onProgress);
-  const plan: Plan = { llm: deps.llm, lang, config, ctx, lines, marks, topics, report };
+  const plan: Plan = { llm: deps.llm, lang, config, ctx, lines, marks, topics, notes, report };
 
   const raw =
     totalTokens(lines) > config.singlePassMaxTokens
       ? await mapReduce(plan)
       : await singlePass(plan);
-  const sourceText = groundingText(meeting, segments, lines);
+  const sourceText = groundingText(meeting, segments, lines, notes);
   const { content, unmatchedMarks } = postProcess(raw, {
     marks,
     window: { beforeMs: config.markWindowBeforeMs, afterMs: config.markWindowAfterMs },
@@ -184,5 +205,6 @@ export async function generateMinutes(
     unmatchedMarks,
     promptVersion: PROMPT_VERSION,
     marksFingerprint: marksFingerprint(storedMarks),
+    notesFingerprint: notesFingerprint(storedNotes),
   };
 }

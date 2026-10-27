@@ -81,3 +81,13 @@ describe("default context size", () => {
     expect(prompt.length).toBeLessThan(2_000);
   });
 });
+
+describe("technical terms rule", () => {
+  it("tells the model to keep English business/IT terms like tier unchanged", () => {
+    for (const source of ["en", "auto", "multi", "vi"] as const) {
+      const prompt = buildSystemPrompt(source, "vi");
+      expect(prompt).toContain("TERMS: Keep widely used English business/IT terms");
+      expect(prompt).toContain("tier");
+    }
+  });
+});

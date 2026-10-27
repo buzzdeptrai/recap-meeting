@@ -27,11 +27,12 @@ describe("buildSideTabs", () => {
     expect(tabs.find((tab) => tab.id === "topics")?.countTone).toBeUndefined();
   });
 
-  it("keeps Phiên without a count and disables Ghi chú with a reason", () => {
-    const tabs = buildSideTabs([]);
+  it("keeps Phiên without a count and enables Ghi chú with its own count", () => {
+    const tabs = buildSideTabs([], 3);
     expect(tabs.find((tab) => tab.id === "session")?.count).toBeUndefined();
     const notes = tabs.find((tab) => tab.id === "notes");
-    expect(notes?.disabled).toBe(true);
-    expect(notes?.disabledReason).toBe("Sắp có");
+    expect(notes?.disabled).toBeUndefined();
+    expect(notes?.count).toBe(3);
+    expect(notes?.countTone).toBeUndefined();
   });
 });

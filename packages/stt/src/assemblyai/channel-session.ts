@@ -5,7 +5,7 @@ import type { SocketFactory, SttSocket } from "../deepgram/provider";
 import { ReplayBuffer } from "../deepgram/replay-buffer";
 import { rmsLevel } from "../audio-level";
 import { SilenceGate } from "../silence-gate";
-import type { SttChannelState, SttResult, SttStatus } from "../types";
+import type { SttStatus } from "../types";
 import {
   ASSEMBLYAI_DEFAULTS,
   DEFAULT_RECONNECT,
@@ -15,19 +15,10 @@ import {
 } from "./config";
 import { endStream } from "./end-stream";
 import { parseAssemblyAiMessage } from "./parse";
+import { StallWatchdog } from "./stall-watchdog";
 import { buildStreamUrl } from "./url";
-
-export interface ChannelCallbacks {
-  onResult: (isFinal: boolean, result: SttResult) => void;
-  onStatus: (status: SttStatus) => void;
-  /** Non-fatal vendor error text. */
-  onError: (message: string) => void;
-  /** The channel gave up reconnecting. */
-  onFatal: (message: string) => void;
-  /** Idle = the channel is parked (socket closed or about to be) and must not count for status. */
-  onIdleChange: (idle: boolean) => void;
-  onActivity: (state: SttChannelState) => void;
-}
+import type { ChannelCallbacks } from "./channel-callbacks";
+import { dialSocket } from "./dial";
 
 /**
  * One AssemblyAI streaming session = one mono audio channel. Owns its socket, reconnect with
@@ -52,6 +43,7 @@ export class ChannelSession {
   private rateLimited = false;
   private readonly closeTimeoutMs: number;
   private sentFrames = 0;
+  private readonly watchdog: StallWatchdog;
 
   constructor(
     readonly channel: Channel,
@@ -63,6 +55,10 @@ export class ChannelSession {
     this.reconnect = { ...DEFAULT_RECONNECT, ...config.reconnect };
     this.replay = new ReplayBuffer(this.reconnect.replayBufferFrames);
     this.closeTimeoutMs = config.closeTimeoutMs ?? ASSEMBLYAI_DEFAULTS.closeTimeoutMs;
+    this.watchdog = new StallWatchdog(
+      config.stallTimeoutMs ?? ASSEMBLYAI_DEFAULTS.stallTimeoutMs,
+      () => this.handleStall(),
+    );
     const idleAfterMs = config.idleAfterMs ?? 0;
     this.gate = idleAfterMs > 0 ? new SilenceGate({ idleAfterMs }) : null;
   }
@@ -121,6 +117,7 @@ export class ChannelSession {
   /** Parks the channel: Terminate cleanly (finals still arrive), no reconnect, no failure status. */
   private enterIdle(): void {
     this.sleeping = true;
+    this.watchdog.stop(); // parked: Terminate in flight, silence is expected
     this.callbacks.onIdleChange(true);
     this.callbacks.onActivity("idle");
     this.clearReconnectTimer();
@@ -157,6 +154,7 @@ export class ChannelSession {
   /** Sends Terminate, keeps reading until the server finishes, then closes the socket. */
   async close(): Promise<void> {
     this.closing = true;
+    this.watchdog.stop();
     await this.idleClose;
     this.clearReconnectTimer();
     this.replay.clear();
@@ -171,6 +169,7 @@ export class ChannelSession {
 
   abort(): void {
     this.closing = true;
+    this.watchdog.stop();
     this.clearReconnectTimer();
     this.replay.clear();
     this.socket?.removeAllListeners();
@@ -192,36 +191,15 @@ export class ChannelSession {
   }
 
   private connectSocket(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const socket = this.createSocket(buildStreamUrl(this.config), {
-        Authorization: this.config.apiKey,
-      });
-      let opened = false;
-      const timeout = setTimeout(
-        () => socket.terminate(),
-        this.config.connectTimeoutMs ?? ASSEMBLYAI_DEFAULTS.connectTimeoutMs,
-      );
-      const fail = (reason: string) => {
-        clearTimeout(timeout);
-        if (!opened) reject(new Error(reason));
-        else this.handleDrop(socket);
-      };
-      socket.on("open", () => {
-        clearTimeout(timeout);
-        if (this.closing) {
-          socket.removeAllListeners();
-          socket.on("error", () => undefined);
-          socket.terminate();
-          reject(new Error("AssemblyAI provider closed while connecting"));
-          return;
-        }
-        opened = true;
-        this.onSocketOpen(socket);
-        resolve();
-      });
-      socket.on("message", (data) => this.handleMessage(socket, String(data)));
-      socket.on("error", (error) => fail(`AssemblyAI socket error: ${error.message}`));
-      socket.on("close", (code) => fail(`AssemblyAI socket closed (code ${code})`));
+    return dialSocket({
+      url: buildStreamUrl(this.config),
+      apiKey: this.config.apiKey,
+      connectTimeoutMs: this.config.connectTimeoutMs ?? ASSEMBLYAI_DEFAULTS.connectTimeoutMs,
+      createSocket: this.createSocket,
+      isClosing: () => this.closing,
+      onOpen: (socket) => this.onSocketOpen(socket),
+      onMessage: (socket, data) => this.handleMessage(socket, data),
+      onDrop: (socket) => this.handleDrop(socket),
     });
   }
 
@@ -235,6 +213,7 @@ export class ChannelSession {
     for (const frame of pending) socket.send(frame.data);
     this.sentFrames += pending.length;
     this.setStatus("open");
+    this.watchdog.touch();
     if (!this.sleeping) return;
     this.sleeping = false;
     this.callbacks.onIdleChange(false);
@@ -242,6 +221,7 @@ export class ChannelSession {
 
   private handleMessage(socket: SttSocket, data: string): void {
     if (socket !== this.socket) return;
+    this.watchdog.touch(); // any inbound message proves the session is alive
     const parsed = parseAssemblyAiMessage(
       data,
       this.channel,
@@ -267,12 +247,22 @@ export class ChannelSession {
 
   private handleDrop(socket: SttSocket): void {
     if (socket !== this.socket) return;
+    this.watchdog.stop();
     this.socket = null;
     socket.removeAllListeners();
     socket.on("error", () => undefined);
     if (this.closing || this.sleeping) return;
     if (this.fatalReason) return this.giveUp(this.fatalReason);
     this.scheduleReconnect();
+  }
+
+  /** Hung socket: drop it and take the normal reconnect path (replay buffer + backoff). */
+  private handleStall(): void {
+    const socket = this.socket;
+    if (!socket || this.closing || this.sleeping) return;
+    this.callbacks.onError("AssemblyAI session stalled (no messages); reconnecting");
+    socket.terminate();
+    this.handleDrop(socket);
   }
 
   private giveUp(reason: string): void {

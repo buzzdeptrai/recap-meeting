@@ -12,6 +12,27 @@ export function isRoomEnded(status: MeetingStatus, override: boolean | null): bo
   return override ?? status === "ended";
 }
 
+/** Interval of the status re-check for a room that was loaded while the meeting was `live`. */
+export const STATUS_RECHECK_MS = 3_000;
+
+/**
+ * A room loaded while the meeting is `live` but not recording here (page reload / returning to
+ * the room right after leaving it) shows a status that is only true until the server finishes
+ * ending the old session, so it must be re-read until it settles.
+ */
+export function shouldRecheckStatus(
+  status: MeetingStatus,
+  override: boolean | null,
+  recording: boolean,
+): boolean {
+  return status === "live" && override === null && !recording;
+}
+
+/** Override to apply after a re-read: ended/draft means the live session is over. */
+export function overrideFromFreshStatus(fresh: MeetingStatus): boolean | null {
+  return fresh === "live" ? null : true;
+}
+
 /** The socket must send `resume` when the meeting already has a recording. */
 export function shouldResume(status: MeetingStatus, segmentCount: number): boolean {
   return status !== "draft" || segmentCount > 0;

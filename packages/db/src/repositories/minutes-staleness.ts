@@ -17,6 +17,7 @@ export type StaleReason =
   | "transcript_changed"
   | "marks_changed"
   | "marks_removed"
+  | "notes_changed"
   | "prompt_updated"
   | "model_changed"
   | "source_edited";
@@ -25,12 +26,16 @@ export interface VersionStamp {
   promptVersion: string | null;
   model: string | null;
   marksFingerprint: string | null;
+  /** Optional: callers that predate notes may omit it (never compared then). */
+  notesFingerprint?: string | null;
 }
 
 export interface StaleInput {
   generatedAt: string;
   latestSegmentAt: string | null;
   latestMarkChangeAt: string | null;
+  /** Newest hand-note creation / edit (omit when notes are not considered). */
+  latestNoteChangeAt?: string | null;
   /** What the minutes were generated with. */
   stored: VersionStamp;
   /** What would be used now; a null field means "unknown" and is not compared. */
@@ -50,6 +55,18 @@ export function marksFingerprint(marks: readonly FingerprintMark[]): string {
   return createHash("sha256").update(rows.join("\n")).digest("hex");
 }
 
+export interface FingerprintNote {
+  id: string;
+  atMs: number | null;
+  content: string;
+}
+
+/** Stable hash of the set of (id, atMs, content); independent of the order given. */
+export function notesFingerprint(notes: readonly FingerprintNote[]): string {
+  const rows = notes.map((n) => JSON.stringify([n.id, n.atMs ?? null, n.content])).sort();
+  return createHash("sha256").update(rows.join("\n")).digest("hex");
+}
+
 const differs = (stored: string | null, current: string | null) =>
   stored !== null && current !== null && stored !== current;
 
@@ -63,6 +80,9 @@ export function minutesStaleReasons(input: StaleInput): StaleReason[] {
   if (marksTouched) reasons.push("marks_changed");
   else if (differs(stored.marksFingerprint, current.marksFingerprint))
     reasons.push("marks_removed");
+  const notesTouched = isChangedSince(input.generatedAt, [input.latestNoteChangeAt ?? null]);
+  if (notesTouched || differs(stored.notesFingerprint ?? null, current.notesFingerprint ?? null))
+    reasons.push("notes_changed");
   if (differs(stored.promptVersion, current.promptVersion)) reasons.push("prompt_updated");
   if (differs(stored.model, current.model)) reasons.push("model_changed");
   return reasons;

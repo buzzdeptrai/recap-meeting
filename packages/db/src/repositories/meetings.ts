@@ -107,6 +107,8 @@ function startMeeting(ctx: RepoContext, id: string, startedAt: string = ctx.now(
 /**
  * Marks the meeting ended. Duration defaults to wall clock since started_at; pass `durationMs`
  * (recorded audio length) for resumed meetings where wall clock includes the pauses.
+ * Idempotent: an already ended meeting keeps its ended_at / duration (a repeated end, e.g. the
+ * socket-close path racing the explicit stop, must not move the timestamp). `start()` re-opens it.
  */
 function endMeeting(
   ctx: RepoContext,
@@ -116,6 +118,7 @@ function endMeeting(
 ) {
   const meeting = getMeeting(ctx, id);
   if (!meeting) return undefined;
+  if (meeting.status === "ended" && meeting.endedAt) return meeting;
   const wallClockMs = meeting.startedAt
     ? Math.max(0, Date.parse(endedAt) - Date.parse(meeting.startedAt))
     : null;

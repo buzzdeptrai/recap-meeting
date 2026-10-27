@@ -8,6 +8,7 @@ import { useAudioCapture, type AudioCaptureApi } from "./use-audio-capture";
 import { useElapsed } from "./use-elapsed";
 import { useMarkActions } from "./use-mark-actions";
 import { useMarkShortcut } from "./use-mark-shortcut";
+import { useLiveStatusRecheck } from "./use-live-status-recheck";
 import {
   useMeetingSocket,
   type InitialRoomData,
@@ -32,6 +33,7 @@ export function useRoomController(
   });
   const capture = useAudioCapture(socket.sendAudio);
   const recording = capture.phase === "running";
+  useLiveStatusRecheck(meeting, endedOverride, recording, setEndedOverride);
   const { clockOrigin, marks } = socket.room;
   const elapsedMs = useElapsed(clockOrigin, recording);
   const canMark = recording && socket.connection === "ready" && clockOrigin !== null;

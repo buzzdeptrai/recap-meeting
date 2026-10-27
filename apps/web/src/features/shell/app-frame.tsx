@@ -13,6 +13,7 @@ import {
   Question,
 } from "@phosphor-icons/react";
 import { AppShell, HelpCardAction, SidebarHelpCard, type NavGroup } from "@recap/admin-ui";
+import { LeaveGuardProvider } from "./leave-guard";
 import { isRoomPath, NAV_SPEC, type NavKey } from "./nav";
 
 const ICONS: Record<NavKey, ReactNode> = {
@@ -51,7 +52,7 @@ export function AppFrame({ userMenu, children }: { userMenu: ReactNode; children
           />
         }
       >
-        {children}
+        <LeaveGuardProvider>{children}</LeaveGuardProvider>
       </AppShell>
     </div>
   );

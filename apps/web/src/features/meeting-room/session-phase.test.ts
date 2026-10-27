@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isRoomEnded, roomActions, shouldResume } from "./session-phase";
+import {
+  isRoomEnded,
+  overrideFromFreshStatus,
+  roomActions,
+  shouldRecheckStatus,
+  shouldResume,
+} from "./session-phase";
 
 describe("isRoomEnded", () => {
   it("follows the loaded status until the page acts", () => {
@@ -41,5 +47,21 @@ describe("roomActions", () => {
       stop: true,
     });
     expect(roomActions(true, true).minutes).toBe(false);
+  });
+});
+
+describe("status re-check after a stale live load", () => {
+  it("polls only a live meeting that nobody here is recording and the page has not acted on", () => {
+    expect(shouldRecheckStatus("live", null, false)).toBe(true);
+    expect(shouldRecheckStatus("live", null, true)).toBe(false);
+    expect(shouldRecheckStatus("live", true, false)).toBe(false);
+    expect(shouldRecheckStatus("ended", null, false)).toBe(false);
+    expect(shouldRecheckStatus("draft", null, false)).toBe(false);
+  });
+
+  it("flips to ended as soon as the server says so, stays put while live", () => {
+    expect(overrideFromFreshStatus("ended")).toBe(true);
+    expect(overrideFromFreshStatus("live")).toBeNull();
+    expect(isRoomEnded("live", overrideFromFreshStatus("ended"))).toBe(true);
   });
 });

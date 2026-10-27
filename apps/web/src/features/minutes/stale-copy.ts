@@ -4,6 +4,7 @@ export const STALE_REASON_COPY: Record<StaleReason, string> = {
   transcript_changed: "Bản chép lời đã thay đổi sau khi tạo biên bản",
   marks_changed: "Dấu mốc đã được thêm hoặc đổi tên sau khi tạo biên bản",
   marks_removed: "Đã xoá hoặc đổi dấu mốc sau khi tạo",
+  notes_changed: "Ghi chú tay đã được thêm, sửa hoặc xoá sau khi tạo biên bản",
   prompt_updated: "Biên bản được tạo bằng phiên bản prompt cũ",
   model_changed: "Biên bản được tạo bằng mô hình khác với mô hình hiện tại",
   source_edited: "Bản gốc đã thay đổi sau lần dịch này",

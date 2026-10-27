@@ -31,3 +31,4 @@ export type {
   SilenceGateConfig,
 } from "./silence-gate";
 export { rmsLevel } from "./audio-level";
+export { GhostLineFilter, type GhostFilterOptions } from "./ghost-filter";

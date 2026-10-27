@@ -14,6 +14,7 @@ interface MinutesRow {
   model: string | null;
   prompt_version: string | null;
   marks_fingerprint: string | null;
+  notes_fingerprint: string | null;
   derived_from_lang: MinutesLang | null;
   source_hash: string | null;
   generated_at: string;
@@ -30,6 +31,7 @@ export interface UpsertMinutesInput {
   /** Version stamps of an `ai` version; ignored (kept as stored) for user edits. */
   promptVersion?: string | null;
   marksFingerprint?: string | null;
+  notesFingerprint?: string | null;
   /** Translation provenance of an `ai` version; kept as stored for user edits. */
   derivedFromLang?: MinutesLang | null;
   sourceHash?: string | null;
@@ -44,6 +46,7 @@ function toMinutes(row: MinutesRow): StoredMinutes {
     model: row.model,
     promptVersion: row.prompt_version,
     marksFingerprint: row.marks_fingerprint,
+    notesFingerprint: row.notes_fingerprint,
     derivedFromLang: row.derived_from_lang,
     sourceHash: row.source_hash,
     generatedAt: row.generated_at,
@@ -57,8 +60,8 @@ export function createMinutesRepository({ db, now }: RepoContext) {
   );
   // generated_at changes only when the AI regenerates; an edit just bumps updated_at.
   const upsertStmt = db.prepare(
-    `INSERT INTO minutes (meeting_id, lang, content, source, model, prompt_version, marks_fingerprint, derived_from_lang, source_hash, generated_at, updated_at)
-     VALUES (@meetingId, @lang, @content, @source, @model, @promptVersion, @marksFingerprint, @derivedFromLang, @sourceHash, @at, @at)
+    `INSERT INTO minutes (meeting_id, lang, content, source, model, prompt_version, marks_fingerprint, notes_fingerprint, derived_from_lang, source_hash, generated_at, updated_at)
+     VALUES (@meetingId, @lang, @content, @source, @model, @promptVersion, @marksFingerprint, @notesFingerprint, @derivedFromLang, @sourceHash, @at, @at)
      ON CONFLICT (meeting_id, lang) DO UPDATE SET
        content = excluded.content,
        source = excluded.source,
@@ -67,6 +70,8 @@ export function createMinutesRepository({ db, now }: RepoContext) {
                              ELSE minutes.prompt_version END,
        marks_fingerprint = CASE WHEN excluded.source = 'ai' THEN excluded.marks_fingerprint
                                 ELSE minutes.marks_fingerprint END,
+       notes_fingerprint = CASE WHEN excluded.source = 'ai' THEN excluded.notes_fingerprint
+                                ELSE minutes.notes_fingerprint END,
        derived_from_lang = CASE WHEN excluded.source = 'ai' THEN excluded.derived_from_lang
                                 ELSE minutes.derived_from_lang END,
        source_hash = CASE WHEN excluded.source = 'ai' THEN excluded.source_hash
@@ -91,6 +96,7 @@ export function createMinutesRepository({ db, now }: RepoContext) {
       model: input.model ?? null,
       promptVersion: input.promptVersion ?? null,
       marksFingerprint: input.marksFingerprint ?? null,
+      notesFingerprint: input.notesFingerprint ?? null,
       derivedFromLang: input.derivedFromLang ?? null,
       sourceHash: input.sourceHash ?? null,
       at: now(),

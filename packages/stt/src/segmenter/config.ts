@@ -36,7 +36,25 @@ export interface SegmenterConfig {
    * speech, so it never cuts before the STT vendor ends the turn. 0 = no such gate (English).
    */
   silenceMinSpeechMs: number;
+  /**
+   * A sentence-ended final with fewer words than this and less speech than `fragmentMaxSpeechMs`
+   * is a fragment: held up to `fragmentHoldMs` so it can join the next result.
+   */
+  fragmentMinWords: number;
+  fragmentMaxSpeechMs: number;
+  fragmentHoldMs: number;
+  /** Max gap between the end of the previous segment and a repeated leading word to drop it. */
+  overlapMaxGapMs: number;
+  /** A result whose start moved later than the cut utterance's start by this is a new turn. */
+  newTurnStartToleranceMs: number;
 }
+
+/** Alignment of emitted words inside revised hypotheses (see align.ts). */
+export const ALIGN_TAIL_CHARS = 16;
+export const ALIGN_MIN_ANCHOR_CHARS = 6;
+/** Longest phrase repeated across two turns that is still recognised as an overlap. */
+export const OVERLAP_MAX_WORDS = 6;
+export const OVERLAP_MIN_SINGLE_WORD_CHARS = 3;
 
 const SILENCE_MS = 600;
 const SILENCE_SHORT_MS = 1_000;
@@ -54,6 +72,11 @@ const SAFETY_MAX_CHARS = 280;
 const SAFETY_MAX_SPEECH_MS = 8_000;
 const FINAL_BUFFER_TIMEOUT_MS = 3_000;
 const NO_SILENCE_SPEECH_GATE_MS = 0;
+const FRAGMENT_MIN_WORDS = 6;
+const FRAGMENT_MAX_SPEECH_MS = 2_000;
+const FRAGMENT_HOLD_MS = 1_500;
+const OVERLAP_MAX_GAP_MS = 500;
+const NEW_TURN_START_TOLERANCE_MS = 500;
 
 export const DEFAULT_SEGMENTER_CONFIG: SegmenterConfig = {
   silenceMs: SILENCE_MS,
@@ -72,6 +95,11 @@ export const DEFAULT_SEGMENTER_CONFIG: SegmenterConfig = {
   safetyMaxSpeechMs: SAFETY_MAX_SPEECH_MS,
   finalBufferTimeoutMs: FINAL_BUFFER_TIMEOUT_MS,
   silenceMinSpeechMs: NO_SILENCE_SPEECH_GATE_MS,
+  fragmentMinWords: FRAGMENT_MIN_WORDS,
+  fragmentMaxSpeechMs: FRAGMENT_MAX_SPEECH_MS,
+  fragmentHoldMs: FRAGMENT_HOLD_MS,
+  overlapMaxGapMs: OVERLAP_MAX_GAP_MS,
+  newTurnStartToleranceMs: NEW_TURN_START_TOLERANCE_MS,
 };
 
 /**
@@ -95,6 +123,8 @@ export const VI_SEGMENTER_CONFIG: SegmenterConfig = {
   safetyMaxSpeechMs: 12_000,
   finalBufferTimeoutMs: 4_000,
   silenceMinSpeechMs: 4_000,
+  fragmentMinWords: 8,
+  fragmentMaxSpeechMs: 2_500,
 };
 
 /** Languages whose speech may be Vietnamese (`multi`/`detect` can code-switch into it). */

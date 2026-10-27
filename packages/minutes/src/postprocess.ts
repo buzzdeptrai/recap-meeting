@@ -59,15 +59,28 @@ function isBackedByMark(atMs: number | null, ctx: PostProcessContext): boolean {
   );
 }
 
+/**
+ * Orders key points by time. Points without a timestamp keep their slot, so the model's
+ * grouping around them is preserved; the sort is stable. Runs on the SOURCE minutes, before
+ * translation, so derived translations (copied by index) stay aligned.
+ */
+export function sortKeyPointsByTime<T extends { atMs: number | null }>(points: T[]): T[] {
+  const timed = points.filter((p) => p.atMs !== null).sort((a, b) => a.atMs! - b.atMs!);
+  let next = 0;
+  return points.map((p) => (p.atMs === null ? p : timed[next++]!));
+}
+
 function convertTopic(topic: LlmMinutes["topics"][number], ctx: PostProcessContext) {
   const conclusionAt = topic.conclusion ? resolveAt(topic.conclusion.at, ctx) : null;
   const conclusionText = clean(topic.conclusion?.text);
   return {
     id: ctx.newId(),
     title: topic.title.trim(),
-    keyPoints: topic.keyPoints
-      .filter((p) => clean(p.text))
-      .map((p) => ({ text: p.text.trim(), atMs: resolveAt(p.at, ctx) })),
+    keyPoints: sortKeyPointsByTime(
+      topic.keyPoints
+        .filter((p) => clean(p.text))
+        .map((p) => ({ text: p.text.trim(), atMs: resolveAt(p.at, ctx) })),
+    ),
     status: topic.status,
     conclusion: conclusionText
       ? { text: conclusionText, atMs: conclusionAt, marked: isBackedByMark(conclusionAt, ctx) }

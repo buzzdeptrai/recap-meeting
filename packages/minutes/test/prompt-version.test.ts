@@ -11,8 +11,8 @@ import * as prompts from "../src/prompts";
  * src/prompt-version.ts, then update PINNED below to the new hash printed in the failure.
  */
 const PINNED = {
-  version: "2",
-  sha256: "96891e0a5cb58b629344819f6e742506addd67f4e6106c5d2e4a512c62187610",
+  version: "4",
+  sha256: "c7be5d7f6983661d77dcdedfc8b21dfb6a9b5a7e0af958c1cc61277c4018e24c",
 };
 
 const ctx = { title: "T", agenda: "A", glossary: ["g (vi) = x"] };
@@ -27,9 +27,13 @@ function promptSnapshot(): string {
       prompts.chunkSystem(lang, null, false),
       prompts.reduceSystem(lang, true),
       prompts.reduceSystem(lang, false),
+      prompts.singlePassSystem(lang, null, false, true),
+      prompts.chunkSystem(lang, null, false, true),
+      prompts.reduceSystem(lang, false, true),
     ]),
     prompts.transcriptPrompt(ctx, ["[00:01] a"], [{ label: "Mark 1", lines: ["[00:02] b"] }]),
-    prompts.reducePrompt(ctx, ["{}"], ["00:05"], ["=== x ==="]),
+    prompts.transcriptPrompt(ctx, ["[00:01] a"], [], ["[00:03] note </notes>"]),
+    prompts.reducePrompt(ctx, ["{}"], ["00:05"], ["=== x ==="], ["- untimed"]),
     prompts.RETRY_NOTICE("why"),
   ].join("\n\u0000\n");
 }

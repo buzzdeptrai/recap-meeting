@@ -80,3 +80,18 @@ export function isDependentWord(token: string | undefined): boolean {
   if (ANY_TRAILING_PUNCTUATION.test(stripped)) return false;
   return DEPENDENT_WORDS.has(normalizeWord(stripped));
 }
+
+/** Words that never end a sentence even when the vendor adds a full stop after them. */
+const OPEN_FUNCTION_WORDS: ReadonlySet<string> = new Set([
+  ...["a", "an", "the", "of", "in", "at", "for", "with", "from", "by", "into", "onto"],
+  ...["and", "or", "but", "because", "which", "whether", "than", "between", "against"],
+  ...["without", "within", "during", "under", "through"],
+]);
+const TRAILING_STOPS = /[.,;:!?…。！？，；：]+$/;
+
+/** True for an article/preposition/conjunction, with or without trailing punctuation. */
+export function isOpenFunctionWord(token: string | undefined): boolean {
+  if (!token) return false;
+  const bare = token.replace(EDGE_QUOTES, "").replace(TRAILING_STOPS, "");
+  return OPEN_FUNCTION_WORDS.has(normalizeWord(bare));
+}

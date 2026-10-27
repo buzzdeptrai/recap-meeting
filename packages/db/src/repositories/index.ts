@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Db, RepoContext } from "../types";
 import { createGlossaryRepository } from "./glossary";
 import { createMarksRepository } from "./marks";
+import { createMeetingNotesRepository } from "./meeting-notes";
 import { createMeetingsRepository } from "./meetings";
 import { createMinutesRepository } from "./minutes";
 import { createMinutesRunsRepository } from "./minutes-runs";
@@ -28,6 +29,7 @@ export function createRepositories(db: Db, options: RepositoryOptions = {}) {
     segments: createSegmentsRepository(context),
     translations: createTranslationsRepository(context),
     marks: createMarksRepository(context),
+    notes: createMeetingNotesRepository(context),
     glossary: createGlossaryRepository(context),
     minutes: createMinutesRepository(context),
     minutesRuns: createMinutesRunsRepository(context),
@@ -44,6 +46,7 @@ export * from "./marks";
 export * from "./meeting-list-extras";
 export * from "./meeting-list-query";
 export * from "./meeting-search";
+export * from "./meeting-notes";
 export * from "./meetings";
 export * from "./meetings-trash";
 export * from "./minutes";

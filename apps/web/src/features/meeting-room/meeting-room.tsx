@@ -4,6 +4,7 @@ import { Info } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import type { MeetingDto } from "@/lib/api-types";
 import { Banner, ConfirmDialog } from "@recap/admin-ui";
+import { useLeaveGuard } from "@/features/shell/leave-guard";
 import { NO_SUGGESTIONS, type MinutesSuggestions } from "./minutes-suggestions";
 import { RESUME_HINT } from "./session-phase";
 import { useDensity } from "./use-density";
@@ -37,6 +38,7 @@ export function MeetingRoom({
   const [stopOpen, setStopOpen] = useState(false);
   const controller = useRoomController(meeting, initial, () => setStopOpen(false));
   const { socket, recording, ended } = controller;
+  useLeaveGuard(recording, controller.confirmStop);
   const root = useRef<HTMLDivElement>(null);
   const transcript = useRef<TranscriptHandle>(null);
   const search = useRoomSearch({ meetingId: meeting.id, room: socket.room, root, transcript });

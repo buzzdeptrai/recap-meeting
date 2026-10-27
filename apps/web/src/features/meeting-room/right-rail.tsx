@@ -4,6 +4,8 @@ import { FloatCard, PillTabs, pillTabId, pillTabPanelId } from "@recap/admin-ui"
 import { useState, type ReactNode } from "react";
 import type { Mark } from "@recap/core";
 import type { MarkTarget } from "./marks";
+import { NotesPanel } from "./notes-panel";
+import type { MeetingNotesApi } from "./use-meeting-notes";
 import { ConclusionList, TopicList, type MarkEditing } from "./mark-sections";
 import { hiddenCounts, visibleSuggestions, type MinutesSuggestions } from "./minutes-suggestions";
 import { SessionStats } from "./session-stats";
@@ -17,6 +19,10 @@ interface RightRailProps extends MarkEditing {
   onJumpTopic: (mark: Mark) => void;
   onJumpTime: (atMs: number) => void;
   suggestions: MinutesSuggestions;
+  /** Hand notes of the meeting ("Ghi chú" tab). */
+  notes: MeetingNotesApi;
+  getNoteOffset: () => number | null;
+  recording: boolean;
 }
 
 function Panel({
@@ -100,33 +106,27 @@ function ConclusionsBody({
   );
 }
 
-/** One floating card: pill tabs (Chủ đề, Kết luận, Phiên, Ghi chú) over their panels. */
-export function RightRail({
+type RailPanelsProps = MarkEditing &
+  Omit<RightRailProps, "notes" | "getNoteOffset"> & {
+    tab: SideTabId;
+    notes: MeetingNotesApi;
+    getNoteOffset: () => number | null;
+  };
+
+function RailPanels({
+  tab,
   room,
   onJump,
   onJumpTopic,
   onJumpTime,
   suggestions,
+  notes,
+  getNoteOffset,
+  recording,
   ...editing
-}: RightRailProps) {
-  const [tab, setTab] = useState<SideTabId>("topics");
+}: RailPanelsProps) {
   return (
-    <FloatCard
-      as="aside"
-      aria-label="Chủ đề, kết luận và thông tin phiên"
-      padding="sm"
-      className="min-[1360px]:w-[380px] min-[1360px]:shrink-0"
-      bodyClassName="overflow-y-auto px-2 pb-2 pt-3 min-[1360px]:px-3"
-      header={
-        <PillTabs
-          ariaLabel="Thông tin cuộc họp"
-          idBase={SIDE_TABS_ID_BASE}
-          tabs={buildSideTabs(room.marks)}
-          value={tab}
-          onValueChange={(id) => setTab(id as SideTabId)}
-        />
-      }
-    >
+    <>
       <Panel id="topics" selected={tab}>
         <TopicsBody
           room={room}
@@ -147,6 +147,39 @@ export function RightRail({
       <Panel id="session" selected={tab}>
         <SessionStats room={room} />
       </Panel>
+      <Panel id="notes" selected={tab}>
+        <NotesPanel
+          notes={notes}
+          getOffset={getNoteOffset}
+          recording={recording}
+          onJumpTime={onJumpTime}
+        />
+      </Panel>
+    </>
+  );
+}
+
+/** One floating card: pill tabs (Chủ đề, Kết luận, Phiên, Ghi chú) over their panels. */
+export function RightRail(props: RightRailProps) {
+  const [tab, setTab] = useState<SideTabId>("topics");
+  return (
+    <FloatCard
+      as="aside"
+      aria-label="Chủ đề, kết luận, thông tin phiên và ghi chú"
+      padding="sm"
+      className="min-[1360px]:w-[380px] min-[1360px]:shrink-0"
+      bodyClassName="overflow-y-auto px-2 pb-2 pt-3 min-[1360px]:px-3"
+      header={
+        <PillTabs
+          ariaLabel="Thông tin cuộc họp"
+          idBase={SIDE_TABS_ID_BASE}
+          tabs={buildSideTabs(props.room.marks, props.notes.notes.length)}
+          value={tab}
+          onValueChange={(id) => setTab(id as SideTabId)}
+        />
+      }
+    >
+      <RailPanels tab={tab} {...props} />
     </FloatCard>
   );
 }

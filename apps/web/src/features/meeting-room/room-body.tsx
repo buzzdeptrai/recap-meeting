@@ -12,6 +12,8 @@ import type { ViewMode } from "./segment-row";
 import { SetupChecklist } from "./setup-checklist";
 import { Transcript, type TranscriptHandle } from "./transcript";
 import { TranscriptSearch } from "./transcript-search";
+import { useMeetingNotes } from "./use-meeting-notes";
+import { noteOffset } from "./notes-state";
 import { conclusionRequest, timeRequest, topicRequest } from "./use-transcript-jump";
 import type { useRoomController } from "./use-room-controller";
 import type { useRoomSearch } from "./use-room-search";
@@ -98,6 +100,9 @@ export function RoomBody({
   suggestions,
 }: RoomBodyProps) {
   const { socket } = controller;
+  const notes = useMeetingNotes(meetingId);
+  const { clockOrigin } = socket.room;
+  const getNoteOffset = () => noteOffset(clockOrigin, controller.recording, Date.now());
   const { jumpToSegment, jumpToTopic, jumpToTime } = useJumps(transcript);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 min-[1360px]:flex-row">
@@ -117,6 +122,9 @@ export function RoomBody({
         onJumpTopic={jumpToTopic}
         onJumpTime={jumpToTime}
         suggestions={suggestions}
+        notes={notes}
+        getNoteOffset={getNoteOffset}
+        recording={controller.recording}
         editingId={controller.topics.editingId}
         onEdit={controller.topics.edit}
         onRename={controller.renameMark}

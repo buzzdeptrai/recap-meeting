@@ -17,6 +17,8 @@ const VI_MIN_TURN_SILENCE_MS = 1_200;
 const VI_MAX_TURN_SILENCE_MS = 3_500;
 const CLOSE_TIMEOUT_MS = 3_000;
 const CONNECT_TIMEOUT_MS = 10_000;
+/** No inbound message for this long on an open socket = hung session (Heartbeat arrives every 5 s). */
+export const DEFAULT_STALL_TIMEOUT_MS = 15_000;
 /** Floor for the retry delay after the per-minute session-start limit (starts reset each minute). */
 export const RATE_LIMIT_MIN_DELAY_MS = 5_000;
 
@@ -36,6 +38,8 @@ export interface AssemblyAiConfig {
   maxTurnSilenceMs?: number;
   closeTimeoutMs?: number;
   connectTimeoutMs?: number;
+  /** Reconnect when an open socket stays silent this long (default 15 s; 0 disables watchdog and heartbeat). */
+  stallTimeoutMs?: number;
   /** Override for tests / data-residency endpoints. */
   baseUrl?: string;
   reconnect?: Partial<ReconnectConfig>;
@@ -53,6 +57,7 @@ export const ASSEMBLYAI_DEFAULTS = {
   maxTurnSilenceMs: DEFAULT_MAX_TURN_SILENCE_MS,
   closeTimeoutMs: CLOSE_TIMEOUT_MS,
   connectTimeoutMs: CONNECT_TIMEOUT_MS,
+  stallTimeoutMs: DEFAULT_STALL_TIMEOUT_MS,
 } as const;
 
 export interface TurnSilence {

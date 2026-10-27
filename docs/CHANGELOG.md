@@ -3,6 +3,24 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-27 · Ghi chú tay trong họp (B1), watchdog treo AssemblyAI, sửa mất chữ khi reconnect, công cụ replay segmenter
+**Học từ translation-ai (trao đổi giữa hai session):** bên kia gặp socket AssemblyAI treo (mở, không gửi gì, không đóng; khoảng 1/50 phiên) mà retry-on-close không bắt được, và mất 3-19 chữ đầu sau mỗi reconnect. Căn chỉnh theo chữ thay offset số từ thì bên này đã có (`segmenter/align.ts`, `cursor.ts`).
+
+**Watchdog treo (`packages/stt/src/assemblyai/stall-watchdog.ts`):** URL thêm `session_heartbeat=true` (server gửi Heartbeat mỗi 5 s); 15 s không có message nào (`stallTimeoutMs`, 0 = tắt) thì báo lỗi "stalled" không chí tử, terminate socket và reconnect qua `handleDrop` + replay buffer. Idempotent, dừng khi kênh bị cổng im lặng tạm ngừng, dọn khi close/abort. Không dùng timer im lặng/âm lượng (vỗ tay, nhạc gây báo nhầm). Tách `dial.ts`, `channel-callbacks.ts` ra khỏi `channel-session.ts` (đang đúng 300 dòng). Code không đặt `inactivity_timeout` nên dùng mặc định AssemblyAI.
+
+**Mất chữ khi reconnect (`segmenter.ts`):** segmenter không biết về reconnect; đuôi chưa cắt của turn cũ (dưới `minWords` hoặc kết thúc bằng từ phụ thuộc) bị kết quả đầu tiên của socket mới ghi đè. Test lỗi viết trước, sửa bằng `flushAbandonedTurn`: kết quả mới bắt đầu muộn hơn turn đang chờ quá `newTurnStartToleranceMs` (500 ms) thì đẩy đuôi cũ đúng một lần rồi xóa cursor. Hypothesis chỉnh sửa của cùng turn không bị flush. Tách `pending-types.ts`.
+
+**Ghi chú tay (B1, migration 013):** bảng `meeting_notes` (tách khỏi bản AI, `at_ms` null = không có mốc, `position`, `last_manual_edit`), cột `minutes.notes_fingerprint`; REST `GET/POST /api/meetings/:id/notes`, `PATCH/DELETE .../notes/:noteId` (tối đa 1000 ký tự/ghi chú, 150 ghi chú/cuộc họp, 409 khi vượt); tab "Ghi chú" trong phòng bật được: Enter thêm, mốc thời gian lấy ở phím đầu khi đang live, bấm chip nhảy tới transcript, sửa tại chỗ (debounce 600 ms, Esc hoàn tác, tôn trọng IME tiếng Việt), xóa. Biên bản: ghi chú vào prompt qua khối `<notes>` đã escape một dòng (chống prompt injection), coi là điểm chủ đã xác nhận cần giữ, không bao giờ là bằng chứng một quyết định. Map-reduce: ghi chú có mốc vào đúng chunk, không mốc vào bước reduce. Stale thêm lý do `notes_changed` (fingerprint, bắt cả ghi chú bị xóa). `PROMPT_VERSION` 3 -> 4, hash prompt trong test đã cập nhật. Trạng thái notes nằm ở `RoomBody` (`useMeetingNotes`), không ở `use-room-controller.ts`, để không đụng thay đổi chưa commit.
+- Cắt khỏi lát đầu: chọn giờ cho ghi chú ở cuộc họp đã kết thúc, đẩy ghi chú qua websocket, xuất Word, huy hiệu stale ở danh sách cuộc họp (SQL pinned theo quy tắc TypeScript), AI "nở" ghi chú. Debounce chưa flush ở `beforeunload`.
+
+**Công cụ replay (`tools/replay-segmenter`):** phát lại capture JSONL (`{tMs,ch,base,raw}`) qua `Segmenter` thật trên đồng hồ ảo; đo chữ lặp ở ranh giới (không tính lặp thật), chữ mất, độ trễ p50/p90, % chunk vụn; thoát 1 khi vượt ngưỡng cờ. Chưa có hook ghi capture (cần một dòng đầu `handleMessage` trong `channel-session.ts`, chưa thêm).
+
+**Gộp cùng commit (việc anh làm trước đó, chưa commit):** segmenter (`align.ts`, `cursor.ts`, `decide`, `dependent-words`), `ghost-filter.ts` (lọc dòng CJK <= 3 ký tự trên mic gần như im), `end-snapshot.ts` và test end idempotent, `leave-guard`, `use-live-status-recheck`, sửa thứ tự key points và prompt dịch. Em chỉ kiểm tra qua test và `npm run verify`, chưa đọc lại từng diff.
+
+**Kiểm tra:** `npm run verify` xanh (167 file, 1349 test, typecheck, lint 0 lỗi, prettier, check:deps).
+
+**Chưa kiểm chứng:** AssemblyAI thật có gửi Heartbeat như docs trên endpoint và model đang dùng hay không (đọc khoảng 100k trong 115k ký tự trang docs), watchdog với socket treo thật; frame gửi vào socket treo trong 15 s trước khi phát hiện vẫn mất (replay buffer chỉ giữ khi socket đã đóng); đuôi turn cũ đi kèm khoảng im dài vẫn chờ kết quả kế tiếp hoặc `flush()` (cách gọn hơn: `meeting-session.ts` gọi `segmenter.flush()` khi status `reconnecting`, chưa làm); tab Ghi chú trên trình duyệt thật (gõ lúc ghi, chip nhảy, chế độ tối); ghi chú có thật sự giảm "Đã thống nhất" gán thừa với LLM thật; công cụ replay chưa chạy trên capture thật, dùng fixture làm tay.
+
 ## 2026-10-24 · Phát hiện im lặng mic/tab, chọn mic, cổng im lặng STT, xóa mềm, phát hiện echo loa
 **Im lặng mic/tab (`apps/web/src/audio/silence.ts`, `source-monitor.ts`):** theo dõi mức âm từng nguồn, hiện banner khi mic hoặc tab im lặng quá lâu. Nguyên nhân gốc đã tìm ra: mic mặc định bị chuyển sang iPhone (Continuity) nên không có tiếng, và tab Zoom/Teams bị mute (chia sẻ tab thì có luồng nhưng không có âm).
 

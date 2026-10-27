@@ -7,5 +7,8 @@
  * this constant and the pin are updated together.
  *
  * History: "2" = transcript injection tags + keep English terms in Vietnamese output.
+ * "3" = strict "decided" (needs explicit agreement), open conclusions state what is unresolved,
+ * scope decisions must be recorded, key points in timestamp order.
+ * "4" = hand notes as an escaped <notes> block: owner-confirmed key points, never proof of a decision.
  */
-export const PROMPT_VERSION = "2";
+export const PROMPT_VERSION = "4";

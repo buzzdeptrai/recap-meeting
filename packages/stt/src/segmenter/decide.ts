@@ -1,6 +1,6 @@
 import type { SegmenterConfig } from "./config";
 import type { CutReason } from "./cut-reason";
-import { isDependentWord } from "./dependent-words";
+import { isDependentWord, isOpenFunctionWord } from "./dependent-words";
 import { exceedsHardCap, shouldSemanticCut } from "./rules";
 
 export type CutDecision =
@@ -40,8 +40,13 @@ export function sentencePrefixLength(words: readonly string[], minWords: number)
   return 0;
 }
 
+/**
+ * True when the last word cannot close a chunk: a function word, or an article/preposition/
+ * conjunction followed by a vendor-added full stop ("check with." is a turn cut, not a sentence).
+ */
 export function endsOnDependentWord(words: readonly string[]): boolean {
-  return isDependentWord(words[words.length - 1]);
+  const last = words[words.length - 1];
+  return isDependentWord(last) || isOpenFunctionWord(last);
 }
 
 /** True once a cut may land on a dependent word. */
@@ -81,7 +86,7 @@ export function decideCut(
   const prefix = sentencePrefixLength(words, config.sentenceMinWords);
   if (prefix > 0) return { kind: "cut", end: prefix, reason: "sentence" };
   const last = words[words.length - 1];
-  if (endsSentence(last) && words.length >= config.sentenceMinWords) {
+  if (endsSentence(last) && !isOpenFunctionWord(last) && words.length >= config.sentenceMinWords) {
     return { kind: "wait", delayMs: config.sentenceEndMs, reason: "sentence" };
   }
   if (endsOnDependentWord(words) && !exceedsSafetyCap(words, speechMs, config, carryWords))

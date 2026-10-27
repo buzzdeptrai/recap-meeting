@@ -1,6 +1,7 @@
 import { SAMPLE_RATE } from "@recap/core";
 import {
   defaultTurnSilence,
+  ASSEMBLYAI_DEFAULTS,
   ASSEMBLYAI_STREAM_URL,
   KEYTERM_URL_CHAR_BUDGET,
   MAX_KEYTERMS,
@@ -45,6 +46,10 @@ export function buildStreamUrl(config: AssemblyAiConfig): string {
     min_turn_silence: String(config.minTurnSilenceMs ?? silence.minMs),
     max_turn_silence: String(config.maxTurnSilenceMs ?? silence.maxMs),
   });
+  // Server Heartbeat every 5 s (documented query param); feeds the stall watchdog.
+  if ((config.stallTimeoutMs ?? ASSEMBLYAI_DEFAULTS.stallTimeoutMs) > 0) {
+    params.set("session_heartbeat", "true");
+  }
   if (config.language === "vi" || config.language === "en") {
     params.set("language_codes", JSON.stringify([config.language]));
   }

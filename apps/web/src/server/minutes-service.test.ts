@@ -2,6 +2,7 @@ import {
   IN_MEMORY,
   createRepositories,
   marksFingerprint,
+  notesFingerprint,
   openDatabase,
   type Repositories,
 } from "@recap/db";
@@ -171,6 +172,27 @@ describe("version-based staleness", () => {
       stale: true,
       staleReasons: ["marks_removed"],
     });
+  });
+
+  it("stores the notes fingerprint at generation", async () => {
+    const id = endedMeeting();
+    repos.notes.insert({ meetingId: id, atMs: 1_000, content: "ghi chú" });
+    await generateNow(repos, id, "vi", llm);
+    expect(repos.minutes.get(id, "vi")?.notesFingerprint).toBe(
+      notesFingerprint(repos.notes.list(id)),
+    );
+  });
+
+  it("flags a note added, edited or deleted after generation (notes_changed)", async () => {
+    const { id } = await fresh();
+    const note = repos.notes.insert({ meetingId: id, atMs: 1_000, content: "mới" });
+    expect(getMinutes(id, "vi", { repos }).staleReasons).toEqual(["notes_changed"]);
+
+    await generateNow(repos, id, "vi", llm);
+    expect(getMinutes(id, "vi", { repos }).stale).toBe(false);
+
+    repos.notes.remove(id, note.id);
+    expect(getMinutes(id, "vi", { repos }).staleReasons).toEqual(["notes_changed"]);
   });
 
   it("flags an older prompt version and a changed model", async () => {
