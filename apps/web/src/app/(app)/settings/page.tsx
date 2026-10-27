@@ -4,7 +4,6 @@ import { buildSettingsModel } from "@/features/settings/settings-model";
 import { parseTab } from "@/features/settings/settings-tab";
 import { SettingsTabs } from "@/features/settings/settings-tabs";
 import { getCurrentUserForShell } from "@/server/current-user";
-import { getPricing } from "@/server/usage-recorder";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Cài đặt — Biên bản" };
@@ -20,11 +19,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
   return (
     <>
       <PageHeader breadcrumb={["Quản trị", "Cài đặt"]} title="Cài đặt" />
-      <SettingsTabs
-        model={buildSettingsModel(getPricing())}
-        initialTab={tab}
-        showUsers={showUsers}
-      />
+      <SettingsTabs model={buildSettingsModel()} initialTab={tab} showUsers={showUsers} />
     </>
   );
 }

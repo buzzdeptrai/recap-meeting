@@ -1,61 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { buildSettingsModel, budgetSetting, priceText } from "./settings-model";
-
-const PRICING = {
-  version: 1 as const,
-  currency: "USD" as const,
-  entries: [
-    {
-      vendor: "deepgram" as const,
-      service: "stt_live" as const,
-      model: "nova-3",
-      audioPerMinute: 0.0058,
-      verified: true,
-      source_url: "https://deepgram.com/pricing",
-      updated_at: "2026-10-22",
-    },
-    {
-      vendor: "gemini" as const,
-      service: "translate" as const,
-      model: "g",
-      inputPer1M: 0.25,
-      outputPer1M: 1.5,
-      verified: false,
-      source_url: "https://ai.google.dev/p",
-      updated_at: "2026-10-22",
-      notes: "n",
-    },
-  ],
-};
-
-const SECRET = "sk-super-secret-123";
+import { buildSettingsModel, budgetSetting } from "./settings-model";
+import { NOTES_PER_MEETING_MAX, NOTE_CONTENT_MAX } from "@recap/core";
+import { GUIDE_SECTIONS } from "./guide-content";
+import { SETTINGS_TABS, parseTab } from "./settings-tab";
 
 describe("settings model", () => {
-  it("never carries key values, only a mask and presence", () => {
-    const model = buildSettingsModel(PRICING, {
-      DEEPGRAM_API_KEY: SECRET,
-      OPENAI_API_KEY: "  ",
-      GEMINI_MODEL: "gemini-x",
+  it("carries only the budget, never env values", () => {
+    const model = buildSettingsModel({
+      DEEPGRAM_API_KEY: "sk-secret",
+      USAGE_MONTHLY_BUDGET_USD: "10",
     });
-    expect(JSON.stringify(model)).not.toContain(SECRET);
-    const byId = Object.fromEntries(model.providers.map((p) => [p.id, p]));
-    expect(byId.deepgram).toMatchObject({ configured: true, maskedKey: "••••" });
-    expect(byId.openai?.configured).toBe(false);
-    expect(byId.assemblyai?.configured).toBe(false);
-    expect(byId.gemini?.models[0]).toEqual({ env: "GEMINI_MODEL", set: true, value: "gemini-x" });
-    expect(byId.deepgram?.models[0]).toMatchObject({ set: false, value: null });
-  });
-
-  it("formats prices and verification from pricing.json", () => {
-    const rows = buildSettingsModel(PRICING, {}).pricing;
-    expect(rows[0]).toMatchObject({
-      price: "$0,0058 / phút kênh",
-      verified: true,
-      sourceHost: "deepgram.com",
-    });
-    expect(rows[1]?.price).toBe("vào $0,25 · ra $1,50 / 1 triệu token");
-    expect(rows[1]).toMatchObject({ verified: false, notes: "n", service: "Dịch" });
-    expect(priceText({ ...PRICING.entries[0]!, audioPerMinute: undefined })).toBe("–");
+    expect(JSON.stringify(model)).not.toContain("sk-secret");
+    expect(Object.keys(model)).toEqual(["budget"]);
   });
 
   it("reads the budget from env with a default", () => {
@@ -66,5 +22,47 @@ describe("settings model", () => {
     });
     expect(budgetSetting({})).toMatchObject({ monthlyUsd: 60, fromEnv: false });
     expect(budgetSetting({ USAGE_MONTHLY_BUDGET_USD: "-5" }).fromEnv).toBe(false);
+  });
+});
+
+describe("settings tabs", () => {
+  it("lists guide, budget and users; guide is the default", () => {
+    expect(SETTINGS_TABS).toEqual(["guide", "budget", "users"]);
+    expect(parseTab(undefined, true)).toBe("guide");
+    expect(parseTab("budget", true)).toBe("budget");
+    expect(parseTab("users", true)).toBe("users");
+    expect(parseTab("users", false)).toBe("guide");
+  });
+
+  it("the hidden providers and pricing tabs cannot be opened via ?tab=", () => {
+    expect(parseTab("providers", true)).toBe("guide");
+    expect(parseTab("pricing", true)).toBe("guide");
+  });
+});
+
+describe("guide content", () => {
+  const text = JSON.stringify(GUIDE_SECTIONS).toLowerCase();
+
+  it("states the real note limits and shortcut keys", () => {
+    expect(text).toContain(String(NOTES_PER_MEETING_MAX));
+    expect(text).toContain(String(NOTE_CONTENT_MAX));
+    expect(text).toContain("phím t");
+    expect(text).toContain("phím k");
+  });
+
+  it("never mentions cost, prices, vendors or models", () => {
+    for (const word of [
+      "chi phí",
+      "giá",
+      "usd",
+      "deepgram",
+      "assemblyai",
+      "openai",
+      "gemini",
+      "gpt",
+      "hệ số",
+    ]) {
+      expect(text).not.toContain(word);
+    }
   });
 });

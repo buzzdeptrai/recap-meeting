@@ -3,6 +3,17 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-27 · Hệ số nhân tiền hiển thị, ẩn 2 tab Settings, tab Hướng dẫn sử dụng
+**Vì sao:** chủ không muốn admin biết chi phí thật (bán lại dịch vụ), và Settings cần một trang hướng dẫn cho người dùng.
+
+**Hệ số nhân:** env `USAGE_COST_DISPLAY_MULTIPLIER` (mặc định 1, chỉ phía server, không trả ra API/UI). `apps/web/src/server/cost-display.ts` + áp trong `usage-service.ts`: tổng, kỳ trước, series, breakdown, top cuộc họp, chi tiêu/dự báo tháng, CSV. DB giữ giá ước tính thật, không migration. Ngân sách tháng (`USAGE_MONTHLY_BUDGET_USD`) KHÔNG nhân: phải đặt theo thang giá đã nhân, nếu không tính ngược ra được hệ số.
+
+**Settings:** ẩn tab "Nhà cung cấp" và "Bảng giá" (xoá panel, dữ liệu không còn gửi xuống client; `?tab=providers|pricing` rơi về tab mặc định). Thêm tab "Hướng dẫn sử dụng" (mặc định; `guide-content.ts` + `guide-panel.tsx`), thứ tự Hướng dẫn, Ngân sách, Người dùng. Route `/api/settings/test-provider` giữ nguyên (không còn nút gọi, vẫn gọi trực tiếp được khi đăng nhập).
+
+**Còn lộ giá gần đúng:** token và giây âm thanh trên `/usage` và CSV, tên nhà cung cấp/model trong bảng breakdown.
+
+**Chưa kiểm chứng:** chưa mở `/usage` và `/settings` trên trình duyệt với hệ số 5; nội dung hướng dẫn đối chiếu qua code, chưa xem giao diện.
+
 ## 2026-10-27 · Dịch: OpenAI làm chính, Gemini dự phòng, đợi 3 s
 **Vì sao:** chủ yêu cầu dùng GPT làm mặc định, Gemini dự phòng, đợi provider chính 3 s trước khi chuyển.
 

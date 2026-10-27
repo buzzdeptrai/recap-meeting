@@ -1,5 +1,6 @@
 import type { Pricing } from "@recap/core";
 import type { Repositories, UsageSums } from "@recap/db";
+import { scaleCost } from "./cost-display";
 import { getRepositories } from "./db";
 import {
   dayKeys,
@@ -22,6 +23,8 @@ export interface UsageServiceDeps {
   pricing: Pricing;
   now: () => number;
   budgetUsd: number;
+  /** Display multiplier for money; omitted = read `USAGE_COST_DISPLAY_MULTIPLIER`. */
+  costMultiplier?: number;
 }
 
 function defaultDeps(): UsageServiceDeps {
@@ -33,6 +36,12 @@ function defaultDeps(): UsageServiceDeps {
     budgetUsd: Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_BUDGET_USD,
   };
 }
+
+const money = (value: number, deps: UsageServiceDeps) => scaleCost(value, deps.costMultiplier);
+const withMoney = <T extends { costUsd: number }>(row: T, deps: UsageServiceDeps): T => ({
+  ...row,
+  costUsd: money(row.costUsd, deps),
+});
 
 const rangeOf = (q: UsageRangeQuery) => ({ from: q.from, to: q.to });
 const echo = (q: UsageRangeQuery) => ({
@@ -51,8 +60,8 @@ const tokensOf = (s: Pick<UsageSums, "inputTokens" | "outputTokens">) =>
 
 export function getSummary(query: UsageRangeQuery, deps: UsageServiceDeps = defaultDeps()) {
   const { usage } = deps.repos;
-  const totals = usage.totals(rangeOf(query));
-  const previous = usage.previousPeriodTotals(rangeOf(query));
+  const totals = withMoney(usage.totals(rangeOf(query)), deps);
+  const previous = withMoney(usage.previousPeriodTotals(rangeOf(query)), deps);
   return {
     range: echo(query),
     totals,
@@ -76,10 +85,13 @@ function monthBudget(tz: number, deps: UsageServiceDeps) {
   const daysInMonth = new Date(
     Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 0),
   ).getUTCDate();
-  const spentUsd = deps.repos.usage.totals({
-    from: new Date(startMs).toISOString(),
-    to: new Date(nowMs + 1).toISOString(),
-  }).costUsd;
+  const spentUsd = money(
+    deps.repos.usage.totals({
+      from: new Date(startMs).toISOString(),
+      to: new Date(nowMs + 1).toISOString(),
+    }).costUsd,
+    deps,
+  );
   // At least one day of history so the first hours of a month do not extrapolate wildly.
   const daysElapsed = Math.max(1, (nowMs - startMs) / MS_PER_DAY);
   return {
@@ -106,8 +118,11 @@ function pricingStatus(pricing: Pricing) {
   };
 }
 
-const METRIC_VALUE: Record<SeriesQuery["metric"], (s: UsageSums) => number> = {
-  cost: (s) => s.costUsd,
+const METRIC_VALUE: Record<
+  SeriesQuery["metric"],
+  (s: UsageSums, deps: UsageServiceDeps) => number
+> = {
+  cost: (s, deps) => money(s.costUsd, deps),
   seconds: (s) => s.audioSeconds,
   tokens: tokensOf,
   requests: (s) => s.requests,
@@ -127,7 +142,7 @@ export function getSeries(query: SeriesQuery, deps: UsageServiceDeps = defaultDe
     const index = dayIndex.get(row.day);
     if (index === undefined) continue;
     const values = byKey.get(row.key) ?? days.map(() => 0);
-    values[index] = (values[index] ?? 0) + value(row);
+    values[index] = (values[index] ?? 0) + value(row, deps);
     byKey.set(row.key, values);
   }
   const series = [...byKey]
@@ -144,7 +159,9 @@ export function getSeries(query: SeriesQuery, deps: UsageServiceDeps = defaultDe
 }
 
 export function getBreakdown(query: BreakdownQuery, deps: UsageServiceDeps = defaultDeps()) {
-  const rows = deps.repos.usage.aggregate({ ...rangeOf(query), groupBy: query.groupBy });
+  const rows = deps.repos.usage
+    .aggregate({ ...rangeOf(query), groupBy: query.groupBy })
+    .map((r) => withMoney(r, deps));
   const totalCost = rows.reduce((sum, r) => sum + r.costUsd, 0);
   const titles = query.groupBy === "meeting" ? meetingTitles(deps) : new Map<string, string>();
   return {
@@ -185,7 +202,9 @@ export function getReliability(query: UsageRangeQuery, deps: UsageServiceDeps = 
 export function getTopMeetings(query: MeetingsQuery, deps: UsageServiceDeps = defaultDeps()) {
   return {
     range: echo(query),
-    meetings: deps.repos.usage.topMeetings(rangeOf(query), query.limit),
+    meetings: deps.repos.usage
+      .topMeetings(rangeOf(query), query.limit)
+      .map((m) => withMoney(m, deps)),
   };
 }
 
@@ -219,7 +238,7 @@ export function getCsv(query: ExportQuery, deps: UsageServiceDeps = defaultDeps(
               groupBy: "day",
               tzOffsetMinutes: query.tzOffsetMinutes,
             })
-            .map((r) => ({ ...r, label: r.key })),
+            .map((r) => ({ ...withMoney(r, deps), label: r.key })),
         }
       : getBreakdown({ ...query, groupBy: query.groupBy }, deps);
   const lines = rows.map((r) =>

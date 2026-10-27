@@ -57,6 +57,7 @@ Cả hai tiến trình đọc cùng một file `.env` ở gốc repo (realtime q
 | `STT_PROVIDER`, `DEEPGRAM_MODEL`, `DEEPGRAM_LANGUAGE`, `ASSEMBLYAI_MODEL`, `ASSEMBLYAI_MIN_TURN_SILENCE_MS`, `ASSEMBLYAI_MAX_TURN_SILENCE_MS` | tùy chọn | có mặc định |
 | `GEMINI_MODEL`, `OPENAI_TRANSLATE_MODEL`, `OPENAI_MINUTES_MODEL`, `TRANSLATE_PROVIDER_ORDER`, `TRANSLATE_DEADLINE_MS`, `TRANSLATE_FALLBACK_DEADLINE_MS` | tùy chọn | có mặc định |
 | `USAGE_MONTHLY_BUDGET_USD` | tùy chọn | ngân sách hiển thị ở `/usage` |
+| `USAGE_COST_DISPLAY_MULTIPLIER` | tùy chọn (1) | hệ số nhân mọi số tiền hiển thị (chỉ server, DB giữ giá thật); 1 = đúng giá ước tính |
 | `REALTIME_PORT` | tùy chọn (4001) | PM2 đặt sẵn 4001 |
 | `REALTIME_HOST` | tùy chọn (bỏ trống = mọi giao diện) | PM2 production đặt sẵn `127.0.0.1`; chỉ Caddy (`/ws*` -> `127.0.0.1:4001`) truy cập được. Giá trị rỗng/chỉ khoảng trắng bị từ chối |
 | `MINUTES_WORKER_POLL_MS`, `MINUTES_WORKER_CONCURRENCY` | tùy chọn | worker biên bản trong realtime |
