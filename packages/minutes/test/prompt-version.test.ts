@@ -11,8 +11,8 @@ import * as prompts from "../src/prompts";
  * src/prompt-version.ts, then update PINNED below to the new hash printed in the failure.
  */
 const PINNED = {
-  version: "4",
-  sha256: "c7be5d7f6983661d77dcdedfc8b21dfb6a9b5a7e0af958c1cc61277c4018e24c",
+  version: "5",
+  sha256: "6143a894098053d936ddf31fdb6d273b5fc5591ce7fcd3bb12b7225baa34e4d9",
 };
 
 const ctx = { title: "T", agenda: "A", glossary: ["g (vi) = x"] };

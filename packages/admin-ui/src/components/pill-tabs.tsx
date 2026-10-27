@@ -110,7 +110,7 @@ export function PillTabs({
             }}
             onKeyDown={(event) => onKeyDown(event, index)}
             className={cn(
-              "soft-focus inline-flex h-[34px] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-soft-pill px-3 text-[13px] font-semibold whitespace-nowrap text-soft-muted transition-colors duration-150 hover:bg-soft-inset-2 hover:text-soft-ink",
+              "soft-focus inline-flex h-[34px] min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-soft-pill px-2 text-[13px] font-semibold whitespace-nowrap text-soft-muted transition-colors duration-150 hover:bg-soft-inset-2 hover:text-soft-ink",
               on &&
                 "bg-soft-solid font-bold text-white shadow-soft-seg hover:bg-soft-solid hover:text-white",
               tab.disabled &&

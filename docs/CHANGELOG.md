@@ -3,6 +3,17 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-27 · Ghi chú chỉ bổ sung (PROMPT_VERSION 5) và tab phòng họp bớt chật
+**Vì sao:** test thật phiên "TODAY 27102026" (2 ghi chú chép từ transcript) rồi A/B 4 lần mỗi nhánh trên bản sao DB: có ghi chú thì 2/4 lần biên bản **bỏ hẳn chủ đề phế cầu** (không ghi chú: 4/4 giữ). Ghi chú về top 5 kéo mô hình nghiêng hẳn về phần đó.
+
+**Prompt (`packages/minutes/src/prompts.ts`):** ghi chú là phần thêm, không phải bộ lọc: mỗi chủ đề của transcript vẫn có mục riêng dù không ghi chú nào nhắc, ghi chú không được khiến bỏ/gộp/rút ngắn chủ đề; ghi chú có thể khác ngôn ngữ biên bản (ví dụ chép từ bản dịch) thì lấy ý và viết theo ngôn ngữ biên bản; bước reduce của map-reduce cũng giữ mọi chủ đề. `PROMPT_VERSION` 4 -> 5, hash pin trong `prompt-version.test.ts` cập nhật.
+
+**Kết quả A/B v5 (6 lần mỗi nhánh, `gpt-4.1`, bản sao DB):** cả 3 nhánh (không ghi chú, 2 ghi chú gốc, 2 ghi chú em tự viết về phế cầu + top 5) giữ đủ 2 chủ đề 18/18; không lần nào có chủ đề `decided` thiếu dấu K; số liệu 60%/30% trong ghi chú đa dạng có mặt 6/6 lần, không ghi chú 1/6. Chỉ số tính bằng regex thô, mẫu nhỏ.
+
+**UI:** `PillTabs` (admin-ui) padding `px-3 -> px-2` + `min-w-0`; bốn tab có badge đếm (Chủ đề, Kết luận, Phiên, Ghi chú) hết tràn rail 380px. Độ rộng ước tính, chưa đo trên trình duyệt.
+
+**Chưa kiểm chứng:** "Đã thống nhất" gán thừa (phiên test luôn có dấu K ở 159 s nên chủ đề top 5 luôn `decided` ở mọi nhánh); tab hết chật trên màn thật; ghi chú đa dạng là dữ liệu em tự viết, không phải ghi chú của chủ.
+
 ## 2026-10-27 · Ghi chú tay trong họp (B1), watchdog treo AssemblyAI, sửa mất chữ khi reconnect, công cụ replay segmenter
 **Học từ translation-ai (trao đổi giữa hai session):** bên kia gặp socket AssemblyAI treo (mở, không gửi gì, không đóng; khoảng 1/50 phiên) mà retry-on-close không bắt được, và mất 3-19 chữ đầu sau mỗi reconnect. Căn chỉnh theo chữ thay offset số từ thì bên này đã có (`segmenter/align.ts`, `cursor.ts`).
 

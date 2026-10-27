@@ -1,5 +1,9 @@
 # Changelog — @recap/admin-ui
 
+## Unreleased
+
+- `PillTabs`: tab padding `px-3 -> px-2` and `min-w-0`, so four tabs with count badges (room right rail: Chủ đề, Kết luận, Phiên, Ghi chú) fit the 380px rail instead of overflowing it.
+
 ## 0.2.2 — contrast and selected states (2026-10-24)
 
 Owner feedback: buttons, tabs and the active menu item were all white on grey, so selected vs unselected was hard to see and the UI felt washed out.

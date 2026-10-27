@@ -10,5 +10,6 @@
  * "3" = strict "decided" (needs explicit agreement), open conclusions state what is unresolved,
  * scope decisions must be recorded, key points in timestamp order.
  * "4" = hand notes as an escaped <notes> block: owner-confirmed key points, never proof of a decision.
+ * "5" = notes are additive: never drop/merge/shorten a topic because no note mentions it; notes may be in another language.
  */
-export const PROMPT_VERSION = "4";
+export const PROMPT_VERSION = "5";
