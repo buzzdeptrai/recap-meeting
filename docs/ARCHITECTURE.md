@@ -155,8 +155,8 @@ DEEPGRAM_MODEL=nova-3
 DEEPGRAM_LANGUAGE=multi      # vi | en | multi — tuned in Phase 0 bench
 GEMINI_MODEL=gemini-3.1-flash-lite
 OPENAI_TRANSLATE_MODEL=gpt-4.1-mini
-TRANSLATE_PROVIDER_ORDER=gemini,openai
-TRANSLATE_DEADLINE_MS=1500
+TRANSLATE_PROVIDER_ORDER=openai,gemini
+TRANSLATE_DEADLINE_MS=3000
 REALTIME_PORT=4001
 # REALTIME_HOST=127.0.0.1   # optional; unset = all interfaces (dev), production = loopback only
 NEXT_PUBLIC_REALTIME_URL=ws://localhost:4001/ws

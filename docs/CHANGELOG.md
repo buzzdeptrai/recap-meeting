@@ -3,6 +3,15 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-27 · Dịch: OpenAI làm chính, Gemini dự phòng, đợi 3 s
+**Vì sao:** chủ yêu cầu dùng GPT làm mặc định, Gemini dự phòng, đợi provider chính 3 s trước khi chuyển.
+
+**Làm gì:** `packages/translate/src/config.ts` mặc định `openai,gemini` và `TRANSLATE_DEADLINE_MS` 3000 (dự phòng vẫn 4000); `.env.example`, `packages/translate/README.md`, `docs/ARCHITECTURE.md` và `config.test.ts` theo. `e2e-translation.test.ts` ghim thứ tự `gemini,openai` vì kịch bản viết cho Gemini là provider chính.
+
+**Lưu ý:** biến env thắng mặc định; `.env` (local và VPS) nào còn `TRANSLATE_PROVIDER_ORDER=gemini,openai` / `TRANSLATE_DEADLINE_MS=1500` phải đổi tay rồi restart realtime. Cả hai key vẫn cần.
+
+**Chưa kiểm chứng:** độ trễ và chi phí thực của `gpt-4.1-mini` làm provider chính trong phiên live; ngưỡng 3 s là theo yêu cầu, chưa đo.
+
 ## 2026-10-27 · STT: flush khi reconnect, ghi capture, bớt chữ lặp ở ranh giới
 **Vì sao:** test thật phiên "TODAY 27102026" có chữ "sĩ" lặp ở ranh giới, và reconnect có thể làm mất đuôi chưa cắt của kênh bị rớt.
 

@@ -6,8 +6,8 @@ const KEYS = { GEMINI_API_KEY: "g-secret", OPENAI_API_KEY: "o-secret" };
 describe("configFromEnv", () => {
   it("applies documented defaults", () => {
     const c = configFromEnv(KEYS);
-    expect(c.providerOrder).toEqual(["gemini", "openai"]);
-    expect(c.deadlineMs).toBe(1500);
+    expect(c.providerOrder).toEqual(["openai", "gemini"]);
+    expect(c.deadlineMs).toBe(3000);
     expect(c.fallbackDeadlineMs).toBe(4000);
     expect(c.slowDeadlineMs).toBe(0);
     expect(

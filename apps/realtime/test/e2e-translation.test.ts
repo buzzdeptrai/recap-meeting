@@ -28,6 +28,7 @@ function translatorWith(gemini: FakeScript, openai: FakeScript = {}) {
   return createTranslator(
     {
       ...DEFAULT_TRANSLATOR_CONFIG,
+      providerOrder: ["gemini", "openai"], // scripts below treat gemini as the primary
       gemini: { apiKey: "unused", model: "fake" },
       openai: { apiKey: "unused", model: "fake" },
     },

@@ -25,10 +25,10 @@ translator.endMeeting(id);    // xóa context + trạng thái thứ tự của c
 
 | Biến | Mặc định |
 |---|---|
-| `TRANSLATE_PROVIDER_ORDER` | `gemini,openai` |
+| `TRANSLATE_PROVIDER_ORDER` | `openai,gemini` |
 | `GEMINI_MODEL` / `OPENAI_TRANSLATE_MODEL` | `gemini-3.1-flash-lite` / `gpt-4.1-mini` |
-| `TRANSLATE_DEADLINE_MS` | `1500` (deadline của provider chính, đứng đầu `TRANSLATE_PROVIDER_ORDER`) |
-| `TRANSLATE_FALLBACK_DEADLINE_MS` | `4000` (deadline của provider dự phòng, thứ 2 trở đi; OpenAI đo được 2.3 s ở lần gọi đầu nên 1500 sẽ timeout đúng lúc cần) |
+| `TRANSLATE_DEADLINE_MS` | `3000` (deadline của provider chính, đứng đầu `TRANSLATE_PROVIDER_ORDER`) |
+| `TRANSLATE_FALLBACK_DEADLINE_MS` | `4000` (deadline của provider dự phòng, thứ 2 trở đi) |
 | `TRANSLATE_SLOW_DEADLINE_MS` | `0` = tắt (đặt vd. `6000` để thử lại 1 lần provider chỉ bị timeout; có thể trễ phụ đề ~9 s) |
 | `TRANSLATE_ORDER_TIMEOUT_MS` | `10000` (chờ tối đa các seq trước) |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` | bắt buộc cho provider nằm trong order |

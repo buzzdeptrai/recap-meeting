@@ -8,9 +8,9 @@ export type ProviderName = (typeof PROVIDER_NAMES)[number];
 
 const DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite";
 const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
-const DEFAULT_ORDER = "gemini,openai";
-const DEFAULT_DEADLINE_MS = 1_500;
-// Fallbacks answer after the primary already failed; OpenAI measured 2.3 s on its first call.
+const DEFAULT_ORDER = "openai,gemini";
+const DEFAULT_DEADLINE_MS = 3_000;
+// Fallbacks answer after the primary already failed, so they get a little longer than a healthy answer.
 const DEFAULT_FALLBACK_DEADLINE_MS = 4_000;
 const DEFAULT_SLOW_DEADLINE_MS = 0; // disabled for live use: a retry can delay a subtitle ~9 s
 const DEFAULT_ORDER_TIMEOUT_MS = 10_000;
@@ -33,7 +33,7 @@ export interface TranslatorConfig {
 }
 
 export const DEFAULT_TRANSLATOR_CONFIG: Omit<TranslatorConfig, "gemini" | "openai"> = {
-  providerOrder: ["gemini", "openai"],
+  providerOrder: ["openai", "gemini"],
   deadlineMs: DEFAULT_DEADLINE_MS,
   fallbackDeadlineMs: DEFAULT_FALLBACK_DEADLINE_MS,
   slowDeadlineMs: DEFAULT_SLOW_DEADLINE_MS,
