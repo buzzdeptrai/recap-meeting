@@ -8,6 +8,9 @@ loadEnvConfig(resolve(process.cwd(), "../.."), process.env.NODE_ENV !== "product
   error: console.error,
 });
 
+/** Private app: tell every crawler not to index, follow, cache or snippet anything (incl. JS chunks). */
+const NO_INDEX = "noindex, nofollow, noarchive, nosnippet, noimageindex";
+
 const nextConfig: NextConfig = {
   // A second dev instance (QA against a scratch DB) needs its own build dir and lock.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
@@ -22,6 +25,11 @@ const nextConfig: NextConfig = {
   ],
   // Native module: load from node_modules at runtime instead of bundling.
   serverExternalPackages: ["better-sqlite3"],
+  // Never ship source maps to the browser (the default, pinned so nobody flips it by accident).
+  productionBrowserSourceMaps: false,
+  async headers() {
+    return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: NO_INDEX }] }];
+  },
 };
 
 export default nextConfig;

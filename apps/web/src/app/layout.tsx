@@ -20,6 +20,7 @@ const jetBrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Biên bản",
   description: "Ghi và dịch cuộc họp Anh–Việt theo thời gian thực",
+  robots: { index: false, follow: false, nocache: true },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

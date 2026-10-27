@@ -3,6 +3,15 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-27 · Chặn bot lập chỉ mục (noindex)
+**Vì sao:** app riêng tư, chủ không muốn bot tìm ra hay lập chỉ mục trang và file JS.
+
+**Làm gì:** `apps/web/next.config.ts` thêm header `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex` cho mọi đường dẫn (kể cả chunk JS) và ghim `productionBrowserSourceMaps: false`; `layout.tsx` metadata `robots` noindex/nofollow/nocache; `src/app/robots.ts` trả `Disallow: /` (qua được proxy đăng nhập nhờ đuôi `.txt`).
+
+**Giới hạn:** chỉ chặn bot tuân thủ; lớp bảo vệ thật là đăng nhập. Cloudflare Bot Fight Mode là lớp thêm tuỳ chọn.
+
+**Chưa kiểm chứng:** mới thử trên dev; chưa kiểm header/robots trên domain thật sau khi build và restart.
+
 ## 2026-10-27 · Hệ số nhân tiền hiển thị, ẩn 2 tab Settings, tab Hướng dẫn sử dụng
 **Vì sao:** chủ không muốn admin biết chi phí thật (bán lại dịch vụ), và Settings cần một trang hướng dẫn cho người dùng.
 
