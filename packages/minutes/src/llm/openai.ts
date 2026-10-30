@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { OpenAiMinutesConfig } from "../config";
 import { MinutesError } from "../errors";
+import { withLlmRetry, type RetryOptions } from "./retry";
 import type { LlmRequest, MinutesLlm, MinutesUsageHook } from "../types";
 
 const TEMPERATURE = 0.2;
@@ -28,6 +29,7 @@ export class OpenAiMinutesLlm implements MinutesLlm {
     private readonly config: OpenAiMinutesConfig,
     client?: OpenAiClientLike,
     private readonly onUsage?: MinutesUsageHook,
+    private readonly retry: RetryOptions = {},
   ) {
     this.model = config.model;
     this.client =
@@ -35,12 +37,27 @@ export class OpenAiMinutesLlm implements MinutesLlm {
       (new OpenAI({ apiKey: config.apiKey, maxRetries: 0 }) as unknown as OpenAiClientLike);
   }
 
+  /**
+   * One logical model call: transient failures (429 / 5xx / network) are retried with backoff,
+   * each try with its own deadline. Usage is reported once, for the final outcome.
+   */
   async generate(request: LlmRequest): Promise<string> {
     const startedAt = Date.now();
+    try {
+      const response = await withLlmRetry(() => this.attempt(request), this.retry);
+      this.report("ok", startedAt, response.usage);
+      return response.choices[0]?.message.content ?? "";
+    } catch (err) {
+      this.report("error", startedAt);
+      throw err;
+    }
+  }
+
+  private async attempt(request: LlmRequest) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.config.deadlineMs);
     try {
-      const response = await this.client.chat.completions.create(
+      return await this.client.chat.completions.create(
         {
           model: this.model,
           temperature: TEMPERATURE,
@@ -55,10 +72,7 @@ export class OpenAiMinutesLlm implements MinutesLlm {
         },
         { signal: controller.signal },
       );
-      this.report("ok", startedAt, response.usage);
-      return response.choices[0]?.message.content ?? "";
     } catch (err) {
-      this.report("error", startedAt);
       if (controller.signal.aborted) {
         throw new MinutesError(`Minutes model exceeded ${this.config.deadlineMs}ms`, "LLM_FAILED");
       }

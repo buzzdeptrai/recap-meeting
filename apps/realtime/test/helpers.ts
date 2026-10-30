@@ -6,6 +6,7 @@ import { IN_MEMORY, createRepositories, openDatabase } from "@recap/db";
 import { FakeSttProvider, type FakeSttOptions } from "@recap/stt";
 import WebSocket from "ws";
 import { createRealtimeServer, type RealtimeServer } from "../src/app";
+import type { WebSocketOptions } from "../src/ws";
 import type { RealtimeDeps } from "../src/deps";
 import { SessionRegistry } from "../src/session/registry";
 
@@ -22,7 +23,10 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-export async function createHarness(overrides: Partial<RealtimeDeps> = {}): Promise<Harness> {
+export async function createHarness(
+  overrides: Partial<RealtimeDeps> = {},
+  serverOptions?: WebSocketOptions,
+): Promise<Harness> {
   const db = openDatabase(IN_MEMORY);
   const audioDir = mkdtempSync(join(tmpdir(), "recap-audio-"));
   const providers: FakeSttProvider[] = [];
@@ -38,7 +42,7 @@ export async function createHarness(overrides: Partial<RealtimeDeps> = {}): Prom
     },
     ...overrides,
   };
-  const server = createRealtimeServer(deps);
+  const server = createRealtimeServer(deps, serverOptions);
   const port = await server.listen(0);
   return {
     server,

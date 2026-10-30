@@ -71,7 +71,7 @@ export class SttRetry {
     }
     this.attempts += 1;
     this.lastStartedAt = at;
-    void this.run();
+    this.run().catch((error: unknown) => log("retry bookkeeping failed", error));
   }
 
   private async run(): Promise<void> {

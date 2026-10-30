@@ -58,7 +58,12 @@ module.exports = {
       // Run the TypeScript source with tsx (runtime dependency of apps/realtime).
       script: "node_modules/tsx/dist/cli.mjs",
       args: "apps/realtime/src/server.ts",
-      max_memory_restart: "500M",
+      // 1G, not 500M: this ONE process holds every live meeting at once (sockets, segmenter and
+      // STT buffers, WAV writers, translation queues) plus the minutes worker, whose map-reduce
+      // keeps long transcripts in memory (concurrency 2). A restart drops ALL live meetings, so
+      // the limit must sit well above the normal peak of ~5 concurrent meetings; it only exists
+      // to catch a leak. Size the VPS for >= 1.5 GB RAM in total with both apps.
+      max_memory_restart: "1G",
       // apps/realtime/src/server.ts force-exits 5 s after SIGTERM (SHUTDOWN_TIMEOUT_MS); keep
       // PM2's SIGKILL just above it so the minutes worker can fail in-flight runs cleanly.
       kill_timeout: 8000,

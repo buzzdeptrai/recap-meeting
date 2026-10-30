@@ -4,6 +4,7 @@ import type { MinutesRunDto } from "@/lib/api-types";
 import {
   failAbandoned,
   defaultRunDeps,
+  runsAhead,
   toRunDto,
   type MinutesRunDeps,
 } from "./minutes-run-service";
@@ -50,5 +51,5 @@ export function startTranslationRun(
   if (run.kind !== "translate") {
     throw new ServiceError(409, "RUN_BUSY", "Biên bản ngôn ngữ này đang được tạo. Hãy đợi xong.");
   }
-  return toRunDto(run);
+  return toRunDto(run, runsAhead(deps, run));
 }

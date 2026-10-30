@@ -1,5 +1,6 @@
 import { REPO_ROOT, loadRootEnv, resolveFromRoot } from "@recap/core/node";
 import { z } from "zod";
+import { DEFAULT_MAX_CONNECTIONS } from "./limits";
 import { parseAllowedOrigins } from "./origin";
 
 export { REPO_ROOT };
@@ -7,6 +8,7 @@ export { REPO_ROOT };
 const DEFAULT_PORT = 4001;
 const DEFAULT_TRANSLATE_DEADLINE_MS = 1500;
 const MAX_PORT = 65_535;
+const MAX_CONNECTIONS_LIMIT = 1_000;
 const MIN_SERVICE_TOKEN_LENGTH = 16;
 const DEFAULT_IDLE_AFTER_MS = 30_000;
 const MAX_IDLE_AFTER_MS = 3_600_000;
@@ -76,6 +78,11 @@ const envSchema = z.object({
     .optional()
     .transform((value) => parseAllowedOrigins(value)),
   REALTIME_PORT: z.coerce.number().int().min(0).max(MAX_PORT).default(DEFAULT_PORT),
+  /** Simultaneous WebSocket clients; further ones get close code 1013. */
+  REALTIME_MAX_CONNECTIONS: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.coerce.number().int().min(1).max(MAX_CONNECTIONS_LIMIT).default(DEFAULT_MAX_CONNECTIONS),
+  ),
   /** Unset = all interfaces (dev). Production sets 127.0.0.1 so only the reverse proxy reaches it. */
   REALTIME_HOST: z.string().trim().min(1, "must not be empty when set").optional(),
   DB_PATH: z.string().trim().min(1).default("./data/recap.db"),

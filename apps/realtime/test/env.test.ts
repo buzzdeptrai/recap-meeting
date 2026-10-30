@@ -71,3 +71,25 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...others, STT_PROVIDER: "whisper" })).toThrow(/STT_PROVIDER/);
   });
 });
+
+describe("REALTIME_MAX_CONNECTIONS", () => {
+  const base = {
+    OPENAI_API_KEY: "k",
+    GEMINI_API_KEY: "k",
+    DEEPGRAM_API_KEY: "k",
+  };
+
+  it("defaults to 40, treats blank as default and accepts overrides", () => {
+    expect(parseEnv(base).REALTIME_MAX_CONNECTIONS).toBe(40);
+    expect(parseEnv({ ...base, REALTIME_MAX_CONNECTIONS: " " }).REALTIME_MAX_CONNECTIONS).toBe(40);
+    expect(parseEnv({ ...base, REALTIME_MAX_CONNECTIONS: "5" }).REALTIME_MAX_CONNECTIONS).toBe(5);
+  });
+
+  it("rejects zero, negatives and junk", () => {
+    for (const REALTIME_MAX_CONNECTIONS of ["0", "-1", "abc", "1.5"]) {
+      expect(() => parseEnv({ ...base, REALTIME_MAX_CONNECTIONS })).toThrow(
+        /REALTIME_MAX_CONNECTIONS/,
+      );
+    }
+  });
+});

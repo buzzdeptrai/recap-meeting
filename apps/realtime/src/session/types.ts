@@ -30,7 +30,8 @@ export interface TranslateStatus {
   degraded: boolean;
 }
 
-export type StopReason = "client" | "disconnect";
+/** `error`: the session crashed internally; the client gets an error, then `stopped`. */
+export type StopReason = "client" | "disconnect" | "error";
 
 export interface SessionLanguages {
   sourceLang: SourceLang;

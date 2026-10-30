@@ -14,6 +14,15 @@ export { TRANSLATE_PROMPT_VERSION } from "./translate-prompts";
 export { extractText, mergeText, minutesTextSchema } from "./translate-schema";
 export type { OpenAiMinutesConfig } from "./config";
 export { OpenAiMinutesLlm } from "./llm/openai";
+export {
+  LLM_MAX_ATTEMPTS,
+  LLM_RETRY_BASE_DELAY_MS,
+  LLM_RETRY_MAX_DELAY_MS,
+  isRetryableLlmError,
+  retryAfterMs,
+  withLlmRetry,
+} from "./llm/retry";
+export type { RetryOptions } from "./llm/retry";
 export type { OpenAiClientLike } from "./llm/openai";
 export { FakeMinutesLlm } from "./llm/fake";
 export type { FakeReply, FakeResponder } from "./llm/fake";

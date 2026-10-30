@@ -18,7 +18,7 @@ Biến môi trường (file `.env` ở thư mục gốc, xem `.env.example`): `D
 Bảo vệ WebSocket (`src/limits.ts`, `src/origin.ts`): kiểm tra header `Origin` lúc upgrade (mặc định chỉ
 `localhost`, `127.0.0.1`, `[::1]`; đổi bằng `REALTIME_ALLOWED_ORIGINS=origin1,origin2` hoặc `*`; client không
 gửi Origin như tool/test vẫn được phép), giới hạn kích thước message 64 KiB, tối đa 200 frame audio và 30 message
-điều khiển mỗi giây (vượt thì đóng 1008), tối đa 20 kết nối cùng lúc.
+điều khiển mỗi giây (vượt thì đóng 1008), tối đa `REALTIME_MAX_CONNECTIONS` (mặc định 40) kết nối cùng lúc, ping mỗi 30 s và cắt kết nối chết, ngắt client quá chậm (đệm gửi > 8 MiB, mã 4009; > 1 MiB thì bỏ `interim`). Chi tiết: `docs/ARCHITECTURE.md` §3.
 
 ## Luồng sự kiện
 

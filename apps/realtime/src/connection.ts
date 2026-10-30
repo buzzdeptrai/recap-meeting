@@ -1,6 +1,7 @@
-import type { ClientMessage, ErrorCode, ServerMessage } from "@recap/core";
-import { encodeServerMessage, parseClientMessage } from "@recap/core";
+import type { ClientMessage, ErrorCode, ServerMessage, StartMessage } from "@recap/core";
+import { parseClientMessage } from "@recap/core";
 import type { RawData, WebSocket } from "ws";
+import { sendWithBackpressure } from "./backpressure";
 import type { RealtimeDeps } from "./deps";
 import {
   CLOSE_POLICY_VIOLATION,
@@ -9,7 +10,12 @@ import {
   RateLimiter,
 } from "./limits";
 import type { MeetingSession } from "./session/meeting-session";
-import { StartRefusedError, createMeetingSession } from "./session/start-session";
+import type { SessionOwner } from "./session/registry";
+import {
+  SessionActiveError,
+  StartRefusedError,
+  createMeetingSession,
+} from "./session/start-session";
 
 function toBuffer(data: RawData): Buffer {
   if (Buffer.isBuffer(data)) return data;
@@ -21,7 +27,7 @@ function toBuffer(data: RawData): Buffer {
  * State of one client socket: parses frames, routes control messages to the MeetingSession and
  * guarantees the session is stopped when the socket goes away.
  */
-export class ClientConnection {
+export class ClientConnection implements SessionOwner {
   private session: MeetingSession | null = null;
   private ready = false;
   private closed = false;
@@ -34,9 +40,25 @@ export class ClientConnection {
   constructor(
     private readonly socket: WebSocket,
     private readonly deps: RealtimeDeps | undefined,
+    /** Authenticated user (null: service token or no authenticator). */
+    readonly userId: string | null = null,
   ) {}
 
+  /**
+   * Entry point for socket frames. Nothing may throw out of here: an exception in an event
+   * handler would be a process-level uncaught exception that ends every other live meeting.
+   */
   handleMessage(data: RawData, isBinary: boolean): void {
+    try {
+      this.routeMessage(data, isBinary);
+    } catch (error) {
+      console.error("[ws] message handler failed:", error);
+      if (this.session) this.session.fail("message handler", error);
+      else this.sendError("INTERNAL", "Internal error");
+    }
+  }
+
+  private routeMessage(data: RawData, isBinary: boolean): void {
     const limiter = isBinary ? this.audioLimiter : this.controlLimiter;
     if (!limiter.hit()) {
       this.socket.close(CLOSE_POLICY_VIOLATION, "Rate limit exceeded");
@@ -68,8 +90,13 @@ export class ClientConnection {
   }
 
   private send(message: ServerMessage): void {
-    if (this.socket.readyState !== this.socket.OPEN) return;
-    this.socket.send(encodeServerMessage(message));
+    sendWithBackpressure(this.socket, message);
+  }
+
+  /** SessionOwner: a newer connection of the same user takes this meeting over. */
+  async replace(): Promise<void> {
+    this.sendError("SESSION_REPLACED", "This meeting was started from another window of yours");
+    await this.stopSession("disconnect");
   }
 
   private sendError(code: ErrorCode, message: string): void {
@@ -79,6 +106,8 @@ export class ClientConnection {
   private handleAudio(frame: Buffer): void {
     const accepted = this.ready && this.session?.handleAudio(frame) === true;
     if (accepted || this.badAudioReported) return;
+    // A session that ended itself (crash, takeover) was reported once; stay quiet.
+    if (this.session?.hasEnded) return;
     // One error per connection; further bad frames are only counted by the session.
     this.badAudioReported = true;
     const reason = this.ready ? "Bad audio frame size" : "Audio received before ready";
@@ -130,10 +159,11 @@ export class ClientConnection {
 
   private async start(message: Extract<ClientMessage, { type: "start" }>): Promise<void> {
     if (!this.deps) return this.sendError("INTERNAL", "Server is not configured for sessions");
+    await this.dropEndedSession();
     if (this.session) return this.sendError("BAD_MESSAGE", "Session already started");
     if (this.closed) return;
     try {
-      this.session = createMeetingSession(this.deps, message, (m) => this.send(m));
+      this.session = await this.createSession(this.deps, message);
     } catch (error) {
       if (!(error instanceof StartRefusedError)) throw error;
       return this.sendError(error.code, error.message);
@@ -146,6 +176,38 @@ export class ClientConnection {
     }
     this.ready = true;
     if (this.closed) await this.stopSession("disconnect");
+  }
+
+  /** A session that ended on its own (crash) no longer blocks a new `start` on this socket. */
+  private async dropEndedSession(): Promise<void> {
+    if (!this.session?.hasEnded) return;
+    await this.stopSession("disconnect");
+  }
+
+  private async createSession(deps: RealtimeDeps, message: StartMessage): Promise<MeetingSession> {
+    const create = (m: StartMessage) =>
+      createMeetingSession(deps, m, (out) => this.send(out), this);
+    try {
+      return create(message);
+    } catch (error) {
+      if (!(error instanceof SessionActiveError) || !(await this.takeOver(deps, message))) {
+        throw error;
+      }
+      return create({ ...message, resume: true });
+    }
+  }
+
+  /**
+   * The same authenticated user may replace their own other connection's session (e.g. a laptop
+   * that went to sleep, or a second tab). A different user, or a service token, never can.
+   */
+  private async takeOver(deps: RealtimeDeps, message: StartMessage): Promise<boolean> {
+    const owner = deps.registry.ownerOf(message.meetingId);
+    if (!owner || owner === this || this.userId === null || owner.userId !== this.userId) {
+      return false;
+    }
+    await owner.replace();
+    return true;
   }
 
   private async stopSession(reason: "client" | "disconnect"): Promise<void> {

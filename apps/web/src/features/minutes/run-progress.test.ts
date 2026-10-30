@@ -20,6 +20,7 @@ const run = (over: Partial<MinutesRunDto> = {}): MinutesRunDto => ({
   error: null,
   startedAt: "2026-10-24T08:00:00.000Z",
   finishedAt: null,
+  ahead: 0,
   ...over,
 });
 
@@ -90,6 +91,11 @@ describe("runProgressView", () => {
       steps: 3,
       percent: 0,
     });
+  });
+
+  it("says a queued run behind other runs is waiting its turn", () => {
+    const view = runProgressView(run({ status: "queued", phase: null, total: 0, ahead: 2 }));
+    expect(view.label).toBe("Đang chờ lượt (còn 2 lượt trước)");
   });
 
   it("copes with no run and never exceeds the step count", () => {

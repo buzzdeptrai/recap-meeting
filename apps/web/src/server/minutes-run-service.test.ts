@@ -86,6 +86,7 @@ describe("startMinutesRun (enqueue only)", () => {
         "error",
         "startedAt",
         "finishedAt",
+        "ahead",
       ].sort(),
     );
     expect(repos.minutesRuns.get(run.runId)).toMatchObject({
@@ -184,6 +185,58 @@ describe("stale and unclaimed runs", () => {
     const once = repos.minutesRuns.get(run.runId);
     expect(getLatestRun(id, "vi", d)?.status).toBe("failed");
     expect(repos.minutesRuns.get(run.runId)).toEqual(once);
+  });
+
+  it("a queued run waiting behind a live running run is not failed, and says how many are ahead", () => {
+    const running = endedMeeting();
+    const waiting = endedMeeting();
+    const first = startMinutesRun(running, "vi", deps());
+    repos.minutesRuns.markRunning(first.runId);
+    const second = startMinutesRun(waiting, "vi", deps());
+    expect(second.ahead).toBe(1);
+    const d = deps({ queuedClaimTimeoutMs: CLAIM_MS });
+    for (let i = 0; i < 4; i++) {
+      clockMs += CLAIM_MS;
+      repos.minutesRuns.updateProgress(first.runId, { phase: "map", done: i, total: 9 });
+      expect(getLatestRun(waiting, "vi", d)).toMatchObject({ status: "queued", ahead: 1 });
+    }
+  });
+
+  it("a queued run waiting behind a long single LLM call (no progress) survives until the stale window", () => {
+    const running = endedMeeting();
+    const waiting = endedMeeting();
+    repos.minutesRuns.markRunning(startMinutesRun(running, "vi", deps()).runId);
+    startMinutesRun(waiting, "vi", deps());
+    const d = deps({ queuedClaimTimeoutMs: CLAIM_MS, staleRunMs: TIMEOUT_MS });
+    clockMs += TIMEOUT_MS - 1_000;
+    expect(getLatestRun(waiting, "vi", d)?.status).toBe("queued");
+  });
+
+  it("fails the waiting run once the running one is abandoned too (no worker anywhere)", () => {
+    const running = endedMeeting();
+    const waiting = endedMeeting();
+    repos.minutesRuns.markRunning(startMinutesRun(running, "vi", deps()).runId);
+    startMinutesRun(waiting, "vi", deps());
+    const d = deps({ queuedClaimTimeoutMs: CLAIM_MS, staleRunMs: TIMEOUT_MS });
+    clockMs += TIMEOUT_MS + 1_000;
+    expect(getLatestRun(running, "vi", d)?.status).toBe("failed");
+    expect(getLatestRun(waiting, "vi", d)).toMatchObject({
+      status: "failed",
+      error: UNCLAIMED_RUN_ERROR,
+    });
+  });
+
+  it("a queued run is not failed while the worker recently finished another run", () => {
+    const done = endedMeeting();
+    const waiting = endedMeeting();
+    const first = startMinutesRun(done, "vi", deps());
+    repos.minutesRuns.markRunning(first.runId);
+    repos.minutesRuns.finish(first.runId);
+    startMinutesRun(waiting, "vi", deps());
+    clockMs += CLAIM_MS - 1_000;
+    expect(getLatestRun(waiting, "vi", deps({ queuedClaimTimeoutMs: CLAIM_MS }))?.status).toBe(
+      "queued",
+    );
   });
 
   it("a claimed (running) run is not affected by the claim timeout", () => {

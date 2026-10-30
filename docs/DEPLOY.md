@@ -6,7 +6,7 @@ Quy ước trong tài liệu: **[đã kiểm]** = đã chạy thử trên máy d
 
 ## 1. Cấu hình máy
 
-- 2 vCPU / 2-4 GB RAM (web tối đa ~600 MB, realtime ~500 MB trước khi PM2 khởi động lại), đĩa SSD. Âm thanh WAV 16 kHz stereo khoảng 115 MB/giờ họp, hãy tính dung lượng cho `AUDIO_DIR`.
+- 2 vCPU / 2-4 GB RAM (web tối đa ~600 MB, realtime tới 1 GB trước khi PM2 khởi động lại; realtime giữ MỌI cuộc họp đang diễn ra + worker biên bản trong một tiến trình nên cần dư địa, cả hai app cùng chạy nên tính >= 2 GB RAM), đĩa SSD. Âm thanh WAV 16 kHz stereo khoảng 115 MB/giờ họp, hãy tính dung lượng cho `AUDIO_DIR`.
 - Ubuntu 22.04/24.04 hoặc Debian 12. Mở cổng 80/443 ra ngoài; **không** mở 3000, 4001 (xem mục 11).
 - Cần domain trỏ về IP máy (ví dụ `recap.congty.vn`). Trình duyệt chỉ cho `getDisplayMedia` và micro trên HTTPS (secure context) hoặc localhost, nên HTTPS là bắt buộc.
 
@@ -60,10 +60,11 @@ Cả hai tiến trình đọc cùng một file `.env` ở gốc repo (realtime q
 | `USAGE_COST_DISPLAY_MULTIPLIER` | tùy chọn (1) | hệ số nhân mọi số tiền hiển thị (chỉ server, DB giữ giá thật); 1 = đúng giá ước tính |
 | `REALTIME_PORT` | tùy chọn (4001) | PM2 đặt sẵn 4001 |
 | `REALTIME_HOST` | tùy chọn (bỏ trống = mọi giao diện) | PM2 production đặt sẵn `127.0.0.1`; chỉ Caddy (`/ws*` -> `127.0.0.1:4001`) truy cập được. Giá trị rỗng/chỉ khoảng trắng bị từ chối |
-| `MINUTES_WORKER_POLL_MS`, `MINUTES_WORKER_CONCURRENCY` | tùy chọn | worker biên bản trong realtime |
-| `MINUTES_QUEUED_CLAIM_TIMEOUT_MS`, `MINUTES_RUN_STALE_MS` | tùy chọn | web: biên bản xếp hàng/đứng im quá lâu thì báo lỗi |
+| `MINUTES_WORKER_POLL_MS`, `MINUTES_WORKER_CONCURRENCY` | tùy chọn (1000, 2) | worker biên bản trong realtime; tối đa `CONCURRENCY` lượt chạy cùng lúc, lượt còn lại xếp hàng ("Đang chờ lượt") |
+| `REALTIME_MAX_CONNECTIONS` | tùy chọn (40) | số kết nối WebSocket đồng thời; vượt thì từ chối bằng mã đóng 1013. Server ping mỗi 30 s và cắt kết nối không trả lời |
+| `MINUTES_QUEUED_CLAIM_TIMEOUT_MS`, `MINUTES_RUN_STALE_MS` | tùy chọn | web: lượt xếp hàng chỉ bị báo "dịch vụ nền chưa chạy" khi quá `CLAIM_TIMEOUT` VÀ không thấy worker hoạt động (không có lượt nào đang chạy/mới xong); lượt `running` đứng im quá `STALE` thì báo lỗi |
 | `MINUTES_MARK_WINDOW_BEFORE_MS`, `MINUTES_MARK_WINDOW_AFTER_MS` | tùy chọn | cửa sổ quanh dấu kết luận |
-| `AUTH_TRUST_PROXY` | nên đặt `true` khi sau Caddy | để giới hạn đăng nhập theo IP thật (đọc `X-Forwarded-For`); chỉ an toàn khi cổng web chỉ nhận từ proxy (đã bind 127.0.0.1) |
+| `AUTH_TRUST_PROXY` | **bắt buộc `true` khi sau Caddy/proxy** | nếu thiếu, mọi người dùng chung MỘT bộ đếm giới hạn đăng nhập (IP của proxy), nên vài lần nhập sai của một người khóa đăng nhập của cả nhóm. Đọc IP thật từ `X-Forwarded-For`; chỉ an toàn khi cổng web chỉ nhận từ proxy (đã bind 127.0.0.1) |
 | `RECAP_SERVICE_TOKEN` | để trống | chỉ cho tool `stream-file`; tắt khi không dùng |
 
 `PORT` (web) do `ecosystem.config.cjs` đặt (3000). `NODE_ENV=production` cũng do PM2 đặt cho cả hai tiến trình.
@@ -138,7 +139,7 @@ pm2 install pm2-logrotate                         # xoay vòng log
 pm2 set pm2-logrotate:max_size 20M && pm2 set pm2-logrotate:retain 14
 ```
 
-`ecosystem.config.cjs`: mỗi app đúng **1 instance, fork mode**, `watch:false`, `max_memory_restart` 600M (web) / 500M (realtime), `kill_timeout` 5 s (web) / 8 s (realtime, cao hơn mốc 5 s mà `apps/realtime/src/server.ts` tự thoát cứng để worker biên bản kịp đánh dấu lỗi các lượt đang chạy), restart có backoff mũ (tối đa 10 lần), log ở `logs/`. **[đã kiểm]** Khởi động cả hai bằng PM2 (cổng phụ, DB tạm): `/login` 200, `/api/meetings` 401 khi chưa đăng nhập, `GET /health` của realtime `{"ok":true,"minutesWorker":{"running":true,...}}`, `pm2 stop` kích hoạt tắt êm của realtime, web nghe `127.0.0.1`.
+`ecosystem.config.cjs`: mỗi app đúng **1 instance, fork mode**, `watch:false`, `max_memory_restart` 600M (web) / 1G (realtime; một restart làm rơi mọi cuộc họp đang diễn ra nên ngưỡng chỉ để bắt rò bộ nhớ), `kill_timeout` 5 s (web) / 8 s (realtime, cao hơn mốc 5 s mà `apps/realtime/src/server.ts` tự thoát cứng để worker biên bản kịp đánh dấu lỗi các lượt đang chạy), restart có backoff mũ (tối đa 10 lần), log ở `logs/`. **[đã kiểm]** Khởi động cả hai bằng PM2 (cổng phụ, DB tạm): `/login` 200, `/api/meetings` 401 khi chưa đăng nhập, `GET /health` của realtime `{"ok":true,"minutesWorker":{"running":true,...}}`, `pm2 stop` kích hoạt tắt êm của realtime, web nghe `127.0.0.1`.
 
 ## 9. Quy trình cập nhật
 
@@ -189,7 +190,7 @@ Giữ 14 ngày DB; `audio/` được rsync (không xóa file cũ). Nên chép th
 
   (nhà cung cấp VPS có thể có firewall riêng, cũng nên chặn.) WebSocket vẫn yêu cầu origin hợp lệ và cookie phiên.
 - `.env` quyền 600, thuộc user `recap`; chạy PM2 bằng user `recap`, không dùng root; bật cập nhật bảo mật tự động của hệ điều hành.
-- Giới hạn đăng nhập: đặt `AUTH_TRUST_PROXY=true` (mục 4). Bộ đếm đăng nhập sai nằm trong bộ nhớ, mất khi web khởi động lại.
+- Giới hạn đăng nhập: `AUTH_TRUST_PROXY=true` là **bắt buộc** sau Caddy (mục 4), nếu không mọi client dùng chung một bộ đếm. Bộ đếm đăng nhập sai nằm trong bộ nhớ, mất khi web khởi động lại.
 
 ## 12. Giới hạn đã biết
 

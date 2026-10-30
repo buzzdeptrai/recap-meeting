@@ -1,6 +1,10 @@
 export const DEFAULT_WORKER_POLL_MS = 1_000;
-export const DEFAULT_WORKER_CONCURRENCY = 1;
-/** A queued run nobody claimed for this long means the worker is not running. */
+/** Two runs at once: several users end meetings together, one long run must not block the rest. */
+export const DEFAULT_WORKER_CONCURRENCY = 2;
+/**
+ * A queued run nobody claimed for this long AND no sign of a living worker (no recent running or
+ * finished run) means the worker is not running. Waiting behind other runs never counts.
+ */
 export const DEFAULT_QUEUED_CLAIM_TIMEOUT_MS = 120_000;
 
 type Env = Record<string, string | undefined>;

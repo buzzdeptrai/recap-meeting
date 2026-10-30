@@ -43,7 +43,7 @@ export function staleRunMsFromEnv(env: Record<string, string | undefined>): numb
   return Number.isInteger(value) && value > 0 ? value : DEFAULT_STALE_RUN_MS;
 }
 
-export const toRunDto = (run: MinutesRun): MinutesRunDto => ({
+export const toRunDto = (run: MinutesRun, ahead = 0): MinutesRunDto => ({
   runId: run.id,
   kind: run.kind,
   lang: run.lang,
@@ -54,17 +54,27 @@ export const toRunDto = (run: MinutesRun): MinutesRunDto => ({
   error: run.error,
   startedAt: run.startedAt,
   finishedAt: run.finishedAt,
+  ahead,
 });
+
+/** Runs the worker handles before this one; only meaningful (and queried) while it is queued. */
+export const runsAhead = (deps: MinutesRunDeps, run: MinutesRun): number =>
+  run.status === "queued" ? deps.repos.minutesRuns.runsAhead(run.id) : 0;
 
 const cutoffIso = (deps: MinutesRunDeps, timeoutMs: number) =>
   new Date((deps.now ?? Date.now)() - timeoutMs).toISOString();
 
-/** Fails active runs that stopped updating, and queued runs no worker picked up. Idempotent. */
+/**
+ * Fails running rows that stopped updating, and queued rows no worker picked up. A queued row is
+ * only "unclaimed" when no worker activity is visible (nothing running recently, nothing finished
+ * within the claim window): waiting behind another run is normal. Idempotent.
+ */
 export function failAbandoned(deps: MinutesRunDeps, meetingId: string, lang: MinutesLang) {
   const { minutesRuns } = deps.repos;
   const staleMs = deps.staleRunMs ?? staleRunMsFromEnv(process.env);
   minutesRuns.failStale(meetingId, lang, cutoffIso(deps, staleMs), STALE_RUN_ERROR);
   const claimMs = deps.queuedClaimTimeoutMs ?? queuedClaimTimeoutMsFromEnv(process.env);
+  if (minutesRuns.hasWorkerActivity(cutoffIso(deps, staleMs), cutoffIso(deps, claimMs))) return;
   minutesRuns.failUnclaimed(meetingId, lang, cutoffIso(deps, claimMs), UNCLAIMED_RUN_ERROR);
 }
 
@@ -91,7 +101,7 @@ export function startMinutesRun(
     promptVersion: PROMPT_VERSION,
   });
   if (run.kind !== "generate") throw runBusy();
-  return toRunDto(run);
+  return toRunDto(run, runsAhead(deps, run));
 }
 
 const runBusy = () =>
@@ -106,5 +116,5 @@ export function getLatestRun(
   requireMeeting(deps.repos, meetingId);
   failAbandoned(deps, meetingId, lang);
   const run = deps.repos.minutesRuns.latest(meetingId, lang);
-  return run ? toRunDto(run) : undefined;
+  return run ? toRunDto(run, runsAhead(deps, run)) : undefined;
 }

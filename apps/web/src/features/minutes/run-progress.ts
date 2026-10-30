@@ -13,6 +13,7 @@ export const PHASE_LABEL: Record<MinutesRunPhase, string> = {
 const PREPARING_LABEL = "Đang chuẩn bị";
 /** Queued: waiting for the background worker to pick the run up. */
 const WAITING_LABEL = "Đang chờ xử lý";
+const WAITING_TURN_LABEL = "Đang chờ lượt";
 /** Steps besides the chunks: the merge and the final pass. */
 const EXTRA_STEPS = 2;
 /** A translation call is running: more than nothing, less than done. */
@@ -36,9 +37,14 @@ function completedSteps(run: MinutesRunDto, chunks: number): number {
   return run.phase === "map" ? Math.min(run.done, chunks) : 0;
 }
 
+/** Queued behind other runs: honest about the wait ("nhường lượt"), not about a missing service. */
+function waitingLabel(ahead: number): string {
+  return ahead > 0 ? `${WAITING_TURN_LABEL} (còn ${ahead} lượt trước)` : WAITING_LABEL;
+}
+
 function labelOf(run: MinutesRunDto | null): string {
   if (run?.phase) return PHASE_LABEL[run.phase];
-  return run?.status === "queued" ? WAITING_LABEL : PREPARING_LABEL;
+  return run?.status === "queued" ? waitingLabel(run.ahead) : PREPARING_LABEL;
 }
 
 export const isTranslateRun = (run: MinutesRunDto | null): boolean => run?.kind === "translate";

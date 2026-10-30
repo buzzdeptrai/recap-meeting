@@ -15,7 +15,7 @@ describe("worker config from env", () => {
         concurrency: DEFAULT_WORKER_CONCURRENCY,
       });
     }
-    expect([DEFAULT_WORKER_POLL_MS, DEFAULT_WORKER_CONCURRENCY]).toEqual([1_000, 1]);
+    expect([DEFAULT_WORKER_POLL_MS, DEFAULT_WORKER_CONCURRENCY]).toEqual([1_000, 2]);
   });
 
   it("accepts positive integers, rejects zero / negative / fractions", () => {
@@ -26,7 +26,9 @@ describe("worker config from env", () => {
       }),
     ).toEqual({ pollMs: 250, concurrency: 3 });
     expect(minutesWorkerConfigFromEnv({ MINUTES_WORKER_POLL_MS: "0" }).pollMs).toBe(1_000);
-    expect(minutesWorkerConfigFromEnv({ MINUTES_WORKER_CONCURRENCY: "1.5" }).concurrency).toBe(1);
+    expect(minutesWorkerConfigFromEnv({ MINUTES_WORKER_CONCURRENCY: "1.5" }).concurrency).toBe(
+      DEFAULT_WORKER_CONCURRENCY,
+    );
   });
 
   it("queued claim timeout defaults to 120s and is overridable", () => {

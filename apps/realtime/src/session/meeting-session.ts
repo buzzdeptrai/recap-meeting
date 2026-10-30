@@ -1,18 +1,5 @@
-import {
-  FRAME_BYTES,
-  type ErrorCode,
-  type MarkKind,
-  type Segment,
-  type ServerMessage,
-} from "@recap/core";
-import {
-  GhostLineFilter,
-  Segmenter,
-  type RawSegment,
-  type SttResult,
-  type SttStatus,
-  type TimeRange,
-} from "@recap/stt";
+import { FRAME_BYTES, type ErrorCode, type MarkKind, type ServerMessage } from "@recap/core";
+import { GhostLineFilter, type Segmenter, type SttResult, type SttStatus } from "@recap/stt";
 import { handleChannelActivity } from "./channel-activity";
 import { waitBounded } from "./drain";
 import { meterAcceptedFrame } from "./frame-metering";
@@ -20,6 +7,8 @@ import { endMeetingRecorded, snapshotEnd, type EndSnapshot } from "./end-snapsho
 import { runMarkAction } from "./mark-action";
 import { log, safely, safelySync } from "./safe";
 import type { MeetingSessionOptions } from "./session-options";
+import { attachProviderEvents, makeGuard, type Guard } from "./session-guard";
+import { createSegmenters } from "./session-segmenters";
 import { SttRetry } from "./stt-retry";
 import { SttUsageMeter } from "./stt-usage-meter";
 import { TranscriptRecorder } from "./transcript-recorder";
@@ -51,6 +40,7 @@ export class MeetingSession {
   private readonly retry: SttRetry;
   /** End state of the meeting before this session re-opened it (resume of an ended meeting). */
   private previousEnd: EndSnapshot | null = null;
+  private readonly guard: Guard = makeGuard((label, error) => this.fail(label, error));
 
   constructor(private readonly options: MeetingSessionOptions) {
     this.hooks = options.hooks ?? {};
@@ -59,7 +49,15 @@ export class MeetingSession {
       : null;
     this.recorder = new TranscriptRecorder(options.repos, options.meeting.id, options.baseMs);
     this.ghostFilter = new GhostLineFilter({ sourceLang: options.sourceLang });
-    this.segmenters = [0, 1].map((channel) => this.createSegmenter(channel as 0 | 1));
+    this.segmenters = createSegmenters({
+      options,
+      recorder: this.recorder,
+      ghostFilter: this.ghostFilter,
+      guard: this.guard,
+      send: (message) => this.sendEvent(message),
+      onCommitted: (segment) =>
+        safelySync("onFinalSegment hook", () => this.hooks.onFinalSegment?.(segment, this)),
+    });
     this.attachProviderEvents();
     this.retry = new SttRetry(
       {
@@ -84,6 +82,11 @@ export class MeetingSession {
 
   get isLive(): boolean {
     return this.state === "live";
+  }
+
+  /** Stopping or stopped (a crash ends a session without the connection asking for it). */
+  get hasEnded(): boolean {
+    return this.state === "stopping" || this.state === "stopped";
   }
 
   get rejectedFrames(): number {
@@ -171,9 +174,31 @@ export class MeetingSession {
     } catch (error) {
       log("audio write failed", error);
     }
-    this.options.stt.sendAudio(frame);
-    meterAcceptedFrame(this.options.stt, this.retry, this.usageMeter, this.sttStatus);
+    try {
+      this.options.stt.sendAudio(frame);
+      meterAcceptedFrame(this.options.stt, this.retry, this.usageMeter, this.sttStatus);
+    } catch (error) {
+      this.fail("audio path", error);
+      return false;
+    }
     return true;
+  }
+
+  /**
+   * An unexpected error inside this session's callbacks (STT events, timers, segment handling):
+   * log with the meeting id, tell the client, and end only this session. Other meetings and the
+   * process keep running; the meeting can be resumed. Idempotent while stopping.
+   */
+  fail(where: string, error: unknown): void {
+    log(`${this.meetingId} crashed in ${where}`, error);
+    if (this.state === "stopping" || this.state === "stopped") return;
+    safelySync("notify client of crash", () =>
+      this.sendError(
+        "INTERNAL",
+        "Recording stopped because of an internal error. Resume the meeting.",
+      ),
+    );
+    void this.stop("error").catch((stopError: unknown) => log("failed to stop crashed", stopError));
   }
 
   /** Restarts the STT provider after it gave up (browser `stt_retry`). Idempotent. */
@@ -230,7 +255,7 @@ export class MeetingSession {
     safelySync("close audio", () => this.options.audio.close());
     safelySync("end meeting", () => this.endMeeting());
     this.state = "stopped";
-    if (reason === "client") this.sendEvent({ type: "stopped", meetingId: this.meetingId });
+    if (reason !== "disconnect") this.sendEvent({ type: "stopped", meetingId: this.meetingId });
     safelySync("onStopped hook", () => this.hooks.onStopped?.(this));
     this.options.onEnded?.();
     if (this.framesRejected > 0)
@@ -243,56 +268,29 @@ export class MeetingSession {
     endMeetingRecorded(this.options.repos, this.meetingId, this.options.audio.durationMs, keep);
   }
 
-  private createSegmenter(channel: 0 | 1): Segmenter {
-    const variants = this.options.variants;
-    return new Segmenter({
-      channel,
-      config: this.options.segmenterConfig,
-      clock: this.options.clock,
-      variants: variants ? () => variants : undefined,
-      ghostFilter: this.ghostFilter,
-      onSegment: (raw) => this.commitSegment(raw),
-      onInterim: (text, range) => this.sendInterim(channel, text, range),
-    });
-  }
-
   private attachProviderEvents(): void {
-    const { stt } = this.options;
-    stt.on("interim", (result) => this.route(result, "onInterim"));
-    stt.on("final", (result) => this.route(result, "onFinal"));
-    stt.on("status", (status) => {
-      this.sttStatus = status;
-      if (this.state === "live") this.sendStatus();
-    });
-    stt.on("activity", (a) => handleChannelActivity(this.meetingId, a, this.segmenters));
-    stt.on("error", (error) => {
-      log(`STT error (fatal=${error.fatal})`, error.message);
-      if (error.fatal) this.sendError("STT_UNAVAILABLE", "Speech recognition connection lost");
-    });
+    attachProviderEvents(
+      this.options.stt,
+      {
+        interim: (result) => this.route(result, "onInterim"),
+        final: (result) => this.route(result, "onFinal"),
+        status: (status) => {
+          this.sttStatus = status;
+          if (this.state === "live") this.sendStatus();
+        },
+        activity: (a) => handleChannelActivity(this.meetingId, a, this.segmenters),
+        error: (error) => {
+          log(`STT error (fatal=${error.fatal})`, error.message);
+          if (error.fatal) this.sendError("STT_UNAVAILABLE", "Speech recognition connection lost");
+        },
+      },
+      this.guard,
+    );
   }
 
   private route(result: SttResult, method: "onInterim" | "onFinal"): void {
     if (this.state === "stopped") return;
     this.segmenters[result.channel]?.[method](result);
-  }
-
-  private commitSegment(raw: RawSegment): void {
-    let segment: Segment;
-    try {
-      segment = this.recorder.commit(raw);
-    } catch (error) {
-      log("failed to persist segment", error);
-      this.sendError("INTERNAL", "Could not save transcript segment");
-      return;
-    }
-    this.sendEvent({ type: "segment", segment });
-    safelySync("onFinalSegment hook", () => this.hooks.onFinalSegment?.(segment, this));
-  }
-
-  private sendInterim(channel: 0 | 1, text: string, range: TimeRange): void {
-    const startMs = this.recorder.toMeetingMs(range.startMs);
-    const endMs = Math.max(startMs, this.recorder.toMeetingMs(range.endMs));
-    this.sendEvent({ type: "interim", channel, text, startMs, endMs });
   }
 
   private sendStatus(): void {

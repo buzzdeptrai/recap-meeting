@@ -2,6 +2,7 @@ import type { StartMessage } from "@recap/core";
 import type { Meeting } from "@recap/db";
 import { AudioWriter, wavPathFor } from "../audio/audio-writer";
 import { resolveSttLanguage, type RealtimeDeps } from "../deps";
+import type { SessionOwner } from "./registry";
 import { MeetingSession } from "./meeting-session";
 import { loadSttGlossary } from "./glossary-source";
 import type { SessionSink } from "./types";
@@ -12,6 +13,13 @@ export class StartRefusedError extends Error {
     message: string,
   ) {
     super(message);
+  }
+}
+
+/** The meeting already has a live session (the caller may take it over, see ClientConnection). */
+export class SessionActiveError extends StartRefusedError {
+  constructor() {
+    super("BAD_MESSAGE", "Meeting already has an active session");
   }
 }
 
@@ -33,10 +41,11 @@ export function createMeetingSession(
   deps: RealtimeDeps,
   message: StartMessage,
   sink: SessionSink,
+  owner?: SessionOwner,
 ): MeetingSession {
   const meeting = checkStartable(deps, message);
   if (!deps.registry.reserve(meeting.id)) {
-    throw new StartRefusedError("BAD_MESSAGE", "Meeting already has an active session");
+    throw new SessionActiveError();
   }
   let audio: AudioWriter | null = null;
   try {
@@ -63,7 +72,7 @@ export function createMeetingSession(
       },
       onEnded: () => deps.registry.release(meeting.id),
     });
-    deps.registry.register(session);
+    deps.registry.register(session, owner);
     session.setHooks(deps.onSessionCreated?.(session) ?? {});
     return session;
   } catch (error) {

@@ -3,6 +3,22 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-30 · Làm bền realtime và hàng đợi biên bản cho ~5 người dùng cùng lúc
+**Vì sao:** dùng nội bộ với ~5 tài khoản, nhiều cuộc họp live cùng lúc. Rà code thấy một lỗi bất kỳ làm chết mọi phiên, hàng đợi biên bản báo lỗi giả, trần 20 kết nối, và gọi LLM không thử lại khi 429. Dữ liệu vẫn dùng chung giữa các tài khoản (chủ đích, không thêm `owner_id`).
+
+**Làm gì:**
+- Cô lập lỗi theo phiên (`MeetingSession.fail`, `session-guard.ts`, `session-segmenters.ts`): lỗi trong STT/timer/audio/message chỉ kết thúc phiên đó (`error INTERNAL` rồi `stopped`, vẫn resume được). Handler `uncaughtException`/`unhandledRejection` giữ làm phương án cuối, log kèm id meeting đang live. PM2 realtime 1G.
+- Hàng đợi biên bản: chỉ báo "dịch vụ nền chưa chạy" khi quá `MINUTES_QUEUED_CLAIM_TIMEOUT_MS` và không thấy worker hoạt động; `failStale` chỉ áp cho lượt `running`; DTO có `ahead`, UI "Đang chờ lượt (còn N lượt trước)"; concurrency mặc định 2.
+- `REALTIME_MAX_CONNECTIONS` (mặc định 40, trước là 20 cứng), chỉ đếm socket đang OPEN; vượt thì đóng mã 1013.
+- Heartbeat ping 30 s (`heartbeat.ts`); cùng user mở lại meeting thì thay phiên cũ (`SESSION_REPLACED`, thông báo tiếng Việt ở `error-copy.ts`); user khác hoặc service-token vẫn bị từ chối.
+- Retry LLM cho biên bản (`packages/minutes/src/llm/retry.ts`): 429/5xx/lỗi mạng, tối đa 4 lần, backoff mũ + jitter, tôn trọng `Retry-After`. Đường dịch live không đổi.
+- Backpressure (`backpressure.ts`): `bufferedAmount` > 1 MiB bỏ `interim`, > 8 MiB đóng mã 4009.
+- `docs/DEPLOY.md`: `AUTH_TRUST_PROXY=true` bắt buộc sau proxy.
+
+**Quyết định:** tín hiệu "worker còn sống" suy từ bảng `minutes_runs`, không migration heartbeat (worker chết cứng thì lượt xếp hàng có thể chờ thêm tới `MINUTES_RUN_STALE_MS` = 10 phút). Takeover cho mọi kết nối khác của cùng user, không chỉ kết nối stale; hai tab cùng meeting có thể giành nhau (tab cũ chỉ ngừng ghi và hiện thông báo).
+
+**Chưa kiểm chứng:** mọi test dùng client giả; chưa chạy STT/OpenAI/Gemini thật, chưa thử ping/pong, backpressure và reconnect sau mã 4009 trên trình duyệt thật, chưa chạy PM2 với 1G. Sức chứa ~5-10 cuộc họp đồng thời là ước đoán, chưa đo bằng `stream-file`.
+
 ## 2026-10-30 · Trang Hướng dẫn sử dụng có ảnh chụp màn hình
 **Vì sao:** tab hướng dẫn chỉ có chữ gạch đầu dòng; người dùng khó theo, nhất là bước chia sẻ tab + micro.
 

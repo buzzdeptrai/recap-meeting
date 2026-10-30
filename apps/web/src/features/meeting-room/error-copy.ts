@@ -7,6 +7,8 @@ export function describeServerError(error: ErrorMessage): string {
       return "Dịch vụ nhận dạng giọng nói tạm thời không dùng được. Hệ thống đang thử kết nối lại.";
     case "MEETING_NOT_FOUND":
       return "Máy chủ ghi âm không tìm thấy cuộc họp này. Tải lại trang rồi thử lại.";
+    case "SESSION_REPLACED":
+      return "Cuộc họp này vừa được mở lại từ một cửa sổ khác của bạn nên cửa sổ này đã ngừng ghi. Hãy dùng cửa sổ mới.";
     case "TRANSLATE_FAILED":
       return "Một câu chưa dịch được. Phần còn lại vẫn tiếp tục.";
     default:

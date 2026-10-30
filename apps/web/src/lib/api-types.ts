@@ -187,4 +187,6 @@ export interface MinutesRunDto {
   error: string | null;
   startedAt: string;
   finishedAt: string | null;
+  /** While queued: runs the worker handles first (0 = next in line). Always 0 otherwise. */
+  ahead: number;
 }

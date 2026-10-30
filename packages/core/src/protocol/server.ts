@@ -23,6 +23,8 @@ export const errorCodeSchema = z.enum([
   "STT_ALREADY_OPEN",
   /** `stt_retry` too soon after the last one, or too many in this session. */
   "RATE_LIMITED",
+  /** The same user started this meeting from another connection; this one no longer records. */
+  "SESSION_REPLACED",
 ]);
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
 

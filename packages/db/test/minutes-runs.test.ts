@@ -113,6 +113,46 @@ describe("minutes runs repository", () => {
     expect(repos.minutesRuns.get(run.id)).toMatchObject({ status: "failed", error: "timeout" });
   });
 
+  it("failStale never touches queued runs", () => {
+    const { repos, advance } = setup();
+    const meetingId = meetingIn(repos);
+    const { run } = repos.minutesRuns.start({ meetingId, lang: "vi" });
+    advance(60_000);
+    const cutoff = new Date(Date.parse(run.updatedAt) + 30_000).toISOString();
+    expect(repos.minutesRuns.failStale(meetingId, "vi", cutoff, "timeout")).toBe(0);
+    expect(repos.minutesRuns.get(run.id)?.status).toBe("queued");
+  });
+
+  it("hasWorkerActivity sees recent running or done runs only", () => {
+    const { repos, advance } = setup();
+    const { run } = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" });
+    const before = new Date(Date.parse(run.updatedAt) - 1).toISOString();
+    expect(repos.minutesRuns.hasWorkerActivity(before, before)).toBe(false);
+    repos.minutesRuns.markRunning(run.id);
+    expect(repos.minutesRuns.hasWorkerActivity(before, before)).toBe(true);
+    repos.minutesRuns.fail(run.id, "x");
+    expect(repos.minutesRuns.hasWorkerActivity(before, before)).toBe(false);
+    const other = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+    repos.minutesRuns.markRunning(other.id);
+    repos.minutesRuns.finish(other.id);
+    expect(repos.minutesRuns.hasWorkerActivity(before, before)).toBe(true);
+    advance(60_000);
+    const later = new Date(Date.parse(other.updatedAt) + 30_000).toISOString();
+    expect(repos.minutesRuns.hasWorkerActivity(later, later)).toBe(false);
+  });
+
+  it("runsAhead counts running runs plus older queued ones", () => {
+    const { repos } = setup();
+    const a = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+    const b = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+    const c = repos.minutesRuns.start({ meetingId: meetingIn(repos), lang: "vi" }).run;
+    expect([a, b, c].map((r) => repos.minutesRuns.runsAhead(r.id))).toEqual([0, 1, 2]);
+    repos.minutesRuns.markRunning(a.id);
+    expect([b, c].map((r) => repos.minutesRuns.runsAhead(r.id))).toEqual([1, 2]);
+    repos.minutesRuns.claimNext();
+    expect(repos.minutesRuns.runsAhead(c.id)).toBe(2);
+  });
+
   it("cascades on meeting delete", () => {
     const { repos, db } = setup();
     const meetingId = meetingIn(repos);
