@@ -2,7 +2,7 @@
 
 import type { CapturePhase } from "./use-audio-capture";
 import type { SourceStatus } from "@/audio/capture";
-import { WarningCircle, WarningOctagon } from "@phosphor-icons/react";
+import { Info, WarningCircle, WarningOctagon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Banner, Button } from "@recap/admin-ui";
 import type { ConnectionState } from "@/lib/ws-client";
@@ -18,6 +18,8 @@ const TAB_AUDIO_SILENT =
   "Không nhận được tiếng từ tab cuộc họp. Kiểm tra tab Zoom có đang bị tắt tiếng không.";
 const MIC_ECHO =
   "Micro đang thu lại tiếng loa. Hãy đeo tai nghe để tiếng người khác không bị ghi hai lần.";
+const RECORDING_STAY =
+  "Đang ghi. Đừng đóng tab hoặc chuyển trang; hãy bấm Kết thúc khi họp xong rồi mới rời đi.";
 const SERVER_DOWN =
   "Không kết nối được máy chủ ghi âm. Âm thanh trong lúc mất kết nối sẽ không được ghi. Đang tự thử lại.";
 const STT_RECONNECTING =
@@ -65,6 +67,14 @@ function ActionBanner({
       }
     >
       {children}
+    </Banner>
+  );
+}
+
+function StayBanner() {
+  return (
+    <Banner tone="info" radius="lg" icon={<Info />}>
+      {RECORDING_STAY}
     </Banner>
   );
 }
@@ -207,6 +217,7 @@ export function RoomBanners(props: RoomBannersProps) {
   });
   return (
     <>
+      {recording && <StayBanner />}
       {props.captureError && (
         <Banner tone="warn" radius="lg" icon={<WarningCircle />}>
           {props.captureError}

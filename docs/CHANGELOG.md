@@ -3,6 +3,15 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-30 · Rõ hơn khi rời phòng họp đang ghi
+**Vì sao:** rời trang lúc đang ghi làm mất phiên ngay; người dùng cần được nhắc rõ phải kết thúc cuộc họp trước.
+
+**Làm gì:** `shell/leave-guard.tsx` đổi chữ hộp thoại (tiêu đề "Cuộc họp đang ghi, chưa thể rời đi", nút "Ở lại phòng" / "Kết thúc cuộc họp và rời đi"); `meeting-room/room-banners.tsx` thêm dải thông tin cố định khi đang ghi (`StayBanner`). Cơ chế chặn (click link, Back/Forward, beforeunload) giữ nguyên.
+
+**Quyết định:** chưa làm nút "Tạm dừng" (cần đổi giao thức realtime, còn trong Open items). Đóng/reload tab vẫn chỉ hiện câu mặc định của trình duyệt, không đổi được.
+
+**Chưa kiểm chứng:** chưa mở phòng họp đang ghi thật để xem hộp thoại và dải cảnh báo.
+
 ## 2026-10-27 · Chặn bot lập chỉ mục (noindex)
 **Vì sao:** app riêng tư, chủ không muốn bot tìm ra hay lập chỉ mục trang và file JS.
 

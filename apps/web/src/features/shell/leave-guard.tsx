@@ -59,9 +59,9 @@ export function LeaveGuardProvider({ children }: { children: ReactNode }) {
       <ConfirmDialog
         open={target !== null}
         onOpenChange={(open) => !open && setTarget(null)}
-        title="Cuộc họp đang ghi"
-        description="Rời khỏi phòng sẽ dừng ghi và kết thúc phiên. Bản ghi và bản dịch đã có vẫn được giữ lại."
-        confirmLabel="Kết thúc và rời đi"
+        title="Cuộc họp đang ghi, chưa thể rời đi"
+        description="Rời khỏi phòng sẽ làm mất phiên ghi hiện tại. Hãy kết thúc cuộc họp trước khi chuyển sang trang khác. Bản ghi và bản dịch đã có vẫn được giữ lại."
+        confirmLabel="Kết thúc cuộc họp và rời đi"
         cancelLabel="Ở lại phòng"
         destructive
         onConfirm={confirmLeave}
