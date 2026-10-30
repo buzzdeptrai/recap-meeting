@@ -3,6 +3,17 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-10-30 · Trang Hướng dẫn sử dụng có ảnh chụp màn hình
+**Vì sao:** tab hướng dẫn chỉ có chữ gạch đầu dòng; người dùng khó theo, nhất là bước chia sẻ tab + micro.
+
+**Làm gì:** `settings/guide-content.ts` đổi sang bước có `image` và `note` tuỳ chọn; `guide-panel.tsx` có mục lục (anchor 5 phần) và bước đánh số; `guide-image.tsx` (ảnh lazy-load, bấm để phóng to bằng `Dialog`, alt tiếng Việt); `guide-callout.tsx` (hộp "Lưu ý", dùng cho bước tích "Chia sẻ âm thanh tab" với hình minh họa CSS, ghi rõ không phải ảnh thật của trình duyệt). 9 ảnh trong `apps/web/public/guide/` (1280x800, dưới 300KB), khung đỏ và số vẽ sẵn vào PNG lúc chụp. Thêm 2 test trong `settings-model.test.ts` (id các phần, ảnh có alt và tồn tại trên đĩa, note tab audio).
+
+**Cách chụp:** chạy web+realtime riêng (cổng 3100/4101) với DB tạm và cuộc họp demo nội dung giả, key giả, micro/màn hình giả của Chrome; không đụng DB hay dev server của chủ. Hai thứ bị ẩn bằng sửa DOM lúc chụp ảnh phòng đang ghi: banner lỗi STT và nhãn "STT đã đóng" (chỉ hiện do key giả).
+
+**Quyết định:** hộp thoại chia sẻ của Chrome là giao diện gốc, không chụp tự động được nên dùng hình minh họa thay vì làm giả. Ảnh nhúng cố định vào repo, UI đổi thì phải chụp lại.
+
+**Chưa kiểm chứng:** ảnh chụp từ bản dev, không phải production; giao diện 390px chỉ kiểm không cuộn ngang, chưa xem bằng mắt; ảnh ở phần 4 lazy-load chưa cuộn xem trong tab thật.
+
 ## 2026-10-30 · Rõ hơn khi rời phòng họp đang ghi
 **Vì sao:** rời trang lúc đang ghi làm mất phiên ngay; người dùng cần được nhắc rõ phải kết thúc cuộc họp trước.
 

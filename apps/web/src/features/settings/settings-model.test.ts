@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildSettingsModel, budgetSetting } from "./settings-model";
 import { NOTES_PER_MEETING_MAX, NOTE_CONTENT_MAX } from "@recap/core";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { GUIDE_SECTIONS } from "./guide-content";
 import { SETTINGS_TABS, parseTab } from "./settings-tab";
 
@@ -64,5 +66,30 @@ describe("guide content", () => {
     ]) {
       expect(text).not.toContain(word);
     }
+  });
+
+  it("keeps the five section ids and gives every step an image with alt text that exists on disk", () => {
+    expect(GUIDE_SECTIONS.map((section) => section.id)).toEqual([
+      "join",
+      "room",
+      "notes",
+      "minutes",
+      "tips",
+    ]);
+    const images = GUIDE_SECTIONS.flatMap((section) => section.steps).flatMap((step) =>
+      step.image ? [step.image] : [],
+    );
+    expect(images.length).toBeGreaterThanOrEqual(8);
+    for (const image of images) {
+      expect(image.alt.length).toBeGreaterThan(10);
+      expect(existsSync(resolve(__dirname, "../../../public/guide", image.file))).toBe(true);
+    }
+  });
+
+  it("flags the tab-audio checkbox with a note", () => {
+    const notes = GUIDE_SECTIONS.flatMap((section) => section.steps).flatMap((step) =>
+      step.note ? [step.note] : [],
+    );
+    expect(notes.some((note) => note.text.includes("Chia sẻ âm thanh tab"))).toBe(true);
   });
 });
