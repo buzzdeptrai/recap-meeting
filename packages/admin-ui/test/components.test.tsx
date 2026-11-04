@@ -101,6 +101,9 @@ describe("LoginForm", () => {
     expect(out).toContain('aria-busy="true"');
     expect(out).toContain("Đang đăng nhập");
   });
+  it("posts natively so credentials never reach the URL if JS has not loaded", () => {
+    expect(html(<LoginForm onSubmit={() => {}} />)).toContain('method="post"');
+  });
   it("hides the remember checkbox on request", () => {
     expect(html(<LoginForm onSubmit={() => {}} showRemember={false} />)).not.toContain(
       'name="remember"',

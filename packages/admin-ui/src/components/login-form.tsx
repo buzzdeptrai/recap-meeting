@@ -73,7 +73,12 @@ export function LoginForm({
 
   return (
     <Card className="w-full max-w-sm p-6 sm:p-8">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" aria-busy={busy || undefined}>
+      <form
+        method="post"
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4"
+        aria-busy={busy || undefined}
+      >
         {logo ? <div className="mb-1">{logo}</div> : null}
         {title ? (
           <h1 className="text-2xl font-bold tracking-[-0.01em] text-soft-ink">{title}</h1>
