@@ -12,6 +12,8 @@ export interface SttUsageMeterOptions {
   model: string;
   language: string;
   intervalMs?: number;
+  /** 1 for a mono (mic-only) session: one vendor channel is billed instead of two. Default 2. */
+  channels?: 1 | 2;
 }
 
 /**
@@ -28,7 +30,11 @@ export class SttUsageMeter {
   private flushes = 0;
   private timer: NodeJS.Timeout | null = null;
 
-  constructor(private readonly options: SttUsageMeterOptions) {}
+  private readonly channels: number;
+
+  constructor(private readonly options: SttUsageMeterOptions) {
+    this.channels = options.channels ?? CHANNELS;
+  }
 
   start(): void {
     if (this.timer) return;
@@ -41,7 +47,7 @@ export class SttUsageMeter {
 
   /** Stereo frames sent on every channel (Deepgram, or any provider without silence gating). */
   addFrame(count = 1): void {
-    this.channelFrames += count * CHANNELS;
+    this.channelFrames += count * this.channels;
   }
 
   /** Mono channel-frames actually sent (providers that skip silent channels report these). */
@@ -59,7 +65,7 @@ export class SttUsageMeter {
   private flush(kind: "periodic" | "final"): void {
     if (this.channelFrames === 0) return;
     const audioSeconds = (this.channelFrames * FRAME_MS) / MS_PER_SECOND;
-    const perChannelSeconds = audioSeconds / CHANNELS;
+    const perChannelSeconds = audioSeconds / this.channels;
     this.channelFrames = 0;
     this.flushes += 1;
     try {
@@ -72,7 +78,7 @@ export class SttUsageMeter {
         requests: 1,
         status: "ok",
         meta: {
-          channels: CHANNELS,
+          channels: this.channels,
           perChannelSeconds,
           language: this.options.language,
           flush: kind,

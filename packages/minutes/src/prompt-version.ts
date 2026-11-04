@@ -11,5 +11,6 @@
  * scope decisions must be recorded, key points in timestamp order.
  * "4" = hand notes as an escaped <notes> block: owner-confirmed key points, never proof of a decision.
  * "5" = notes are additive: never drop/merge/shorten a topic because no note mentions it; notes may be in another language.
+ * "6" = meeting templates (type-specific rules block) + owner's extra instructions as an escaped <instructions> data block.
  */
-export const PROMPT_VERSION = "5";
+export const PROMPT_VERSION = "6";

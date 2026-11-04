@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { MarkKind, MinutesContent } from "@recap/core";
+import { normalizeExtraInstructions, type MarkKind, type MinutesContent } from "@recap/core";
 
 /**
  * The staleness rules for stored minutes. Minutes are stale when the transcript or the marks
@@ -18,6 +18,8 @@ export type StaleReason =
   | "marks_changed"
   | "marks_removed"
   | "notes_changed"
+  | "template_changed"
+  | "instructions_changed"
   | "prompt_updated"
   | "model_changed"
   | "source_edited";
@@ -28,6 +30,9 @@ export interface VersionStamp {
   marksFingerprint: string | null;
   /** Optional: callers that predate notes may omit it (never compared then). */
   notesFingerprint?: string | null;
+  /** Meeting template id; optional like notes (never compared when omitted / NULL). */
+  templateId?: string | null;
+  instructionsFingerprint?: string | null;
 }
 
 export interface StaleInput {
@@ -67,6 +72,13 @@ export function notesFingerprint(notes: readonly FingerprintNote[]): string {
   return createHash("sha256").update(rows.join("\n")).digest("hex");
 }
 
+/** Stable hash of the extra instructions (whitespace-normalized; none = hash of the empty text). */
+export function instructionsFingerprint(text: string | null | undefined): string {
+  return createHash("sha256")
+    .update(normalizeExtraInstructions(text) ?? "")
+    .digest("hex");
+}
+
 const differs = (stored: string | null, current: string | null) =>
   stored !== null && current !== null && stored !== current;
 
@@ -83,6 +95,10 @@ export function minutesStaleReasons(input: StaleInput): StaleReason[] {
   const notesTouched = isChangedSince(input.generatedAt, [input.latestNoteChangeAt ?? null]);
   if (notesTouched || differs(stored.notesFingerprint ?? null, current.notesFingerprint ?? null))
     reasons.push("notes_changed");
+  if (differs(stored.templateId ?? null, current.templateId ?? null))
+    reasons.push("template_changed");
+  if (differs(stored.instructionsFingerprint ?? null, current.instructionsFingerprint ?? null))
+    reasons.push("instructions_changed");
   if (differs(stored.promptVersion, current.promptVersion)) reasons.push("prompt_updated");
   if (differs(stored.model, current.model)) reasons.push("model_changed");
   return reasons;

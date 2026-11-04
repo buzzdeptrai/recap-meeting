@@ -1,6 +1,7 @@
 import {
   IN_MEMORY,
   createRepositories,
+  instructionsFingerprint,
   marksFingerprint,
   notesFingerprint,
   openDatabase,
@@ -222,5 +223,35 @@ describe("version-based staleness", () => {
     });
     const dto = getMinutes(id, "vi", { repos, currentModel: () => "whatever" });
     expect(dto).toMatchObject({ stale: false, staleReasons: [] });
+  });
+});
+
+describe("template and instructions staleness", () => {
+  it("stores the template and instructions fingerprint at generation", async () => {
+    const id = endedMeeting();
+    repos.meetings.updateSettings(id, { templateId: "interview", extraInstructions: "điểm mạnh" });
+    await generateNow(repos, id, "vi", llm);
+    const stored = repos.minutes.get(id, "vi");
+    expect(stored?.templateId).toBe("interview");
+    expect(stored?.instructionsFingerprint).toBe(instructionsFingerprint("điểm mạnh"));
+    expect(getMinutes(id, "vi", { repos }).stale).toBe(false);
+  });
+
+  it("goes stale (not regenerated) when the template or instructions change", async () => {
+    const id = endedMeeting();
+    await generateNow(repos, id, "vi", llm);
+    const before = repos.minutes.get(id, "vi")?.generatedAt;
+
+    repos.meetings.updateSettings(id, { templateId: "client" });
+    expect(getMinutes(id, "vi", { repos }).staleReasons).toEqual(["template_changed"]);
+    repos.meetings.updateSettings(id, { extraInstructions: "nhấn mạnh giá" });
+    expect(getMinutes(id, "vi", { repos }).staleReasons).toEqual([
+      "template_changed",
+      "instructions_changed",
+    ]);
+    expect(repos.minutes.get(id, "vi")?.generatedAt).toBe(before);
+
+    await generateNow(repos, id, "vi", llm);
+    expect(getMinutes(id, "vi", { repos }).stale).toBe(false);
   });
 });

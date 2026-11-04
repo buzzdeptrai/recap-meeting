@@ -60,4 +60,16 @@ export function toStereoFrames(mic: Int16Array | null, others: Int16Array): Uint
   return frames;
 }
 
+/** Mono mic-only frames (MONO_FRAME_BYTES each) for `--mono`; the last frame is zero-padded. */
+export function toMonoFrames(samples: Int16Array): Uint8Array[] {
+  const frameCount = Math.ceil(samples.length / FRAME_SAMPLES);
+  const frames: Uint8Array[] = [];
+  for (let f = 0; f < frameCount; f++) {
+    const frame = new Int16Array(FRAME_SAMPLES);
+    frame.set(samples.subarray(f * FRAME_SAMPLES, (f + 1) * FRAME_SAMPLES));
+    frames.push(new Uint8Array(frame.buffer));
+  }
+  return frames;
+}
+
 export const audioDurationMs = (samples: number) => Math.round((samples / SAMPLE_RATE) * 1000);

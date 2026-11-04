@@ -90,7 +90,7 @@ Migrations hiện có: 001 initial, 002 minutes, 003 search, 004 usage_events, (
 | # | Việc | Nguồn ý tưởng | Công sức | Ghi chú |
 |---|---|---|---|---|
 | B1 | **Ghi chú tay trong họp + "nở" thành biên bản**; lưu tách khỏi bản AI (`meeting_notes`, giữ `last_manual_edit`) | Foresight, Anarlog | Lớn | Giá trị cao nhất. Dòng ghi chú coi như tín hiệu "phải giữ" cùng K/T, có thể giảm "Đã chốt" bị gán thừa |
-| B2 | Template biên bản theo loại họp (daily, retro, khách hàng...) lưu DB | Meetily | Vừa-lớn | Cần A9 |
+| B2 | Template biên bản theo loại họp (daily, retro, khách hàng...) lưu DB | Meetily | Vừa-lớn | Cần A9. **Đã làm bản đầu 2026-11-04**: 5 loại cố định trong code (không do người dùng tạo) + "Hướng dẫn thêm" từng cuộc, migration 014; chưa có template tự tạo, chưa chọn template theo lần tạo lại (A9) |
 | B3 | Phát hiện câu hỏi trong họp, gợi ý trả lời từ kho tài liệu (PDF/Docs/Markdown) | Foresight | Lớn | Cần embedding + nguồn tài liệu; làm sau |
 | B4 | Chat / tìm kiếm ngữ nghĩa trên các cuộc họp cũ | Anarlog, Foresight | Lớn | FTS5 hiện có làm nền |
 | B5 | Liên kết lịch + người dự (tự đặt tên cuộc họp, gợi ý tên người nói) | Foresight, Anarlog | Vừa-lớn | Chỉ khi có nhu cầu |

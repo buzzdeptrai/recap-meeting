@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { marksFingerprint, notesFingerprint } from "@recap/db";
+import { instructionsFingerprint, marksFingerprint, notesFingerprint } from "@recap/db";
 import { DEFAULT_GENERATOR_CONFIG } from "./config";
 import { MinutesError } from "./errors";
 import { glossaryLines } from "./glossary-lines";
@@ -36,6 +36,8 @@ interface Plan {
   marks: number[];
   topics: TopicMarker[];
   notes: NoteLine[];
+  /** Template id + whether extra instructions exist: both steer every system prompt. */
+  extras: prompts.SystemExtras;
   report: (progress: MinutesProgress) => void;
 }
 
@@ -73,6 +75,7 @@ async function singlePass(plan: Plan): Promise<LlmMinutes> {
       plan.marks.length > 0 ? windowSpec(plan) : null,
       plan.topics.length > 0,
       plan.notes.length > 0,
+      plan.extras,
     ),
     user: prompts.transcriptPrompt(
       plan.ctx,
@@ -106,6 +109,7 @@ async function mapReduce(plan: Plan): Promise<LlmMinutes> {
         marks.length > 0 ? windowSpec(plan) : null,
         plan.topics.length > 0,
         notes.length > 0,
+        plan.extras,
       ),
       user: prompts.transcriptPrompt(
         plan.ctx,
@@ -119,7 +123,12 @@ async function mapReduce(plan: Plan): Promise<LlmMinutes> {
   }
   plan.report({ phase: "reduce", done: total, total });
   const reduced = await callStructured(plan.llm, {
-    system: prompts.reduceSystem(plan.lang, plan.topics.length > 0, plan.notes.length > 0),
+    system: prompts.reduceSystem(
+      plan.lang,
+      plan.topics.length > 0,
+      plan.notes.length > 0,
+      plan.extras,
+    ),
     user: prompts.reducePrompt(
       plan.ctx,
       parts,
@@ -156,55 +165,91 @@ function splitMarks(stored: ReadonlyArray<{ kind: string; atMs: number; label: s
   };
 }
 
+function promptContextOf(
+  meeting: { title: string; agenda: string | null; extraInstructions: string | null },
+  glossary: string[],
+): prompts.PromptContext {
+  return {
+    title: meeting.title,
+    agenda: meeting.agenda,
+    glossary,
+    extraInstructions: meeting.extraInstructions,
+  };
+}
+
+/** What the minutes were built from; compared later to detect stale minutes. */
+function versionStamps(
+  meeting: { templateId: string; extraInstructions: string | null },
+  marks: Parameters<typeof marksFingerprint>[0],
+  notes: Parameters<typeof notesFingerprint>[0],
+) {
+  return {
+    promptVersion: PROMPT_VERSION,
+    marksFingerprint: marksFingerprint(marks),
+    notesFingerprint: notesFingerprint(notes),
+    templateId: meeting.templateId,
+    instructionsFingerprint: instructionsFingerprint(meeting.extraInstructions),
+  };
+}
+
+type StoredMeeting = NonNullable<ReturnType<MinutesDeps["repos"]["meetings"]["get"]>>;
+
+/** Everything one generation reads from the database, plus the plan the prompts are built from. */
+function loadPlan(meeting: StoredMeeting, lang: GenerateMinutesInput["lang"], deps: MinutesDeps) {
+  const config = { ...DEFAULT_GENERATOR_CONFIG, ...deps.config };
+  const segments = deps.repos.segments.listByMeeting(meeting.id);
+  const translations = deps.repos.translations.listByMeeting(meeting.id);
+  const spoken = buildTranscriptLines(segments, translations, lang);
+  if (spoken.length === 0) throw new MinutesError("Meeting has no transcript", "EMPTY_TRANSCRIPT");
+
+  const storedMarks = deps.repos.marks.list(meeting.id);
+  const { marks, topics } = splitMarks(storedMarks);
+  const storedNotes = deps.repos.notes.list(meeting.id);
+  const ctx = promptContextOf(meeting, glossaryLines(deps.repos, config.maxGlossaryTerms));
+  const plan: Plan = {
+    llm: deps.llm,
+    lang,
+    config,
+    ctx,
+    lines: withTopicBoundaries(spoken, topics),
+    marks,
+    topics,
+    notes: buildNoteLines(storedNotes),
+    extras: {
+      templateId: meeting.templateId,
+      hasInstructions: prompts.promptInstructions(ctx) !== null,
+    },
+    report: safeReporter(deps.onProgress),
+  };
+  return { plan, segments, spoken, storedMarks, storedNotes };
+}
+
 /** Builds the minutes of an ended meeting. Reads via `deps.repos`; does not store the result. */
 export async function generateMinutes(
   { meetingId, lang }: GenerateMinutesInput,
   deps: MinutesDeps,
 ): Promise<GeneratedMinutes> {
-  const config = { ...DEFAULT_GENERATOR_CONFIG, ...deps.config };
   const meeting = deps.repos.meetings.get(meetingId);
   if (!meeting) throw new MinutesError("Meeting not found", "MEETING_NOT_FOUND");
-
-  const segments = deps.repos.segments.listByMeeting(meetingId);
-  const spoken = buildTranscriptLines(
-    segments,
-    deps.repos.translations.listByMeeting(meetingId),
-    lang,
-  );
-  if (spoken.length === 0) throw new MinutesError("Meeting has no transcript", "EMPTY_TRANSCRIPT");
-
-  const storedMarks = deps.repos.marks.list(meetingId);
-  const { marks, topics } = splitMarks(storedMarks);
-  const storedNotes = deps.repos.notes.list(meetingId);
-  const notes = buildNoteLines(storedNotes);
-  const lines = withTopicBoundaries(spoken, topics);
-  const ctx = {
-    title: meeting.title,
-    agenda: meeting.agenda,
-    glossary: glossaryLines(deps.repos, config.maxGlossaryTerms),
-  };
-  const report = safeReporter(deps.onProgress);
-  const plan: Plan = { llm: deps.llm, lang, config, ctx, lines, marks, topics, notes, report };
+  const { plan, segments, spoken, storedMarks, storedNotes } = loadPlan(meeting, lang, deps);
+  const { config, lines, marks, topics, notes } = plan;
 
   const raw =
     totalTokens(lines) > config.singlePassMaxTokens
       ? await mapReduce(plan)
       : await singlePass(plan);
-  const sourceText = groundingText(meeting, segments, lines, notes);
   const { content, unmatchedMarks } = postProcess(raw, {
     marks,
     window: { beforeMs: config.markWindowBeforeMs, afterMs: config.markWindowAfterMs },
     topics,
     maxAtMs: Math.max(...spoken.map((l) => l.endMs)),
     newId: deps.newId ?? randomUUID,
-    sourceText,
+    sourceText: groundingText(meeting, segments, lines, notes),
   });
   return {
     content,
     model: deps.llm.model,
     unmatchedMarks,
-    promptVersion: PROMPT_VERSION,
-    marksFingerprint: marksFingerprint(storedMarks),
-    notesFingerprint: notesFingerprint(storedNotes),
+    ...versionStamps(meeting, storedMarks, storedNotes),
   };
 }

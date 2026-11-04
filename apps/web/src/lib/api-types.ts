@@ -1,5 +1,6 @@
 import type {
   Mark,
+  MeetingTemplateId,
   MinutesContent,
   MinutesLang,
   MinutesSource,
@@ -150,6 +151,8 @@ export interface CreateMeetingBody {
   sourceLang: SourceLang;
   targetLang: TargetLang;
   agenda?: string;
+  templateId?: MeetingTemplateId;
+  extraInstructions?: string;
 }
 
 export interface ApiErrorBody {

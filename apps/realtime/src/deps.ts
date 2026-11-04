@@ -28,6 +28,8 @@ export type SttVendor = Env["STT_PROVIDER"];
 export interface SttRequest {
   sourceLang: SourceLang;
   keyterms: string[];
+  /** Mic-only session: the provider takes mono frames and opens a single channel. */
+  mono?: boolean;
 }
 
 /** Everything the WebSocket layer needs; each member is replaceable in tests. */
@@ -76,6 +78,8 @@ function requireKey(value: string | undefined, name: string): string {
   throw new EnvError(`${name} is required for the selected STT provider (see .env.example)`);
 }
 
+const monoChannels = (request: SttRequest) => (request.mono ? { channels: 1 as const } : {});
+
 /** Builds the STT provider config for the vendor chosen by `STT_PROVIDER`. */
 export function buildSttConfig(env: Env, request: SttRequest): SttProviderConfig {
   const language = resolveSttLanguage(request.sourceLang, env.DEEPGRAM_LANGUAGE);
@@ -86,6 +90,7 @@ export function buildSttConfig(env: Env, request: SttRequest): SttProviderConfig
       model: env.ASSEMBLYAI_MODEL,
       language,
       keyterms: request.keyterms,
+      ...monoChannels(request),
       minTurnSilenceMs: env.ASSEMBLYAI_MIN_TURN_SILENCE_MS,
       maxTurnSilenceMs: env.ASSEMBLYAI_MAX_TURN_SILENCE_MS,
       idleAfterMs: env.STT_IDLE_AFTER_MS,
@@ -98,6 +103,7 @@ export function buildSttConfig(env: Env, request: SttRequest): SttProviderConfig
     model: env.DEEPGRAM_MODEL,
     language,
     keyterms: request.keyterms,
+    ...monoChannels(request),
   };
 }
 

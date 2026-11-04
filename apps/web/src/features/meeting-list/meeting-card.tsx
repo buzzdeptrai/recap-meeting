@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TemplateTag } from "@/components/template-tag";
 import type { MeetingListItemDto } from "@/lib/api-types";
 import { formatDateTime } from "@/lib/format";
 import { formatVnTime } from "@/lib/vn-time";
@@ -47,6 +48,7 @@ export function MeetingCard({ meeting, grouped, onCopy, onDelete, layout }: Card
         {meeting.durationMs === null ? null : (
           <span className="font-soft-mono">{durationLabel(meeting)}</span>
         )}
+        <TemplateTag templateId={meeting.templateId} collapse />
         <span className="sm:hidden">
           <MeetingStatusBadge meeting={meeting} />
         </span>

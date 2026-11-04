@@ -24,9 +24,11 @@ export interface MicController {
   /** Wires an already-open stream (null = permission denied). */
   attach: (stream: MediaStream | null) => void;
   /** Hot-swap to another device; false when it could not be opened (the old mic is kept). */
-  switchTo: (deviceId: string) => Promise<boolean>;
+  switchTo: (deviceId: string | null) => Promise<boolean>;
   /** Device id of the live mic track, if known. */
   activeDeviceId: () => string | null;
+  /** The mic track in use (null before attach / after detach). */
+  activeTrack: () => MediaStreamTrack | null;
   detach: () => void;
 }
 
@@ -48,7 +50,7 @@ function watchTrack(track: MediaStreamTrack, hooks: TrackHooks): () => void {
 }
 
 async function openCurrentMic(
-  deviceId: string,
+  deviceId: string | null,
   isCurrent: () => boolean,
 ): Promise<MediaStream | null> {
   const next = await openMicStream(deviceId, false);
@@ -98,7 +100,7 @@ export function createMicController(deps: MicDeps): MicController {
     publish();
   };
 
-  const switchTo = async (deviceId: string) => {
+  const switchTo = async (deviceId: string | null) => {
     const seq = ++switchSeq;
     // The last request wins: a superseded (or post-stop) result releases its stream.
     const next = await openCurrentMic(deviceId, () => isActive() && seq === switchSeq);
@@ -108,5 +110,6 @@ export function createMicController(deps: MicDeps): MicController {
   };
 
   const activeDeviceId = () => stream?.getAudioTracks()[0]?.getSettings().deviceId ?? null;
-  return { attach, switchTo, activeDeviceId, detach };
+  const activeTrack = () => stream?.getAudioTracks()[0] ?? null;
+  return { attach, switchTo, activeDeviceId, activeTrack, detach };
 }

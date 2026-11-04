@@ -45,6 +45,8 @@ describe("DashboardView render", () => {
             sourceLang: "vi",
             targetLang: "en",
             agenda: null,
+            templateId: "general",
+            extraInstructions: null,
             createdAt: "2026-10-10T03:00:00Z",
             startedAt: null,
             endedAt: null,

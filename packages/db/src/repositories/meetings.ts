@@ -1,4 +1,9 @@
-import type { SourceLang, TargetLang } from "@recap/core";
+import {
+  DEFAULT_TEMPLATE_ID,
+  type MeetingTemplateId,
+  type SourceLang,
+  type TargetLang,
+} from "@recap/core";
 import type { Meeting, MeetingStatus, RepoContext } from "../types";
 import { searchMeetings, type SearchMeetingsOptions } from "./meeting-search";
 import { createMeetingRecovery } from "./meetings-recovery";
@@ -11,6 +16,8 @@ export interface MeetingRow {
   source_lang: string | null;
   target_lang: string | null;
   agenda: string | null;
+  template_id: string;
+  extra_instructions: string | null;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
@@ -23,6 +30,14 @@ export interface CreateMeetingInput {
   sourceLang?: SourceLang | null;
   targetLang?: TargetLang | null;
   agenda?: string | null;
+  templateId?: MeetingTemplateId;
+  extraInstructions?: string | null;
+}
+
+export interface UpdateMeetingSettings {
+  templateId?: MeetingTemplateId;
+  /** null / blank clears it; undefined leaves it. */
+  extraInstructions?: string | null;
 }
 
 export interface ListMeetingsOptions {
@@ -42,6 +57,8 @@ export function toMeeting(row: MeetingRow): Meeting {
     sourceLang: row.source_lang as SourceLang | null,
     targetLang: row.target_lang as TargetLang | null,
     agenda: row.agenda,
+    templateId: row.template_id as MeetingTemplateId,
+    extraInstructions: row.extra_instructions,
     createdAt: row.created_at,
     startedAt: row.started_at,
     endedAt: row.ended_at,
@@ -49,6 +66,8 @@ export function toMeeting(row: MeetingRow): Meeting {
     deletedAt: row.deleted_at ?? null,
   };
 }
+
+const blankToNull = (text: string | null | undefined) => text?.trim() || null;
 
 const SELECT_BY_ID = "SELECT * FROM meetings WHERE id = ? AND deleted_at IS NULL";
 
@@ -62,8 +81,8 @@ function createMeeting(ctx: RepoContext, input: CreateMeetingInput): Meeting {
   const id = ctx.newId();
   ctx.db
     .prepare(
-      `INSERT INTO meetings (id, title, status, source_lang, target_lang, agenda, created_at)
-       VALUES (@id, @title, 'draft', @sourceLang, @targetLang, @agenda, @createdAt)`,
+      `INSERT INTO meetings (id, title, status, source_lang, target_lang, agenda, template_id, extra_instructions, created_at)
+       VALUES (@id, @title, 'draft', @sourceLang, @targetLang, @agenda, @templateId, @extraInstructions, @createdAt)`,
     )
     .run({
       id,
@@ -71,6 +90,8 @@ function createMeeting(ctx: RepoContext, input: CreateMeetingInput): Meeting {
       sourceLang: input.sourceLang ?? null,
       targetLang: input.targetLang ?? null,
       agenda: input.agenda ?? null,
+      templateId: input.templateId ?? DEFAULT_TEMPLATE_ID,
+      extraInstructions: blankToNull(input.extraInstructions),
       createdAt: ctx.now(),
     });
   return getMeeting(ctx, id) as Meeting;
@@ -90,6 +111,23 @@ function setColumn(ctx: RepoContext, id: string, column: "title" | "status", val
   ctx.db
     .prepare(`UPDATE meetings SET ${column} = ? WHERE id = ? AND deleted_at IS NULL`)
     .run(value, id);
+  return getMeeting(ctx, id);
+}
+
+/** Template and/or extra instructions of a meeting; only the given fields change. */
+function updateSettings(ctx: RepoContext, id: string, settings: UpdateMeetingSettings) {
+  const current = getMeeting(ctx, id);
+  if (!current) return undefined;
+  const templateId = settings.templateId ?? current.templateId;
+  const extraInstructions =
+    settings.extraInstructions === undefined
+      ? current.extraInstructions
+      : blankToNull(settings.extraInstructions);
+  ctx.db
+    .prepare(
+      "UPDATE meetings SET template_id = ?, extra_instructions = ? WHERE id = ? AND deleted_at IS NULL",
+    )
+    .run(templateId, extraInstructions, id);
   return getMeeting(ctx, id);
 }
 
@@ -136,6 +174,8 @@ export function createMeetingsRepository(ctx: RepoContext) {
     list: (options?: ListMeetingsOptions) => listMeetings(ctx, options),
     search: (options?: SearchMeetingsOptions) => searchMeetings(ctx, options),
     updateTitle: (id: string, title: string) => setColumn(ctx, id, "title", title),
+    updateSettings: (id: string, settings: UpdateMeetingSettings) =>
+      updateSettings(ctx, id, settings),
     updateStatus: (id: string, status: MeetingStatus) => setColumn(ctx, id, "status", status),
     start: (id: string, startedAt?: string) => startMeeting(ctx, id, startedAt),
     end: (id: string, endedAt?: string, recordedMs?: number) =>

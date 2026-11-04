@@ -12,10 +12,12 @@ import {
   type SegmentOption,
 } from "@recap/admin-ui";
 import { StatusBadge } from "@/components/status-badge";
+import type { MeetingDto } from "@/lib/api-types";
 import { formatClock } from "@/lib/format";
 import { MEETING_STATUS, RECORDING_STATUS } from "@/lib/status";
 import { EditableTitle } from "./editable-title";
 import { LANG_NAME } from "./row-parts";
+import { TemplateChip } from "./template-dialog";
 import type { ViewMode } from "./segment-row";
 
 const VIEW_OPTIONS: ReadonlyArray<SegmentOption<ViewMode>> = [
@@ -86,6 +88,8 @@ function SearchPill({ open, onClick }: SearchPillProps) {
 interface RoomTopBarProps {
   meetingId: string;
   title: string;
+  /** Meeting type, shown as a small chip next to the recording state. */
+  settings: Pick<MeetingDto, "templateId" | "extraInstructions">;
   rec: RecState;
   elapsedMs: number;
   durationMs: number | null;
@@ -110,6 +114,11 @@ export function RoomTopBar(props: RoomTopBarProps) {
         </Link>
         <EditableTitle meetingId={props.meetingId} initialTitle={props.title} />
       </div>
+      <TemplateChip
+        meetingId={props.meetingId}
+        templateId={props.settings.templateId}
+        extraInstructions={props.settings.extraInstructions}
+      />
       <RecIndicator state={props.rec} elapsedMs={props.elapsedMs} durationMs={props.durationMs} />
       <SearchPill open={props.searchOpen} onClick={props.onSearch} />
       <ViewModeControl view={props.view} onChange={props.onViewChange} target={props.targetLang} />

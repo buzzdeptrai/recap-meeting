@@ -1,3 +1,4 @@
+import type { MeetingTemplateId } from "@recap/core";
 import type {
   ApiErrorBody,
   CreateMeetingBody,
@@ -45,6 +46,24 @@ export async function renameMeeting(id: string, title: string): Promise<MeetingD
   const result = await request<{ meeting: MeetingDto }>(
     `/api/meetings/${encodeURIComponent(id)}`,
     jsonInit("PATCH", { title }),
+  );
+  return result.meeting;
+}
+
+export interface MeetingSettingsPatch {
+  templateId?: MeetingTemplateId;
+  /** Empty string clears the extra instructions. */
+  extraInstructions?: string | null;
+}
+
+/** Changes the meeting type / extra instructions; existing minutes then show as stale. */
+export async function updateMeetingSettings(
+  id: string,
+  patch: MeetingSettingsPatch,
+): Promise<MeetingDto> {
+  const result = await request<{ meeting: MeetingDto }>(
+    `/api/meetings/${encodeURIComponent(id)}`,
+    jsonInit("PATCH", patch),
   );
   return result.meeting;
 }

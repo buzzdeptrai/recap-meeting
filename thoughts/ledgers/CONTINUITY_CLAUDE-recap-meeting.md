@@ -126,3 +126,31 @@ Done = T1–T6 in `docs/PLAN.md` ticked, `npm test` + `npm run typecheck` green,
   - [ ] Sandbox 1 tuần: ổ đĩa ≥10 GB (WAV ~115 MB/giờ, KHÔNG tự xóa), backup DB hằng ngày, `AUTH_SECRET` nếu production, đeo tai nghe; khởi động realtime trước rồi web.
   - [ ] Hiệu chỉnh ngưỡng im lặng/vọng bằng bản ghi thật; lọc bản lặp transcript (hoãn); Deepgram tiết kiệm theo kênh cần 2 socket mono; xóa vĩnh viễn + chính sách xóa WAV; lỗi #9 (thiếu vài frame tính tiền lúc stop).
   - [ ] UNCONFIRMED: giao diện mới trên trình duyệt thật (mic picker, thùng rác, tab EN/VI), chất lượng dịch biên bản, giá model dịch.
+
+## Phiên 2026-11-04 - chế độ điện thoại `/m` (mono, chỉ mic)
+- Goal: trang `/m` cho họp trực tiếp / họp online qua loa, dùng lại WS + STT + dịch + biên bản + dấu K/T + Word. Chi tiết quyết định ở `docs/CHANGELOG.md` (mục 2026-11-04).
+- Done (CHƯA COMMIT):
+  - [x] Giao thức `start.channels` (1|2) + `MONO_FRAME_BYTES`; realtime nhận frame mono, WAV vẫn stereo; `channels:1` cho Deepgram và AssemblyAI; usage tính 1 kênh. Test: `apps/realtime/test/mono-session.test.ts`, `packages/stt/test/mono.test.ts`, `ws-client.test.ts`.
+  - [x] `apps/web/src/audio/{mic-capture,interruption,wake-lock}.ts` (+test), `features/mobile/*`, `app/m/page.tsx`; `tools/stream-file --mono`.
+  - [x] Smoke thật: AssemblyAI + Deepgram mono (scratch DB, cổng 4002); Chrome headless 390 px + micro giả: luồng đầy đủ + ngắt mic/"Tiếp tục".
+- Now: chờ chủ thử `/m` (Chrome devtools giả lập di động trên PC, rồi iPhone thật qua HTTPS).
+- Next:
+  - [ ] Thử iPhone thật: HTTPS (tunnel hoặc VPS) vì LAN http không có micro; khoá máy, cuộc gọi, Siri, Wake Lock; đo WER chế độ loa ngoài.
+  - [ ] Cân nhắc tắt echoCancellation/noiseSuppression cho chế độ họp trực tiếp nếu giọng xa bị cắt.
+  - [ ] Đặt tên chủ đề trên điện thoại; ảo hoá transcript `/m` nếu họp rất dài; "Tạm dừng".
+- Working set: `apps/web/src/features/mobile/`, `apps/web/src/audio/mic-capture.ts`, `apps/realtime/src/session/meeting-session.ts`, `packages/stt/src/{deepgram,assemblyai}/`. Thử nhanh: `npm run start -w @recap/tool-stream-file -- --file data/samples/david1-45s.wav --speed 4 --mono` (cần `RECAP_SERVICE_TOKEN`).
+
+## Phiên 2026-11-04 - loại cuộc họp + Hướng dẫn thêm (B2)
+- Goal: chọn loại họp khi tạo (và sửa sau trên trang biên bản) + ô "Hướng dẫn thêm" từng cuộc, cùng đi vào prompt biên bản. Chi tiết ở `docs/CHANGELOG.md` (mục 2026-11-04 "Loại cuộc họp").
+- Done (CHƯA COMMIT):
+  - [x] Migration 014; `@recap/core/meeting-templates.ts`; `@recap/minutes/templates.ts`; prompts single/chunk/reduce; `PROMPT_VERSION` 6.
+  - [x] Stale `template_changed` / `instructions_changed`; REST create/PATCH; UI `/meetings/new`, `/m`, chip ở phòng họp + trang biên bản, thẻ sửa ở trang biên bản.
+  - [x] `npm run verify` xanh; thử OpenAI thật trên bản sao scratch (general vs interview).
+- Now: chờ chủ thử. Khởi động lại realtime trước (chạy migration 014 + `/health`), rồi web.
+- Next:
+  - [ ] UNCONFIRMED: chất lượng biên bản từng template trên cuộc họp thật; xem giao diện trên trình duyệt (chưa chụp ảnh).
+  - [ ] B2 tiếp: template tự tạo, chọn template khi "Tạo lại" (A9), badge stale ở danh sách theo template/hướng dẫn.
+
+## Phiên 2026-11-04 - thẻ chọn loại cuộc họp
+- Done (verify xanh, chưa commit): `OptionCardGroup` (admin-ui), `TemplateCards`/`TemplateTag`/icon map (web), dùng ở `/meetings/new`, `/m`, trang biên bản; chip loại trong phòng họp mở dialog đổi loại; tag loại ở `/meetings` và dashboard. Chi tiết: CHANGELOG mục đầu.
+- Next: chủ xem trên trình duyệt (light/dark, 390px, bàn phím); cân nhắc lọc danh sách theo loại (cần đổi API `list-query`); UNCONFIRMED: độ rộng tag trong bảng xl.

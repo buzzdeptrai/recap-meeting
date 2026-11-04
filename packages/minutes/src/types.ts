@@ -77,4 +77,8 @@ export interface GeneratedMinutes {
   marksFingerprint: string;
   /** Fingerprint of the hand notes the minutes were built from. */
   notesFingerprint: string;
+  /** Meeting template the minutes were built with. */
+  templateId: string;
+  /** Fingerprint of the owner's extra instructions the minutes were built with. */
+  instructionsFingerprint: string;
 }

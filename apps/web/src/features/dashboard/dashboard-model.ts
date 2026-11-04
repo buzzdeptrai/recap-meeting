@@ -185,6 +185,7 @@ export interface RecentRow {
   /** Languages the minutes exist in (same meaning as the chips on the meeting list). */
   minutesLangs: Array<"VI" | "EN">;
   status: MeetingStatus;
+  templateId: string;
 }
 
 export interface DashboardModel {
@@ -211,6 +212,7 @@ export function toRecentRow(m: MeetingListItemDto): RecentRow {
     durationMs: m.durationMs,
     minutesLangs: m.minutesLangs.map((lang) => (lang === "vi" ? "VI" : "EN")),
     status: m.status,
+    templateId: m.templateId,
   };
 }
 

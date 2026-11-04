@@ -1,3 +1,4 @@
+import type { MeetingTemplateId } from "@recap/core";
 import { IN_MEMORY, createRepositories, openDatabase } from "@recap/db";
 
 export interface SeedSegment {
@@ -16,11 +17,15 @@ export function seed(options: {
   topics?: { atMs: number; label?: string }[];
   agenda?: string | null;
   title?: string;
+  templateId?: MeetingTemplateId;
+  extraInstructions?: string | null;
 }) {
   const repos = createRepositories(openDatabase(IN_MEMORY));
   const meeting = repos.meetings.create({
     title: options.title ?? "Họp đối tác",
     agenda: options.agenda ?? null,
+    templateId: options.templateId,
+    extraInstructions: options.extraInstructions,
   });
   options.segments.forEach((s, seq) => {
     const stored = repos.segments.insert({

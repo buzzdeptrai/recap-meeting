@@ -11,6 +11,7 @@ import { FailureBanner, StaleBanner, TranslatingBanner } from "./minutes-banners
 import { MinutesConfirm } from "./minutes-dialogs";
 import { DEFAULT_SOURCE_LANG, otherMinutesLang } from "./minutes-langs";
 import { EmptyMinutes, GeneratingMinutes, LoadingMinutes } from "./minutes-states";
+import { MinutesSettings, type MeetingSettings, type SettingsBinding } from "./minutes-settings";
 import { MinutesTopBar, type MinutesMeetingInfo } from "./minutes-top-bar";
 import { useMinutes } from "./use-minutes";
 import { usePanelRequests } from "./use-panel-requests";
@@ -21,10 +22,16 @@ export function MinutesView({ meeting }: { meeting: MinutesMeetingInfo }) {
   const [lang, setLang] = useState<MinutesLang>(DEFAULT_SOURCE_LANG);
   const { available, markAvailable } = useAvailability(meeting.id);
   const overview = useRunsOverview(meeting.id, markAvailable);
+  // Lifted here so a language switch (which remounts the panel) keeps the saved settings.
+  const [settings, setSettings] = useState<MeetingSettings>({
+    templateId: meeting.templateId,
+    extraInstructions: meeting.extraInstructions,
+  });
   return (
     <MinutesPanel
       key={lang}
       meeting={meeting}
+      settings={{ meetingId: meeting.id, value: settings, onSaved: setSettings }}
       lang={lang}
       onLangChange={setLang}
       available={available}
@@ -58,6 +65,7 @@ function useAvailability(meetingId: string) {
 
 interface MinutesPanelProps {
   meeting: MinutesMeetingInfo;
+  settings: SettingsBinding;
   lang: MinutesLang;
   onLangChange: (lang: MinutesLang) => void;
   available: MinutesAvailability;
@@ -95,6 +103,7 @@ function MinutesPanel(props: MinutesPanelProps) {
         onRetryGenerate={() => void minutes.generate(lang)}
         onRetryTranslate={req.requestTranslate}
         notice={translatingInto !== lang ? translatingInto : null}
+        settings={props.settings}
       />
       <main className="py-6">
         <PanelBody
@@ -126,6 +135,7 @@ interface PanelBannersProps {
   onRetryTranslate: () => void;
   /** Language being translated into elsewhere (shown on the other tab); null = nothing running. */
   notice: MinutesLang | null;
+  settings: SettingsBinding;
 }
 
 function PanelBanners({
@@ -134,12 +144,19 @@ function PanelBanners({
   onRetryGenerate,
   onRetryTranslate,
   notice,
+  settings,
 }: PanelBannersProps) {
   const { failure, phase, saved } = minutes;
   const retry = failure?.action === "translate" ? onRetryTranslate : onRetryGenerate;
   const canRetry = failure?.action === "generate" || failure?.action === "translate";
   return (
     <>
+      <MinutesSettings
+        binding={settings}
+        dirty={minutes.dirty}
+        busy={phase === "generating"}
+        onReload={minutes.reload}
+      />
       {failure && (
         <FailureBanner
           message={failure.message}

@@ -26,14 +26,15 @@ export function capKeyterms(terms: readonly string[]): string[] {
   return kept;
 }
 
-/** Builds the streaming `listen` URL (stereo linear16, one transcript per channel). */
+/** Builds the streaming `listen` URL (linear16; stereo = one transcript per channel, mono = channel 0 only). */
 export function buildListenUrl(config: DeepgramConfig): string {
+  const channels = config.channels ?? CHANNELS;
   const params = new URLSearchParams({
     model: config.model,
     encoding: "linear16",
     sample_rate: String(SAMPLE_RATE),
-    channels: String(CHANNELS),
-    multichannel: "true",
+    channels: String(channels),
+    multichannel: String(channels > 1),
     interim_results: "true",
     punctuate: "true",
     smart_format: "true",

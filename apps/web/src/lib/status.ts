@@ -8,7 +8,7 @@
  * - amber (`conclusion`) belongs to conclusions and decisions only: topic "Đã thống nhất" in minutes and the room.
  *   Warnings that are not decisions use `warn` (yellow, warning icon colour), never `conclusion`.
  */
-import type { TopicStatus } from "@recap/core";
+import { templateLabel, type TopicStatus } from "@recap/core";
 import type { MeetingStatus } from "@recap/db";
 
 export type StatusTone = "neutral" | "ok" | "warn" | "error" | "rec" | "purple" | "conclusion";
@@ -90,5 +90,11 @@ export const UNSAVED_STATUS: StatusSpec = { label: "Chưa lưu", tone: "warn" };
 
 /** Minutes whose transcript/marks changed after generation. Yellow `warn` (amber is for conclusions). */
 export const MINUTES_STALE_STATUS: StatusSpec = { label: "Cần cập nhật", tone: "warn" };
+
+/** Meeting type chip (room and minutes header); the label comes from the template registry. */
+export const templateStatus = (id: string): StatusSpec => ({
+  label: templateLabel(id),
+  tone: "neutral",
+});
 
 export const NO_MINUTES_LABEL = "Chưa có biên bản";

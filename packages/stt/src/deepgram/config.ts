@@ -1,4 +1,4 @@
-import type { SttLanguage } from "../types";
+import type { SttChannelCount, SttLanguage } from "../types";
 
 export const DEEPGRAM_LISTEN_URL = "wss://api.deepgram.com/v1/listen";
 
@@ -39,6 +39,8 @@ export interface DeepgramConfig {
   model: string;
   language: SttLanguage;
   keyterms?: readonly string[];
+  /** 1 = mono frames, no multichannel (billed once). Default 2 = stereo multichannel. */
+  channels?: SttChannelCount;
   endpointingMs?: number;
   utteranceEndMs?: number;
   keepAliveMs?: number;

@@ -3,6 +3,12 @@ import type { Channel } from "@recap/core";
 /** Provider connection state. Maps 1:1 to the `status.stt` protocol field. */
 export type SttStatus = "connecting" | "open" | "reconnecting" | "closed";
 
+/**
+ * Audio layout a provider is configured for. 2 (default) = interleaved stereo frames (ch0 mic,
+ * ch1 tab); 1 = mono frames, only channel 0 exists (mobile / mic-only sessions).
+ */
+export type SttChannelCount = 1 | 2;
+
 /** `detect` = let the provider auto-detect the language (no fixed `language` param). */
 export type SttLanguage = "vi" | "en" | "multi" | "detect";
 
@@ -61,7 +67,7 @@ export interface SttEvents {
 
 export type SttListener<E extends keyof SttEvents> = (payload: SttEvents[E]) => void;
 
-/** Streaming speech-to-text backend. Audio in: interleaved Int16 stereo PCM frames. */
+/** Streaming speech-to-text backend. Audio in: Int16 PCM frames, stereo unless configured mono. */
 export interface SttProvider {
   readonly name: string;
   /** Present only when the provider can skip audio, so billing must follow what was sent. */

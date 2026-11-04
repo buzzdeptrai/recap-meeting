@@ -14,12 +14,14 @@ const defaultSocketFactory: SocketFactory = (url, headers) => new WebSocket(url,
 /**
  * AssemblyAI streaming has no multichannel mode (the docs recommend one session per channel), so
  * each stereo frame is split into two mono streams and sent over two sockets. Both sockets are
- * merged into the single `SttProvider` surface; results carry the channel of their socket.
+ * merged into the single `SttProvider` surface (a mono session, `channels: 1`, takes mono frames and opens only the mic socket); results carry the channel of their socket.
  * Sessions are billed per connection second, so sockets are closed as soon as the stream ends.
  */
 export class AssemblyAiProvider extends SttEmitter implements SttProvider {
   readonly name = "assemblyai";
-  private readonly sessions: Record<Channel, ChannelSession>;
+  /** Channels with a socket: both for stereo, only the mic for a mono (mobile) session. */
+  private readonly active: readonly Channel[];
+  private readonly sessions: Partial<Record<Channel, ChannelSession>>;
   private readonly statuses: Record<Channel, SttStatus> = {
     [CHANNEL_ME]: "closed",
     [CHANNEL_OTHERS]: "closed",
@@ -49,7 +51,8 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
         onIdleChange: (idle) => this.onChannelIdle(channel, idle),
         onActivity: (state) => this.emit("activity", { channel, state }),
       });
-    this.sessions = { [CHANNEL_ME]: make(CHANNEL_ME), [CHANNEL_OTHERS]: make(CHANNEL_OTHERS) };
+    this.active = config.channels === 1 ? [CHANNEL_ME] : [CHANNEL_ME, CHANNEL_OTHERS];
+    this.sessions = Object.fromEntries(this.active.map((channel) => [channel, make(channel)]));
     if (config.idleAfterMs && config.idleAfterMs > 0) {
       this.usage = {
         takeSentChannelFrames: () =>
@@ -80,9 +83,10 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
   sendAudio(frame: Uint8Array): void {
     const index = this.frameCounter++;
     if (this.status === "closed") return;
+    if (this.active.length === 1) return this.sessions[CHANNEL_ME]?.send(index, frame);
     const [mic, others] = splitStereo(frame);
-    this.sessions[CHANNEL_ME].send(index, mic);
-    this.sessions[CHANNEL_OTHERS].send(index, others);
+    this.sessions[CHANNEL_ME]?.send(index, mic);
+    this.sessions[CHANNEL_OTHERS]?.send(index, others);
   }
 
   async close(): Promise<void> {
@@ -92,7 +96,7 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
   }
 
   private all(): ChannelSession[] {
-    return [this.sessions[CHANNEL_ME], this.sessions[CHANNEL_OTHERS]];
+    return this.active.flatMap((channel) => this.sessions[channel] ?? []);
   }
 
   private onChannelStatus(channel: Channel, status: SttStatus): void {
@@ -112,7 +116,7 @@ export class AssemblyAiProvider extends SttEmitter implements SttProvider {
    * channels are left out (parking a silent channel is not a failure); all idle = still open.
    */
   private mergedStatus(): SttStatus {
-    const values = ([CHANNEL_ME, CHANNEL_OTHERS] as const)
+    const values = this.active
       .filter((channel) => !this.idle[channel])
       .map((channel) => this.statuses[channel]);
     if (values.length === 0) return "open";

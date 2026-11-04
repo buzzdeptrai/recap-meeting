@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { WarningCircle } from "@phosphor-icons/react";
-import type { SourceLang, TargetLang } from "@recap/core";
+import {
+  DEFAULT_TEMPLATE_ID,
+  type MeetingTemplateId,
+  type SourceLang,
+  type TargetLang,
+} from "@recap/core";
 import Link from "next/link";
 import {
   ActionGroup,
@@ -15,6 +20,8 @@ import {
   SegmentedControl,
   Textarea,
 } from "@recap/admin-ui";
+import { InstructionsField } from "@/components/template-fields";
+import { TemplateCards } from "@/components/template-cards";
 import { createMeeting } from "@/lib/api";
 import { SOURCE_LANG_OPTIONS, TARGET_LANG_OPTIONS } from "@/lib/format";
 
@@ -24,6 +31,8 @@ function useNewMeetingForm() {
   const [sourceLang, setSourceLang] = useState<SourceLang>("multi");
   const [targetLang, setTargetLang] = useState<TargetLang>("vi");
   const [agenda, setAgenda] = useState("");
+  const [templateId, setTemplateId] = useState<MeetingTemplateId>(DEFAULT_TEMPLATE_ID);
+  const [extraInstructions, setExtraInstructions] = useState("");
   const [titleError, setTitleError] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -35,7 +44,14 @@ function useNewMeetingForm() {
     setFailure(null);
     setSubmitting(true);
     try {
-      const meeting = await createMeeting({ title: title.trim(), sourceLang, targetLang, agenda });
+      const meeting = await createMeeting({
+        title: title.trim(),
+        sourceLang,
+        targetLang,
+        agenda,
+        templateId,
+        extraInstructions: extraInstructions.trim() || undefined,
+      });
       router.push(`/meetings/${meeting.id}`);
     } catch (cause) {
       setFailure(cause instanceof Error ? cause.message : "Không tạo được cuộc họp.");
@@ -44,8 +60,15 @@ function useNewMeetingForm() {
   }
 
   return {
-    values: { title, sourceLang, targetLang, agenda },
-    set: { setTitle, setSourceLang, setTargetLang, setAgenda },
+    values: { title, sourceLang, targetLang, agenda, templateId, extraInstructions },
+    set: {
+      setTitle,
+      setSourceLang,
+      setTargetLang,
+      setAgenda,
+      setTemplateId,
+      setExtraInstructions,
+    },
     titleError,
     failure,
     submitting,
@@ -84,7 +107,9 @@ export function NewMeetingForm() {
           onSource={set.setSourceLang}
           onTarget={set.setTargetLang}
         />
+        <TemplateCards value={values.templateId} onChange={set.setTemplateId} />
         <AgendaField value={values.agenda} onChange={set.setAgenda} />
+        <InstructionsField value={values.extraInstructions} onChange={set.setExtraInstructions} />
         <ActionGroup placement="start" className="border-t border-soft-line pt-6">
           <Button type="submit" size="lg" shape="pill" loading={submitting}>
             {submitting ? "Đang tạo" : "Tạo và vào phòng họp"}

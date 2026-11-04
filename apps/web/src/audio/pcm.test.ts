@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { floatToInt16, interleaveStereo, LinearResampler, rms } from "./pcm";
+import { floatToInt16, interleaveStereo, LinearResampler, rms, stereoToMono } from "./pcm";
 
 describe("floatToInt16", () => {
   it("maps the range and clamps", () => {
@@ -62,5 +62,17 @@ describe("LinearResampler", () => {
     const joined = parts.flat();
     expect(joined.length).toBe(whole.length);
     joined.forEach((value, i) => expect(value).toBeCloseTo(whole[i] ?? NaN, 5));
+  });
+});
+
+describe("stereoToMono", () => {
+  it("keeps channel 0 and halves the size", () => {
+    const stereo = Int16Array.from([10, -1, 20, -2, 30, -3]);
+    const mono = new Int16Array(stereoToMono(stereo.buffer));
+    expect([...mono]).toEqual([10, 20, 30]);
+  });
+
+  it("turns a 100 ms stereo frame into a 100 ms mono frame", () => {
+    expect(stereoToMono(new ArrayBuffer(6400)).byteLength).toBe(3200);
   });
 });

@@ -17,6 +17,8 @@ Usage: npm run start -w @recap/tool-stream-file -- --file <audio> [options]
   --token <token>          Service token for the WebSocket (default: env RECAP_SERVICE_TOKEN; prefer the env,
                            command-line arguments are visible in ps).
   --meeting-id <id>        Resume an existing (ended) meeting instead of creating one (sends resume:true).
+  --mono                   Mic-only session like the phone page (/m): sends channels:1 and mono frames; --file goes to
+                           the single channel 0 and --mic-file is ignored.
   --mark-topic-at <s[:label]>   Send a topic marker <s> seconds into this stream (repeatable).
   --mark-conclusion-at <s>      Send a conclusion marker <s> seconds into this stream (repeatable).
   --mark-clock <audio|wall>     How the marker atMs is computed (default: audio).
@@ -41,6 +43,8 @@ export interface Options {
   webUrl: string;
   /** Existing meeting to resume (skips creation). */
   meetingId: string | null;
+  /** Mic-only (mono) session, like the phone page. */
+  mono: boolean;
   marks: StreamMark[];
   markClock: MarkClock;
 }
@@ -95,6 +99,7 @@ export function parseOptions(argv: string[]): Options | null {
       "mark-topic-at": { type: "string", multiple: true },
       "mark-conclusion-at": { type: "string", multiple: true },
       "mark-clock": { type: "string", default: "audio" },
+      mono: { type: "boolean", default: false },
       help: { type: "boolean", default: false },
     },
   });
@@ -112,6 +117,7 @@ export function parseOptions(argv: string[]): Options | null {
     token: values.token ?? null,
     webUrl: values["web-url"],
     meetingId: values["meeting-id"] ?? null,
+    mono: values.mono,
     markClock: oneOf("mark-clock", values["mark-clock"], ["audio", "wall"] as const),
     marks: [
       ...(values["mark-topic-at"] ?? []).map((v) => parseMark("topic", v)),

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TemplateTag } from "@/components/template-tag";
 import type { MeetingListItemDto } from "@/lib/api-types";
 import { formatDateTime } from "@/lib/format";
 import { formatVnTime } from "@/lib/vn-time";
@@ -62,6 +63,7 @@ export function MeetingRow({ meeting, grouped, onCopy, onDelete }: RowProps) {
           </Link>
           <SubLine meeting={meeting} />
         </span>
+        <TemplateTag templateId={meeting.templateId} className="max-w-36 truncate" />
       </span>
       <TimeCell meeting={meeting} grouped={grouped} />
       <Counters meeting={meeting} />

@@ -20,12 +20,14 @@ export const POST = withAuth(async (request: Request) => {
   if (forbidden) return forbidden;
   const parsed = await parseBody(request, createMeetingSchema);
   if (!parsed.ok) return parsed.response;
-  const { title, sourceLang, targetLang, agenda } = parsed.data;
+  const { title, sourceLang, targetLang, agenda, templateId, extraInstructions } = parsed.data;
   const meeting = getRepositories().meetings.create({
     title,
     sourceLang,
     targetLang,
     agenda: agenda || null,
+    templateId,
+    extraInstructions: extraInstructions || null,
   });
   return NextResponse.json({ meeting }, { status: 201 });
 });

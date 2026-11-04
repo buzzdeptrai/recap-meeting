@@ -9,6 +9,10 @@ export const FRAME_SAMPLES = (SAMPLE_RATE * FRAME_MS) / MS_PER_SECOND;
 /** Bytes in one interleaved Int16 stereo frame (6400). */
 export const FRAME_BYTES = FRAME_SAMPLES * CHANNELS * BYTES_PER_SAMPLE;
 
+/** Mono (mic-only) session: one channel, frames are half the size (3200 bytes). */
+export const MONO_CHANNELS = 1;
+export const MONO_FRAME_BYTES = FRAME_SAMPLES * MONO_CHANNELS * BYTES_PER_SAMPLE;
+
 /** Channel 0 = local mic ("Tôi"). */
 export const CHANNEL_ME = 0;
 /** Channel 1 = meeting tab audio ("Người khác"). */

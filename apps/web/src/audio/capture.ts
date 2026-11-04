@@ -26,7 +26,7 @@ export interface CaptureSession {
   micDeviceId: () => string | null;
 }
 
-export type CaptureErrorCode = "unsupported" | "share-cancelled" | "worklet-failed";
+export type CaptureErrorCode = "unsupported" | "share-cancelled" | "worklet-failed" | "mic-denied";
 
 export class CaptureError extends Error {
   constructor(
@@ -66,7 +66,7 @@ async function requestTabStream(): Promise<MediaStream> {
   }
 }
 
-interface Graph {
+export interface Graph {
   context: AudioContext;
   merger: ChannelMergerNode;
   node: AudioWorkletNode;
@@ -74,8 +74,21 @@ interface Graph {
   onLevels: (mic: number, tab: number) => void;
 }
 
-async function buildGraph(events: CaptureEvents): Promise<Graph> {
-  const context = new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: "interactive" });
+export interface GraphOptions {
+  /**
+   * An already created (and, on iOS, already unlocked) context. Without it the graph makes one at
+   * exactly SAMPLE_RATE; a supplied context may run at the device rate (48k / 44.1k), the worklet
+   * resamples to SAMPLE_RATE either way.
+   */
+  context?: AudioContext;
+}
+
+export async function buildGraph(
+  events: CaptureEvents,
+  options: GraphOptions = {},
+): Promise<Graph> {
+  const context =
+    options.context ?? new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: "interactive" });
   try {
     await context.audioWorklet.addModule(WORKLET_URL);
   } catch {

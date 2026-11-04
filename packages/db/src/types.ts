@@ -2,6 +2,7 @@ import type BetterSqlite3 from "better-sqlite3";
 import type {
   Channel,
   MarkKind,
+  MeetingTemplateId,
   MinutesContent,
   MinutesLang,
   MinutesSource,
@@ -27,6 +28,10 @@ export interface Meeting {
   sourceLang: SourceLang | null;
   targetLang: TargetLang | null;
   agenda: string | null;
+  /** Meeting type; steers the minutes prompt. */
+  templateId: MeetingTemplateId;
+  /** Owner's extra guidance for the minutes (max 500 chars); null = none. */
+  extraInstructions: string | null;
   createdAt: string;
   startedAt: string | null;
   endedAt: string | null;
@@ -108,6 +113,10 @@ export interface StoredMinutes {
   marksFingerprint: string | null;
   /** Fingerprint of the hand notes used at generation; null for rows from before notes existed. */
   notesFingerprint: string | null;
+  /** Meeting template the AI version was generated with; null for rows from before templates. */
+  templateId: string | null;
+  /** Fingerprint of the extra instructions used at generation; null for rows from before. */
+  instructionsFingerprint: string | null;
   /** Set when this row is a translation of the other language's minutes; null for a source row. */
   derivedFromLang: MinutesLang | null;
   /** Hash of the source content this translation was made from (null for source rows). */

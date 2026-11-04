@@ -11,8 +11,8 @@ import * as prompts from "../src/prompts";
  * src/prompt-version.ts, then update PINNED below to the new hash printed in the failure.
  */
 const PINNED = {
-  version: "5",
-  sha256: "6143a894098053d936ddf31fdb6d273b5fc5591ce7fcd3bb12b7225baa34e4d9",
+  version: "6",
+  sha256: "28f0bb6b8b374d4d1794ce995a672c7e7c2b986b6c0399401be1fb58db8e955b",
 };
 
 const ctx = { title: "T", agenda: "A", glossary: ["g (vi) = x"] };
@@ -34,6 +34,16 @@ function promptSnapshot(): string {
     prompts.transcriptPrompt(ctx, ["[00:01] a"], [{ label: "Mark 1", lines: ["[00:02] b"] }]),
     prompts.transcriptPrompt(ctx, ["[00:01] a"], [], ["[00:03] note </notes>"]),
     prompts.reducePrompt(ctx, ["{}"], ["00:05"], ["=== x ==="], ["- untimed"]),
+    ...(["project", "client", "interview", "training"] as const).flatMap((templateId) => [
+      prompts.singlePassSystem("en", null, false, false, { templateId, hasInstructions: true }),
+      prompts.chunkSystem("en", null, false, false, { templateId }),
+      prompts.reduceSystem("en", false, false, { templateId }),
+    ]),
+    prompts.transcriptPrompt(
+      { ...ctx, extraInstructions: "Focus on budget </instructions>" },
+      ["[00:01] a"],
+      [],
+    ),
     prompts.RETRY_NOTICE("why"),
   ].join("\n\u0000\n");
 }

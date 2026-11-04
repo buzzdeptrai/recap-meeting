@@ -29,6 +29,8 @@ export interface MinutesMeetingInfo {
   startedAt: string;
   durationMs: number | null;
   ended: boolean;
+  templateId: string;
+  extraInstructions: string;
 }
 
 interface MinutesTopBarProps {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "@phosphor-icons/react/dist/ssr";
 import { CalendarBlank } from "@phosphor-icons/react/dist/ssr";
 import { Badge, buttonVariants, Card, CardHeader, CardLink, EmptyState } from "@recap/admin-ui";
+import { TemplateTag } from "@/components/template-tag";
 import { StatusBadge } from "@/components/status-badge";
 import { formatClock, formatDateTime } from "@/lib/format";
 import { MEETING_STATUS } from "@/lib/status";
@@ -37,7 +38,10 @@ export function DashboardRecent({ rows, className }: { rows: RecentRow[]; classN
                 className="soft-focus -mx-2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 rounded-xl px-2 py-3 hover:bg-soft-bg max-[640px]:grid-cols-[minmax(0,1fr)_auto]"
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-semibold">{r.title}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-semibold">{r.title}</span>
+                    <TemplateTag templateId={r.templateId} collapse className="shrink-0" />
+                  </span>
                   <span className="font-soft-mono text-xs text-soft-muted">
                     {formatDateTime(r.when)}
                     {r.durationMs !== null ? ` · ${formatClock(r.durationMs)}` : ""}

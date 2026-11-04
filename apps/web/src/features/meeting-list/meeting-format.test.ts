@@ -21,6 +21,8 @@ const meeting = (over: Partial<MeetingListItemDto> = {}): MeetingListItemDto => 
   sourceLang: "vi",
   targetLang: "en",
   agenda: null,
+  templateId: "general",
+  extraInstructions: null,
   createdAt: "2026-10-22T05:00:00.000Z",
   startedAt: "2026-10-22T05:00:00.000Z",
   endedAt: "2026-10-22T05:02:06.000Z",

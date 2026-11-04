@@ -29,6 +29,8 @@ export interface MeetingSocketOptions {
   targetLang: TargetLang;
   /** Continue a meeting that already has segments. Reconnects always resume. */
   resume?: boolean;
+  /** 1 = mic-only session (mono frames, mobile mode). Omitted = the usual stereo session. */
+  channels?: 1 | 2;
   onMessage: (message: ServerMessage) => void;
   onConnection: (state: ConnectionState) => void;
   /** A frame failed zod validation; it is dropped. */
@@ -147,12 +149,13 @@ export class MeetingSocket {
   }
 
   private sendStart(): void {
-    const { meetingId, sourceLang, targetLang, resume } = this.options;
+    const { meetingId, sourceLang, targetLang, resume, channels } = this.options;
     this.sendJson({
       type: "start",
       meetingId,
       sourceLang,
       targetLang,
+      ...(channels ? { channels } : {}),
       ...(resume || this.wasReady ? { resume: true } : {}),
     });
   }

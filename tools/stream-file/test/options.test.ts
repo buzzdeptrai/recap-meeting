@@ -24,6 +24,14 @@ describe("marker options", () => {
   });
 });
 
+describe("mono option", () => {
+  it("is off by default and on with --mono", async () => {
+    const { parseOptions } = await import("../src/options");
+    expect(parseOptions(["--file", "a.wav"])?.mono).toBe(false);
+    expect(parseOptions(["--file", "a.wav", "--mono"])?.mono).toBe(true);
+  });
+});
+
 describe("token option", () => {
   it("defaults to null and accepts an explicit token", async () => {
     const { parseOptions } = await import("../src/options");

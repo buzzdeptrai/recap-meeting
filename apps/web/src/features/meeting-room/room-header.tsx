@@ -47,6 +47,7 @@ export function RoomHeader({
       <RoomTopBar
         meetingId={meeting.id}
         title={meeting.title}
+        settings={meeting}
         rec={recState(ended, socket.connection)}
         elapsedMs={controller.elapsedMs}
         durationMs={controller.stopped ? controller.elapsedMs : meeting.durationMs}

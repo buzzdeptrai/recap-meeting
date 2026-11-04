@@ -9,6 +9,7 @@ npm run start -w @recap/tool-stream-file -- --file path/to/audio.m4a --speed 1
 npm run start -w @recap/tool-stream-file -- --help
 ```
 
+- `--mono`: phiên chỉ mic như trang điện thoại `/m` (gửi `channels:1`, frame mono 3200 byte; file đi vào kênh 0 duy nhất).
 - Cần `ffmpeg` (đặt `FFMPEG_PATH` nếu không nằm trong PATH). File mono -> kênh 1 ("Khác"), kênh 0 im lặng; `--mic-file` -> kênh 0.
 - Đường dẫn tương đối tính từ thư mục bạn chạy `npm` (không phải thư mục tool).
 - Đăng nhập: realtime yêu cầu đăng nhập. Công cụ không có cookie nên dùng service token: đặt `RECAP_SERVICE_TOKEN=<chuỗi >=16 ký tự>` trong `.env`

@@ -1,6 +1,6 @@
 import { DEFAULT_RECONNECT, type ReconnectConfig } from "../deepgram/config";
 import type { SttCaptureRecorder } from "../capture-recorder";
-import type { SttLanguage } from "../types";
+import type { SttChannelCount, SttLanguage } from "../types";
 
 export const ASSEMBLYAI_STREAM_URL = "wss://streaming.assemblyai.com/v3/ws";
 export const DEFAULT_ASSEMBLYAI_MODEL = "universal-3-6-pro";
@@ -35,6 +35,8 @@ export interface AssemblyAiConfig {
    */
   language: SttLanguage;
   keyterms?: readonly string[];
+  /** 1 = mono frames, only the channel-0 socket is opened. Default 2 = stereo, two sockets. */
+  channels?: SttChannelCount;
   minTurnSilenceMs?: number;
   maxTurnSilenceMs?: number;
   closeTimeoutMs?: number;

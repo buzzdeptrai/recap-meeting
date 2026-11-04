@@ -1,9 +1,9 @@
 import { dbPathFromEnv, loadRootEnv } from "@recap/core/node";
 import { alignmentRows, formatAlignment } from "./alignment";
-import { audioDurationMs, decodeToMono16k, toStereoFrames } from "./audio";
+import { audioDurationMs, decodeToMono16k, toMonoFrames, toStereoFrames } from "./audio";
 import { framesToSeconds, streamMeeting } from "./client";
 import { createMeeting } from "./meeting";
-import { HELP, parseOptions } from "./options";
+import { HELP, parseOptions, type Options } from "./options";
 import { createPrinter } from "./printer";
 import { summarize, type RunSummary } from "./summary";
 
@@ -21,13 +21,19 @@ function printSummary(summary: RunSummary, framesSent: number, interrupted: bool
   for (const error of summary.otherErrors) console.log(`error:                ${error}`);
 }
 
+/** Decodes the input file(s) into the frames to send: mono for `--mono`, stereo otherwise. */
+async function loadFrames(options: Options) {
+  const others = await decodeToMono16k(options.file);
+  if (options.mono) return { others, frames: toMonoFrames(others) };
+  const mic = options.micFile ? await decodeToMono16k(options.micFile) : null;
+  return { others, frames: toStereoFrames(mic, others) };
+}
+
 async function main(): Promise<void> {
   const options = parseOptions(process.argv.slice(2));
   if (!options) return void console.log(HELP);
   loadRootEnv();
-  const others = await decodeToMono16k(options.file);
-  const mic = options.micFile ? await decodeToMono16k(options.micFile) : null;
-  const frames = toStereoFrames(mic, others);
+  const { frames, others } = await loadFrames(options);
   console.log(
     `audio: ${(audioDurationMs(others.length) / 1000).toFixed(1)} s, ${frames.length} frames, speed ${options.speed}`,
   );
@@ -57,6 +63,7 @@ async function main(): Promise<void> {
       sourceLang: options.sourceLang,
       targetLang: options.targetLang,
       ...(options.meetingId ? { resume: true } : {}),
+      ...(options.mono ? { channels: 1 as const } : {}),
     },
     marks: options.marks,
     markClock: options.markClock,

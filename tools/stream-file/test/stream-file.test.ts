@@ -1,6 +1,6 @@
-import { FRAME_BYTES, FRAME_SAMPLES } from "@recap/core";
+import { FRAME_BYTES, FRAME_SAMPLES, MONO_FRAME_BYTES } from "@recap/core";
 import { describe, expect, it } from "vitest";
-import { toStereoFrames } from "../src/audio";
+import { toMonoFrames, toStereoFrames } from "../src/audio";
 import { alignmentRows, formatAlignment } from "../src/alignment";
 import { markAtMs } from "../src/client";
 import { parseOptions, parseSpeed } from "../src/options";
@@ -25,6 +25,17 @@ describe("toStereoFrames", () => {
     expect([samples[0], samples[1], samples[2], samples[3], samples[4], samples[5]]).toEqual([
       7, 1, 8, 0, 9, 0,
     ]);
+  });
+});
+
+describe("toMonoFrames", () => {
+  it("makes exact mono-size frames and zero-pads the last one", () => {
+    const samples = Int16Array.from({ length: FRAME_SAMPLES + 2 }, (_, i) => i + 1);
+    const frames = toMonoFrames(samples);
+    expect(frames).toHaveLength(2);
+    expect(frames.every((frame) => frame.length === MONO_FRAME_BYTES)).toBe(true);
+    const last = new Int16Array(frames[1]!.buffer);
+    expect([last[0], last[1], last[2]]).toEqual([FRAME_SAMPLES + 1, FRAME_SAMPLES + 2, 0]);
   });
 });
 

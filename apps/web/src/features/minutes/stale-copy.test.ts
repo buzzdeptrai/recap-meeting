@@ -8,6 +8,9 @@ describe("staleBannerText", () => {
     expect(STALE_REASON_COPY.notes_changed).toBe(
       "Ghi chú tay đã được thêm, sửa hoặc xoá sau khi tạo biên bản",
     );
+    expect(staleBannerText(["template_changed", "instructions_changed"])).toBe(
+      `${STALE_REASON_COPY.template_changed}; ${STALE_REASON_COPY.instructions_changed.toLowerCase()}. Tạo lại để cập nhật.`,
+    );
     for (const text of Object.values(STALE_REASON_COPY)) expect(text.length).toBeGreaterThan(10);
   });
 

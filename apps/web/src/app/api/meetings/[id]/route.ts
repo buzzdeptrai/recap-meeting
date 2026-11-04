@@ -23,7 +23,13 @@ export const PATCH = withAuth(async (request: Request, { params }: RouteContext)
   const { id } = await params;
   const parsed = await parseBody(request, patchMeetingSchema);
   if (!parsed.ok) return parsed.response;
-  const meeting = getRepositories().meetings.updateTitle(id, parsed.data.title);
+  const { title, templateId, extraInstructions } = parsed.data;
+  const meetings = getRepositories().meetings;
+  const renamed = title === undefined ? meetings.get(id) : meetings.updateTitle(id, title);
+  const meeting =
+    renamed && (templateId !== undefined || extraInstructions !== undefined)
+      ? meetings.updateSettings(id, { templateId, extraInstructions })
+      : renamed;
   return meeting ? NextResponse.json({ meeting }) : notFound();
 });
 

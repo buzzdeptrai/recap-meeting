@@ -14,6 +14,11 @@ export const startMessageSchema = z.object({
   sourceLang: sourceLangSchema,
   targetLang: targetLangSchema,
   resume: z.boolean().optional(),
+  /**
+   * 1 = mic-only session (mobile mode): binary frames are mono Int16 (MONO_FRAME_BYTES), only
+   * channel 0 exists. Absent or 2 = the usual stereo mic + tab frames.
+   */
+  channels: z.union([z.literal(1), z.literal(2)]).optional(),
 });
 
 export const markRequestSchema = z.object({

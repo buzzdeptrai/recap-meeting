@@ -1,6 +1,7 @@
 import type { MinutesContent, MinutesLang } from "@recap/core";
 import {
   derivedStaleReasons,
+  instructionsFingerprint,
   marksFingerprint,
   minutesStaleReasons,
   notesFingerprint,
@@ -40,6 +41,7 @@ export function minutesStaleReasonsOf(
     const source = repos.minutes.get(stored.meetingId, stored.derivedFromLang);
     return derivedStaleReasons(stored.sourceHash, source?.content ?? null);
   }
+  const meeting = repos.meetings.get(stored.meetingId);
   return minutesStaleReasons({
     generatedAt: stored.generatedAt,
     latestSegmentAt: repos.segments.latestCreatedAt(stored.meetingId),
@@ -50,12 +52,16 @@ export function minutesStaleReasonsOf(
       model: stored.model,
       marksFingerprint: stored.marksFingerprint,
       notesFingerprint: stored.notesFingerprint,
+      templateId: stored.templateId,
+      instructionsFingerprint: stored.instructionsFingerprint,
     },
     current: {
       promptVersion: PROMPT_VERSION,
       model: currentModel,
       marksFingerprint: marksFingerprint(repos.marks.list(stored.meetingId)),
       notesFingerprint: notesFingerprint(repos.notes.list(stored.meetingId)),
+      templateId: meeting?.templateId ?? null,
+      instructionsFingerprint: meeting ? instructionsFingerprint(meeting.extraInstructions) : null,
     },
   });
 }

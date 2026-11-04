@@ -18,6 +18,8 @@ describe("meetings repository", () => {
       sourceLang: "multi",
       targetLang: "vi",
       agenda: null,
+      templateId: "general",
+      extraInstructions: null,
       createdAt: "2026-10-21T09:00:00.000Z",
       startedAt: null,
       endedAt: null,

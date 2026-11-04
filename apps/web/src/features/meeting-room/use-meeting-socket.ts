@@ -21,6 +21,8 @@ export interface UseMeetingSocketOptions {
   targetLang: TargetLang;
   /** The meeting already has recorded segments (reload of a live meeting). */
   resume: boolean;
+  /** 1 = mic-only (mono) session; the mobile page sets it. */
+  channels?: 1 | 2;
   initial: InitialRoomData;
   /** Override for tests / alternate servers. */
   url?: string;
@@ -84,7 +86,7 @@ function init(initial: InitialRoomData): RoomState {
 
 /** Single owner of the realtime connection and the derived room state. */
 export function useMeetingSocket(options: UseMeetingSocketOptions): MeetingSocketApi {
-  const { meetingId, sourceLang, targetLang, resume, initial, url } = options;
+  const { meetingId, sourceLang, targetLang, resume, channels, initial, url } = options;
   const [room, dispatch] = useReducer(roomReducer, initial, init);
   const [connection, setConnection] = useState<ConnectionState>("idle");
   const socketRef = useRef<MeetingSocket | null>(null);
@@ -99,6 +101,7 @@ export function useMeetingSocket(options: UseMeetingSocketOptions): MeetingSocke
       sourceLang,
       targetLang,
       resume: resume || hasRecorded.current,
+      channels,
       onMessage: (message) => {
         if (message.type === "ready") hasRecorded.current = true;
         dispatch({ type: "server", message, receivedAt: Date.now() });
@@ -107,7 +110,7 @@ export function useMeetingSocket(options: UseMeetingSocketOptions): MeetingSocke
     });
     socketRef.current = socket;
     socket.connect();
-  }, [meetingId, sourceLang, targetLang, resume, url]);
+  }, [meetingId, sourceLang, targetLang, resume, channels, url]);
 
   useEffect(() => () => socketRef.current?.close(), []);
   const retryStt = useSttRetry(room.sttRetry, connection, dispatch, socketRef);

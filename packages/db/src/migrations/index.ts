@@ -10,6 +10,7 @@ import { migration010 } from "./010_minutes_runs";
 import { migration011 } from "./011_meeting_soft_delete";
 import { migration012 } from "./012_minutes_translation";
 import { migration013 } from "./013_meeting_notes";
+import { migration014 } from "./014_meeting_templates";
 
 export interface Migration {
   readonly version: number;
@@ -31,4 +32,5 @@ export const migrations: readonly Migration[] = [
   migration011,
   migration012,
   migration013,
+  migration014,
 ];

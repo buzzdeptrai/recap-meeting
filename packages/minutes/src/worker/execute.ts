@@ -35,6 +35,8 @@ async function runGeneration(
     promptVersion: result.promptVersion,
     marksFingerprint: result.marksFingerprint,
     notesFingerprint: result.notesFingerprint,
+    templateId: result.templateId,
+    instructionsFingerprint: result.instructionsFingerprint,
     derivedFromLang: null,
     sourceHash: null,
   });

@@ -11,6 +11,8 @@ export interface MeetingSessionOptions extends SessionLanguages {
   stt: SttProvider;
   audio: AudioWriter;
   sink: SessionSink;
+  /** 1 = mic-only session: client frames are mono (MONO_FRAME_BYTES). Default 2 = stereo. */
+  channels?: 1 | 2;
   /** Session audio timeline → meeting timeline offset (non-zero when resuming). */
   baseMs: number;
   variants?: readonly VariantEntry[];

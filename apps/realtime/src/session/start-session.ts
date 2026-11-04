@@ -56,10 +56,15 @@ export function createMeetingSession(
     const session = new MeetingSession({
       meeting,
       repos: deps.repos,
-      stt: deps.createStt({ sourceLang: message.sourceLang, keyterms: glossary.keyterms }),
+      stt: deps.createStt({
+        sourceLang: message.sourceLang,
+        keyterms: glossary.keyterms,
+        mono: message.channels === 1,
+      }),
       audio,
       sink,
       baseMs: message.resume ? audio.durationMs : 0,
+      channels: message.channels,
       sourceLang: message.sourceLang,
       targetLang: message.targetLang,
       variants: glossary.variants,
@@ -69,6 +74,7 @@ export function createMeetingSession(
         vendor: deps.usage.sttVendor,
         model: deps.usage.sttModel,
         language: resolveSttLanguage(message.sourceLang, deps.usage.sttLanguage),
+        channels: message.channels,
       },
       onEnded: () => deps.registry.release(meeting.id),
     });

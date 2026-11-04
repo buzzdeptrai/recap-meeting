@@ -15,6 +15,8 @@ interface MinutesRow {
   prompt_version: string | null;
   marks_fingerprint: string | null;
   notes_fingerprint: string | null;
+  template_id: string | null;
+  instructions_fingerprint: string | null;
   derived_from_lang: MinutesLang | null;
   source_hash: string | null;
   generated_at: string;
@@ -32,6 +34,8 @@ export interface UpsertMinutesInput {
   promptVersion?: string | null;
   marksFingerprint?: string | null;
   notesFingerprint?: string | null;
+  templateId?: string | null;
+  instructionsFingerprint?: string | null;
   /** Translation provenance of an `ai` version; kept as stored for user edits. */
   derivedFromLang?: MinutesLang | null;
   sourceHash?: string | null;
@@ -47,6 +51,8 @@ function toMinutes(row: MinutesRow): StoredMinutes {
     promptVersion: row.prompt_version,
     marksFingerprint: row.marks_fingerprint,
     notesFingerprint: row.notes_fingerprint,
+    templateId: row.template_id,
+    instructionsFingerprint: row.instructions_fingerprint,
     derivedFromLang: row.derived_from_lang,
     sourceHash: row.source_hash,
     generatedAt: row.generated_at,
@@ -54,32 +60,37 @@ function toMinutes(row: MinutesRow): StoredMinutes {
   };
 }
 
+// generated_at changes only when the AI regenerates; an edit just bumps updated_at.
+const UPSERT_SQL = `INSERT INTO minutes (meeting_id, lang, content, source, model, prompt_version, marks_fingerprint, notes_fingerprint, template_id, instructions_fingerprint, derived_from_lang, source_hash, generated_at, updated_at)
+ VALUES (@meetingId, @lang, @content, @source, @model, @promptVersion, @marksFingerprint, @notesFingerprint, @templateId, @instructionsFingerprint, @derivedFromLang, @sourceHash, @at, @at)
+ ON CONFLICT (meeting_id, lang) DO UPDATE SET
+   content = excluded.content,
+   source = excluded.source,
+   model = COALESCE(excluded.model, minutes.model),
+   prompt_version = CASE WHEN excluded.source = 'ai' THEN excluded.prompt_version
+                         ELSE minutes.prompt_version END,
+   marks_fingerprint = CASE WHEN excluded.source = 'ai' THEN excluded.marks_fingerprint
+                            ELSE minutes.marks_fingerprint END,
+   notes_fingerprint = CASE WHEN excluded.source = 'ai' THEN excluded.notes_fingerprint
+                            ELSE minutes.notes_fingerprint END,
+   template_id = CASE WHEN excluded.source = 'ai' THEN excluded.template_id
+                      ELSE minutes.template_id END,
+   instructions_fingerprint = CASE WHEN excluded.source = 'ai'
+                                   THEN excluded.instructions_fingerprint
+                                   ELSE minutes.instructions_fingerprint END,
+   derived_from_lang = CASE WHEN excluded.source = 'ai' THEN excluded.derived_from_lang
+                            ELSE minutes.derived_from_lang END,
+   source_hash = CASE WHEN excluded.source = 'ai' THEN excluded.source_hash
+                      ELSE minutes.source_hash END,
+   generated_at = CASE WHEN excluded.source = 'ai' THEN excluded.generated_at
+                       ELSE minutes.generated_at END,
+   updated_at = excluded.updated_at`;
+
 export function createMinutesRepository({ db, now }: RepoContext) {
   const getStmt = db.prepare<[string, string], MinutesRow>(
     "SELECT * FROM minutes WHERE meeting_id = ? AND lang = ?",
   );
-  // generated_at changes only when the AI regenerates; an edit just bumps updated_at.
-  const upsertStmt = db.prepare(
-    `INSERT INTO minutes (meeting_id, lang, content, source, model, prompt_version, marks_fingerprint, notes_fingerprint, derived_from_lang, source_hash, generated_at, updated_at)
-     VALUES (@meetingId, @lang, @content, @source, @model, @promptVersion, @marksFingerprint, @notesFingerprint, @derivedFromLang, @sourceHash, @at, @at)
-     ON CONFLICT (meeting_id, lang) DO UPDATE SET
-       content = excluded.content,
-       source = excluded.source,
-       model = COALESCE(excluded.model, minutes.model),
-       prompt_version = CASE WHEN excluded.source = 'ai' THEN excluded.prompt_version
-                             ELSE minutes.prompt_version END,
-       marks_fingerprint = CASE WHEN excluded.source = 'ai' THEN excluded.marks_fingerprint
-                                ELSE minutes.marks_fingerprint END,
-       notes_fingerprint = CASE WHEN excluded.source = 'ai' THEN excluded.notes_fingerprint
-                                ELSE minutes.notes_fingerprint END,
-       derived_from_lang = CASE WHEN excluded.source = 'ai' THEN excluded.derived_from_lang
-                                ELSE minutes.derived_from_lang END,
-       source_hash = CASE WHEN excluded.source = 'ai' THEN excluded.source_hash
-                          ELSE minutes.source_hash END,
-       generated_at = CASE WHEN excluded.source = 'ai' THEN excluded.generated_at
-                           ELSE minutes.generated_at END,
-       updated_at = excluded.updated_at`,
-  );
+  const upsertStmt = db.prepare(UPSERT_SQL);
 
   function get(meetingId: string, lang: MinutesLang): StoredMinutes | undefined {
     const row = getStmt.get(meetingId, lang);
@@ -97,6 +108,8 @@ export function createMinutesRepository({ db, now }: RepoContext) {
       promptVersion: input.promptVersion ?? null,
       marksFingerprint: input.marksFingerprint ?? null,
       notesFingerprint: input.notesFingerprint ?? null,
+      templateId: input.templateId ?? null,
+      instructionsFingerprint: input.instructionsFingerprint ?? null,
       derivedFromLang: input.derivedFromLang ?? null,
       sourceHash: input.sourceHash ?? null,
       at: now(),

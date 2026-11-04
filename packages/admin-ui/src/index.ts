@@ -56,6 +56,12 @@ export {
   type ActionGroupProps,
   type ActionPlacement,
 } from "./components/action-group";
+export {
+  OptionCardGroup,
+  nextOptionIndex,
+  type OptionCardGroupProps,
+  type OptionCardItem,
+} from "./components/option-card";
 export { IconTile, type IconTileProps } from "./components/icon-tile";
 export { Badge, Pill, type BadgeProps } from "./components/badge";
 export { StatusDot, type StatusDotProps } from "./components/status-dot";

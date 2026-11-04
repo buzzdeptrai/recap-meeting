@@ -1,4 +1,6 @@
 import {
+  extraInstructionsSchema,
+  meetingTemplateIdSchema,
   minutesContentSchema,
   minutesLangSchema,
   sourceLangSchema,
@@ -24,9 +26,24 @@ export const createMeetingSchema = z.object({
   sourceLang: sourceLangSchema,
   targetLang: targetLangSchema,
   agenda: z.string().trim().max(MAX_AGENDA).optional(),
+  templateId: meetingTemplateIdSchema.optional(),
+  extraInstructions: extraInstructionsSchema.nullish(),
 });
 
-export const patchMeetingSchema = z.object({ title: titleSchema });
+/** Rename and/or change the minutes settings; at least one field. `extraInstructions: null` clears it. */
+export const patchMeetingSchema = z
+  .object({
+    title: titleSchema.optional(),
+    templateId: meetingTemplateIdSchema.optional(),
+    extraInstructions: extraInstructionsSchema.nullable().optional(),
+  })
+  .refine(
+    (body) =>
+      body.title !== undefined ||
+      body.templateId !== undefined ||
+      body.extraInstructions !== undefined,
+    { message: "Cần ít nhất một trường để cập nhật" },
+  );
 
 /** `lang` is the SOURCE language of the run (the other language is translated from it). */
 export const generateMinutesSchema = z.object({ lang: minutesLangSchema });

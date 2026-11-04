@@ -3,6 +3,61 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-11-04 · Chọn loại cuộc họp bằng thẻ (card) + thẻ loại ở danh sách + đổi loại ngay trong phòng họp
+**Vì sao:** Select một dòng không giúp thành viên hiểu mỗi loại làm gì; chủ muốn thẻ đẹp có mô tả, dùng ở mọi nơi chọn/sửa loại, và muốn quét danh sách theo loại.
+
+**Làm gì:**
+- `@recap/core`: mỗi template thêm `tagline` (tối đa 60 ký tự), `bestFor`, `focus` (3 gạch đầu dòng khớp ý khối prompt trong `templates.ts`); thêm `getMeetingTemplate`. Id/nhãn/mô tả giữ nguyên.
+- `@recap/admin-ui`: `OptionCardGroup` (generic, không biết dự án): `role="radiogroup"`, mỗi thẻ `role="radio"` + `aria-checked`, roving tabindex, phím mũi tên/Home/End chọn, Space/Enter, focus ring `soft-focus`, hover nhấc nhẹ chỉ khi `motion-safe`. Thẻ chọn: viền + nền tonal brand, ô icon đặc brand, dấu tick, mở phần children. Lưới 1 cột (điện thoại) / 2 (sm) / 3 (xl); `compact` = 1 cột, padding nhỏ.
+- `apps/web`: `TemplateCards` (thay `TemplateSelect`; thẻ chọn liệt kê 3 `focus` + "Nên chọn khi"), `template-icons.tsx` (Notebook, Kanban, Handshake, UserFocus, ChalkboardTeacher), `TemplateTag` (một chip dùng cho phòng họp, danh sách, dashboard; dưới `sm` chỉ còn icon, nhãn vẫn cho trình đọc màn hình), `useSettingsDraft` (draft + PATCH dùng chung).
+- Dùng ở `/meetings/new`, `/m` (compact), trang biên bản (`minutes-settings.tsx`: đóng = icon + nhãn + tagline; "Sửa" mở lưới thẻ + "Hướng dẫn thêm"; khoá khi có chỉnh sửa chưa lưu, banner stale giữ nguyên).
+- Phòng họp: chip loại trên top bar bấm được, mở `Dialog` (thẻ + hướng dẫn thêm + Hủy/Lưu), gọi `updateMeetingSettings`, dùng được khi đang họp lẫn đã kết thúc; lưu xong chip đổi, không tạo lại biên bản.
+- Danh sách `/meetings` (bảng và thẻ) và "Cuộc họp gần đây" ở dashboard hiện `TemplateTag`; `templateId` đã có sẵn trong DTO danh sách (cùng truy vấn, giữ lọc soft-delete); `RecentRow.templateId` thêm mới.
+
+**Quyết định:** icon nằm ở web (không vào core); không thêm bộ lọc theo loại (bộ lọc hiện hỏi theo SQL + `list-query`, làm đúng cần đổi API, để sau nếu chủ muốn); `Field` không bọc nhóm radio (label trỏ tới input không tồn tại) nên dùng tiêu đề riêng + `aria-label`.
+
+**Đã kiểm chứng:** `npm run verify` xanh; test mới cho registry, `OptionCardGroup` (radiogroup, aria-checked, disabled, roving tabindex, phím), bản đồ icon phủ mọi id, `TemplateTag`, `TemplateCards`, `RecentRow.templateId`.
+
+**Chưa kiểm chứng:** chưa xem trên trình duyệt thật (không có mật khẩu đăng nhập): bố cục lưới 1/2/3 cột, chế độ tối, điện thoại 390px, hiệu ứng hover/focus, độ rộng tag ở bảng danh sách, dialog đổi loại trong phòng họp.
+
+## 2026-11-04 · Loại cuộc họp (template) + "Hướng dẫn thêm" cho biên bản (B2)
+**Vì sao:** mỗi loại họp cần nhấn mạnh khác nhau (dự án: việc/hạn/vướng mắc; khách hàng: nhu cầu/cam kết; phỏng vấn: câu hỏi/điểm mạnh; đào tạo: nội dung/thuật ngữ). Chủ muốn chọn khi tạo họp và dặn thêm từng cuộc, không đổi cấu trúc biên bản.
+
+**Quan sát trước khi sửa:** `prompts.ts` ghép `COMMON_RULES` + khối quy tắc theo cờ (marks/topics/notes); stale dựa vào dấu vân tay lưu cùng minutes (`marks_fingerprint`, `notes_fingerprint`, migration 013) và so với hiện tại ở `minutes-service.ts`. Không có chỗ sửa meeting ngoài đổi tên (`PATCH {title}`).
+
+**Làm gì:**
+- `@recap/core/meeting-templates.ts`: 5 loại (`general` mặc định, `project`, `client`, `interview`, `training`) với nhãn + mô tả tiếng Việt, zod (`meetingTemplateIdSchema`, `extraInstructionsSchema` tối đa 500 ký tự), `normalizeExtraInstructions`.
+- `@recap/minutes/templates.ts`: khối quy tắc tiếng Anh theo loại (`general` rỗng). Mỗi khối nói rõ không ghi đè schema, quy tắc "decided" chặt và quy tắc chống injection. `prompts.ts`: tham số `extras {templateId, hasInstructions}` cho `singlePassSystem/chunkSystem/reduceSystem` (chunk và reduce đều mang khối); "Hướng dẫn thêm" đi vào prompt người dùng (`header()`, nên cả transcript và reduce) thành khối có nhãn trong thẻ `<instructions>`, gộp về một dòng và escape như notes/transcript; thêm một quy tắc hệ thống tĩnh nói cách đối xử khối này (dữ liệu, không đổi schema/quy tắc, không lộ prompt). Schema JSON đầu ra KHÔNG đổi. `PROMPT_VERSION` 5 -> 6, bản dịch (`translate-prompts.ts`) không dùng template.
+- Migration 014: `meetings.template_id TEXT NOT NULL DEFAULT 'general'`, `meetings.extra_instructions TEXT`, `minutes.template_id`, `minutes.instructions_fingerprint`. Repo: `create` nhận hai trường, `meetings.updateSettings(id, {templateId?, extraInstructions?})` (hàng đã xoá mềm -> không đổi), `minutes.upsert` lưu hai dấu vết cho bản `ai`.
+- Stale: lý do mới `template_changed`, `instructions_changed` (`minutes-staleness.ts`, `instructionsFingerprint`); hàng minutes cũ (NULL) không bao giờ bị đánh dấu. Đổi loại/hướng dẫn chỉ báo "cần cập nhật", không tự tạo lại. Banner: `stale-copy.ts`.
+- REST: `POST /api/meetings` nhận `templateId`, `extraInstructions`; `PATCH /api/meetings/:id` nhận `title?`, `templateId?`, `extraInstructions?` (null xoá), cần ít nhất một trường; loại lạ -> 400.
+- UI: `/meetings/new` và `/m` có "Loại cuộc họp" (Select + mô tả một dòng; `/m` gọn hơn) và "Hướng dẫn thêm (không bắt buộc)" có bộ đếm ký tự + dòng giải thích; phòng họp và trang biên bản có chip loại; trang biên bản có thẻ "Loại cuộc họp / Sửa" (`minutes-settings.tsx`) để đổi loại + hướng dẫn của cuộc họp đã có (không có chỗ sửa nào sẵn ngoài đổi tên). Nút lưu bị khoá khi bản biên bản có chỉnh sửa chưa lưu (vì lưu xong sẽ tải lại biên bản).
+
+**Quyết định:** template cố định trong code, người dùng không tự tạo; "Hướng dẫn thêm" lưu nguyên văn (đã trim) nhưng prompt và dấu vân tay dùng dạng gộp khoảng trắng; badge stale ở danh sách cuộc họp vẫn chỉ theo timestamp (không thấy `template_changed` / `instructions_changed`, giống notes).
+
+**Đã kiểm chứng:** `npm run verify` xanh; test mới: registry, prompt single/chunk/reduce, escape chuỗi thù địch, zod, migration 014 + checksum, dấu vân tay/stale, REST tạo + sửa. Chạy thật OpenAI trên bản sao scratch của cuộc họp demo 47 câu (không đụng DB của chủ): `general` vs `interview` cho cùng số chủ đề; bản interview thêm "điểm mạnh / điểm cần cân nhắc" vào summary, nhiều key point hơn ở một chủ đề.
+
+**Chưa kiểm chứng:** chất lượng biên bản thực tế của từng template với LLM thật trên cuộc họp thật (mới thử một lần với dữ liệu demo không phải phỏng vấn); giao diện trên trình duyệt thật (chưa xem ảnh chụp); cần khởi động lại realtime rồi web để thấy migration 014.
+
+## 2026-11-04 · Chế độ điện thoại `/m` (chỉ mic, một kênh)
+**Vì sao:** họp trực tiếp hoặc họp online qua loa ngoài thì không có tab để chia sẻ; chỉ cần điện thoại (iOS Safari) đặt giữa phòng. Không làm app native: một trang web `/m` dùng lại WebSocket, STT, dịch, biên bản, dấu K/T và xuất Word có sẵn.
+
+**Quan sát trước khi sửa:** phiên chỉ mic KHÔNG chạy sẵn "đúng nghĩa". Giao thức bắt buộc frame stereo 6400 byte; gửi stereo với kênh 1 im lặng thì chạy được nhưng Deepgram tính tiền 2 kênh, AssemblyAI mở 2 socket (kênh im lặng chỉ được cổng im lặng 30 s dừng sau đó). Nên thêm tuỳ chọn phiên.
+
+**Làm gì:**
+- Giao thức: `start.channels` (1 | 2, tuỳ chọn, mặc định stereo như cũ) + hằng `MONO_CHANNELS`, `MONO_FRAME_BYTES` (3200). `MeetingSession` nhận frame mono, ghi WAV vẫn stereo (kênh phải im lặng, `audio/mono.ts`) để mọi thứ đọc WAV không đổi, và đưa frame mono cho STT. Frame sai cỡ (stereo trong phiên mono hoặc ngược lại) bị từ chối như trước.
+- STT: `DeepgramConfig.channels` (URL `channels=1&multichannel=false`), `AssemblyAiConfig.channels` (chỉ mở socket kênh 0, không tách stereo). Giá/usage: `SttUsageMeter` tính 1 kênh (`meta.channels=1`).
+- Trình duyệt: `audio/mic-capture.ts` (một nguồn mic -> worklet cũ -> `stereoToMono`), `interruption.ts` (mic ended/muted, AudioContext suspended/interrupted, mất frame > 3 s), `wake-lock.ts` (giữ sáng màn hình, xin lại khi trang hiện lại), `unlockAudio()` tạo + resume AudioContext ngay trong lần chạm (iOS). Context chạy ở tốc độ thiết bị (48k/44.1k), worklet đã tự lấy mẫu về 16 kHz nên tránh lỗi Safari khi tốc độ mic khác context. `capture.ts` export `buildGraph` nhận context sẵn; `mic-controller` thêm `activeTrack` và `switchTo(null)`.
+- Trang `/m` (`app/m/page.tsx`, `features/mobile/*`): màn thiết lập (tiêu đề, ngôn ngữ nói, dịch sang, nút Bắt đầu ghi lớn), phòng ghi (header trạng thái qua `status.ts`, transcript tự cuộn + dòng dịch dưới mỗi câu, nhãn người nói duy nhất "Cuộc họp", thanh dưới Kết luận / Chủ đề mới / Dừng, hộp thoại xác nhận Dừng), băng "Đừng khoá máy, Safari sẽ dừng mic.", băng "Mic đã bị ngắt" + nút "Tiếp tục" (khởi động lại mic rồi dùng lại reconnect của socket và `stt_retry`), sau khi dừng: Tạo biên bản (dùng `useMinutes`: hàng đợi + polling), tóm tắt chỉ đọc, nút tải Word, link sang trang biên bản đầy đủ để sửa. `/m?id=` mở lại cuộc họp (tải lại trang không mất). Phím K/T vẫn chạy khi thử trên PC.
+- `tools/stream-file --mono` để smoke test đường mono.
+- Giao diện 390 px: kiểm danh sách cuộc họp, trang biên bản và phòng họp desktop bằng Chrome 390 px: không cuộn ngang, không cần sửa CSS.
+
+**Quyết định:** ghi WAV vẫn stereo (đổi định dạng WAV sẽ động tới T12/phát lại); frame mono trên dây để không tốn băng thông di động và không bị tính 2 kênh. Nhãn người nói chung "Cuộc họp" (không tách người nói). Chủ đề mới trên điện thoại không hỏi tên (đặt tên sau ở phòng họp). `/m` không ảo hoá danh sách: chỉ render 300 câu cuối. "Ghi tiếp" ở phòng desktop của cuộc họp mono vẫn đòi chia sẻ tab (không đổi); ghi tiếp bằng điện thoại qua `/m?id=`.
+
+**Đã kiểm chứng:** `npm run verify` xanh; smoke `stream-file --mono` với AssemblyAI và Deepgram thật (file mẫu 30 s, 4 và 3 câu, dịch OK, usage `channels:1`, 29.8 s); Chrome headless 390 px (giả micro bằng file wav) chạy trọn luồng Bắt đầu -> transcript + dịch -> K/T -> Dừng -> Tạo biên bản -> Tải Word; mô phỏng ngắt mic (dừng track) hiện băng rồi "Tiếp tục" mở lại mic và transcript chạy tiếp.
+
+**Chưa kiểm chứng:** hành vi trên iPhone/Safari thật (getUserMedia khi tải trang qua HTTPS, `AudioContext` bị `interrupted`, track `mute`/`ended` khi khoá máy, cuộc gọi, Siri); Wake Lock thật (iOS cũ không có); Safari có thật sự cho worklet chạy ở 48k/44.1k như giả định; chất lượng STT khi đặt điện thoại giữa phòng hoặc cạnh loa (echoCancellation/noiseSuppression của trình duyệt có thể cắt giọng xa, chưa thử tắt); pin/nhiệt khi ghi nhiều giờ; điện thoại ở LAN cần HTTPS mới có micro (chỉ `localhost` được miễn); tiếng Việt qua loa ngoài chưa đo WER.
+
 ## 2026-10-30 · Làm bền realtime và hàng đợi biên bản cho ~5 người dùng cùng lúc
 **Vì sao:** dùng nội bộ với ~5 tài khoản, nhiều cuộc họp live cùng lúc. Rà code thấy một lỗi bất kỳ làm chết mọi phiên, hàng đợi biên bản báo lỗi giả, trần 20 kết nối, và gọi LLM không thử lại khi 429. Dữ liệu vẫn dùng chung giữa các tài khoản (chủ đích, không thêm `owner_id`).
 

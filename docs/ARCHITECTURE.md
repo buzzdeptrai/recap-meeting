@@ -59,7 +59,7 @@ Channel: `0` = mic ("Tôi"), `1` = meeting tab ("Người khác").
 ### Client → server
 JSON text frames:
 ```ts
-{ type: "start", meetingId: string, sourceLang: "auto" | "vi" | "en" | "multi", targetLang: "vi" | "en", resume?: boolean }
+{ type: "start", meetingId: string, sourceLang: "auto" | "vi" | "en" | "multi", targetLang: "vi" | "en", resume?: boolean, channels?: 1 | 2 }
 { type: "mark", kind: "conclusion" | "topic", atMs: number, label?: string /* max 120 */ }
 { type: "unmark", id: string }                         // delete a mark
 { type: "mark_label", id: string, label: string }      // rename; "" clears
@@ -69,6 +69,7 @@ JSON text frames:
 ```
 Binary frames (only after `ready`): raw PCM **Int16 little-endian, interleaved stereo, 16000 Hz**,
 100 ms per frame = 1600 frames × 2 ch × 2 bytes = 6400 bytes.
+**Mono (mic-only) session:** `start.channels: 1` (mobile page `/m`) changes the frame to mono Int16, 1600 × 1 ch × 2 bytes = 3200 bytes (`MONO_FRAME_BYTES`); a frame of the wrong size for the session is rejected. Only channel 0 exists: the STT provider is created with `channels: 1` (Deepgram `channels=1`, no multichannel; AssemblyAI opens one socket) and usage is billed for one channel. The WAV is still written as stereo (right channel silent). Default (absent or 2) is unchanged.
 
 ### Server → client
 ```ts
@@ -101,6 +102,7 @@ Every message is validated with zod on both sides; invalid → `error BAD_MESSAG
 ```sql
 meetings(id TEXT PK, title TEXT NOT NULL, status TEXT CHECK(status IN ('draft','live','ended')),
          source_lang TEXT, target_lang TEXT, agenda TEXT,
+         template_id TEXT NOT NULL DEFAULT 'general' /* migration 014 */, extra_instructions TEXT NULL /* 014, max 500 */,
          created_at TEXT, started_at TEXT, ended_at TEXT, duration_ms INTEGER)
 segments(id TEXT PK, meeting_id TEXT FK, seq INTEGER, channel INTEGER, lang TEXT,
          start_ms INTEGER, end_ms INTEGER, text TEXT, created_at TEXT, UNIQUE(meeting_id, seq))

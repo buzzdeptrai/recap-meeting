@@ -14,6 +14,10 @@ const NO_INDEX = "noindex, nofollow, noarchive, nosnippet, noimageindex";
 const nextConfig: NextConfig = {
   // A second dev instance (QA against a scratch DB) needs its own build dir and lock.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  // Dev only: extra hosts allowed to load dev resources (e.g. a tunnel host for phone testing), comma separated.
+  allowedDevOrigins: process.env.DEV_ALLOWED_ORIGINS?.split(",")
+    .map((h) => h.trim())
+    .filter(Boolean),
   // Workspace packages ship TypeScript source (no build step).
   transpilePackages: [
     "@recap/admin-ui",

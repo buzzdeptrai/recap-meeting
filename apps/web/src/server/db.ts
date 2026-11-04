@@ -12,7 +12,8 @@ export function getRepositories(): Repositories {
   if (
     cached?.sessions &&
     typeof cached.segments.anchorAt === "function" &&
-    typeof cached.meetings.softDelete === "function"
+    typeof cached.meetings.softDelete === "function" &&
+    typeof cached.meetings.updateSettings === "function"
   ) {
     return cached;
   }

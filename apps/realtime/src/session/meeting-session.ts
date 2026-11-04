@@ -1,5 +1,12 @@
-import { FRAME_BYTES, type ErrorCode, type MarkKind, type ServerMessage } from "@recap/core";
+import {
+  FRAME_BYTES,
+  MONO_FRAME_BYTES,
+  type ErrorCode,
+  type MarkKind,
+  type ServerMessage,
+} from "@recap/core";
 import { GhostLineFilter, type Segmenter, type SttResult, type SttStatus } from "@recap/stt";
+import { monoToStereo } from "../audio/mono";
 import { handleChannelActivity } from "./channel-activity";
 import { waitBounded } from "./drain";
 import { meterAcceptedFrame } from "./frame-metering";
@@ -161,16 +168,24 @@ export class MeetingSession {
     this.sendStatus();
   }
 
-  /** Accepts one stereo PCM frame. Returns false (and counts it) when the frame is unusable. */
+  private get isMono(): boolean {
+    return this.options.channels === 1;
+  }
+
+  /**
+   * Accepts one PCM frame: stereo, or mono for a mic-only session (stored as stereo with a silent
+   * right channel; the STT provider, configured mono, gets the mono frame). Returns false (and
+   * counts it) when the frame is unusable.
+   */
   handleAudio(frame: Uint8Array): boolean {
     if (this.state !== "live") return false;
-    if (frame.length !== FRAME_BYTES) {
+    if (frame.length !== (this.isMono ? MONO_FRAME_BYTES : FRAME_BYTES)) {
       this.framesRejected += 1;
       return false;
     }
     this.framesAccepted += 1;
     try {
-      this.options.audio.write(frame);
+      this.options.audio.write(this.isMono ? monoToStereo(frame) : frame);
     } catch (error) {
       log("audio write failed", error);
     }

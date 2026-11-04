@@ -6,3 +6,4 @@ export * from "./protocol/parse";
 export * from "./minutes";
 export * from "./usage";
 export * from "./notes";
+export * from "./meeting-templates";

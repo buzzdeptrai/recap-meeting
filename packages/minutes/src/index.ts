@@ -9,6 +9,8 @@ export {
   DEFAULT_GENERATOR_CONFIG,
 } from "./config";
 export { PROMPT_VERSION } from "./prompt-version";
+export { TEMPLATES, getTemplate, templatePromptBlock } from "./templates";
+export type { MeetingTemplate } from "./templates";
 export { translateMinutes, otherLang } from "./translate";
 export { TRANSLATE_PROMPT_VERSION } from "./translate-prompts";
 export { extractText, mergeText, minutesTextSchema } from "./translate-schema";

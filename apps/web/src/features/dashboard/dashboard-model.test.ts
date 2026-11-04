@@ -42,6 +42,8 @@ const meeting = (over: Partial<MeetingListItemDto> = {}): MeetingListItemDto => 
   sourceLang: "vi",
   targetLang: "en",
   agenda: null,
+  templateId: "general",
+  extraInstructions: null,
   createdAt: "2026-10-14T03:00:00.000Z",
   startedAt: "2026-10-14T03:00:00.000Z",
   endedAt: null,
@@ -199,6 +201,7 @@ describe("toRecentRow", () => {
   it("links finished meetings with minutes to the minutes page", () => {
     expect(toRecentRow(meeting()).href).toBe("/meetings/m1/minutes");
     expect(toRecentRow(meeting()).status).toBe("ended");
+    expect(toRecentRow(meeting({ templateId: "client" })).templateId).toBe("client");
     expect(toRecentRow(meeting()).minutesLangs).toEqual(["VI"]);
   });
 

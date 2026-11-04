@@ -23,6 +23,17 @@ export function interleaveStereo(ch0: Float32Array, ch1: Float32Array): Int16Arr
   return out;
 }
 
+/**
+ * Keeps channel 0 of an interleaved stereo Int16 buffer (L,R,L,R…) as a mono buffer of half the
+ * size. Mic-only (mobile) sessions send this instead of the stereo frame.
+ */
+export function stereoToMono(stereo: ArrayBuffer): ArrayBuffer {
+  const input = new Int16Array(stereo);
+  const out = new Int16Array(Math.floor(input.length / 2));
+  for (let i = 0; i < out.length; i++) out[i] = input[i * 2] ?? 0;
+  return out.buffer;
+}
+
 /** Root-mean-square of a block, 0..1. Empty block → 0. */
 export function rms(samples: ArrayLike<number>): number {
   if (samples.length === 0) return 0;

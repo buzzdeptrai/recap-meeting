@@ -28,6 +28,8 @@ export default async function MinutesPage({ params }: MinutesPageProps) {
         startedAt: meeting.startedAt ?? meeting.createdAt,
         durationMs: meeting.durationMs,
         ended: meeting.status === "ended",
+        templateId: meeting.templateId,
+        extraInstructions: meeting.extraInstructions ?? "",
       }}
     />
   );

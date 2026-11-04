@@ -41,7 +41,7 @@ class FakeSocket implements SocketLike {
 const READY = { type: "ready", meetingId: "m1", startedAt: "2026-10-21T10:00:00.000Z" };
 const latest = () => FakeSocket.instances[FakeSocket.instances.length - 1]!;
 
-function setup(resume = false) {
+function setup(resume = false, channels?: 1 | 2) {
   const messages: unknown[] = [];
   const states: ConnectionState[] = [];
   const invalid: string[] = [];
@@ -51,6 +51,7 @@ function setup(resume = false) {
     sourceLang: "multi",
     targetLang: "vi",
     resume,
+    channels,
     onMessage: (m) => messages.push(m),
     onConnection: (s) => states.push(s),
     onInvalid: (r) => invalid.push(r),
@@ -195,5 +196,26 @@ describe("MeetingSocket", () => {
         .json()
         .some((m) => m.type === "ping"),
     ).toBe(true);
+  });
+});
+
+describe("MeetingSocket mono session", () => {
+  it("asks for one channel in start, also after a reconnect", () => {
+    const { socket } = setup(false, 1);
+    socket.connect();
+    latest().open();
+    expect(latest().json()[0]).toMatchObject({ type: "start", channels: 1 });
+    latest().receive(READY);
+    latest().drop();
+    vi.advanceTimersByTime(100);
+    latest().open();
+    expect(latest().json()[0]).toMatchObject({ type: "start", channels: 1, resume: true });
+  });
+
+  it("sends no channels field for the usual stereo session", () => {
+    const { socket } = setup();
+    socket.connect();
+    latest().open();
+    expect(latest().json()[0]).not.toHaveProperty("channels");
   });
 });
