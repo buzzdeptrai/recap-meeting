@@ -1,4 +1,4 @@
-import { withAuth } from "@/server/auth";
+import { withMeetingAuth } from "@/server/meeting-auth";
 import { checkSameOrigin, parseBody, respond } from "@/server/http";
 import { startTranslationRun } from "@/server/minutes-translate-service";
 import { translateMinutesSchema } from "@/server/schemas";
@@ -14,7 +14,7 @@ interface RouteContext {
 const HTTP_ACCEPTED = 202;
 
 /** Enqueues a translation into `lang` from the other language; progress via `GET .../minutes/run`. */
-export const POST = withAuth(async (request: Request, { params }: RouteContext) => {
+export const POST = withMeetingAuth(async (request: Request, { params }: RouteContext) => {
   const forbidden = checkSameOrigin(request);
   if (forbidden) return forbidden;
   const { id } = await params;

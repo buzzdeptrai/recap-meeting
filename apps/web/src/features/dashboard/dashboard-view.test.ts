@@ -17,7 +17,9 @@ function render(
   const repos = createRepositories(openDatabase(IN_MEMORY));
   seed(repos);
   const deps = { repos, now: () => NOW, budgetUsd: 60, pricing };
-  const model = buildDashboardModel(loadDashboard(NOW, deps, source));
+  const model = buildDashboardModel(
+    loadDashboard(NOW, { id: "admin", role: "admin" }, deps, source),
+  );
   return renderToStaticMarkup(createElement(DashboardView, { model }));
 }
 
@@ -53,6 +55,7 @@ describe("DashboardView render", () => {
             durationMs: 1,
             minutesLangs: [],
             deletedAt: null,
+            ownerId: null,
             minutes: {},
             topicCount: 0,
             conclusionCount: 0,

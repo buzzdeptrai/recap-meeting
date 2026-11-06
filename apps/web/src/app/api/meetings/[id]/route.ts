@@ -3,7 +3,7 @@ import { getRepositories } from "@/server/db";
 import { checkSameOrigin, notFound, parseBody, respond } from "@/server/http";
 import { deleteMeeting, getMeetingDetail } from "@/server/meetings-service";
 import { patchMeetingSchema } from "@/server/schemas";
-import { withAuth } from "@/server/auth";
+import { viewerOf, withMeetingAuth } from "@/server/meeting-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +11,13 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export const GET = withAuth(async (_request: Request, { params }: RouteContext) => {
+export const GET = withMeetingAuth(async (_request: Request, { params }: RouteContext, session) => {
   const { id } = await params;
-  const detail = getMeetingDetail(id);
+  const detail = getMeetingDetail(id, viewerOf(session));
   return detail ? NextResponse.json(detail) : notFound();
 });
 
-export const PATCH = withAuth(async (request: Request, { params }: RouteContext) => {
+export const PATCH = withMeetingAuth(async (request: Request, { params }: RouteContext) => {
   const forbidden = checkSameOrigin(request);
   if (forbidden) return forbidden;
   const { id } = await params;
@@ -34,9 +34,11 @@ export const PATCH = withAuth(async (request: Request, { params }: RouteContext)
 });
 
 /** Soft delete (restorable via `POST .../restore`). 409 while the meeting is live. */
-export const DELETE = withAuth(async (request: Request, { params }: RouteContext, session) => {
-  const forbidden = checkSameOrigin(request);
-  if (forbidden) return forbidden;
-  const { id } = await params;
-  return respond(() => ({ meeting: deleteMeeting(id, session.user.id) }));
-});
+export const DELETE = withMeetingAuth(
+  async (request: Request, { params }: RouteContext, session) => {
+    const forbidden = checkSameOrigin(request);
+    if (forbidden) return forbidden;
+    const { id } = await params;
+    return respond(() => ({ meeting: deleteMeeting(id, session.user.id) }));
+  },
+);

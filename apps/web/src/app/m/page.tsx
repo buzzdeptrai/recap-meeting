@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { MobileApp, type MobileLoaded } from "@/features/mobile/mobile-app";
+import { requirePageUser } from "@/server/auth-page";
 import { getMeetingDetail } from "@/server/meetings-service";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,8 @@ interface MobilePageProps {
 export default async function MobilePage({ searchParams }: MobilePageProps) {
   const raw = (await searchParams).id;
   const id = Array.isArray(raw) ? raw[0] : raw;
-  const detail = id ? getMeetingDetail(id) : null;
+  const user = await requirePageUser(id ? `/m?id=${encodeURIComponent(id)}` : "/m");
+  const detail = id ? getMeetingDetail(id, user) : null;
   const loaded: MobileLoaded | null = detail
     ? {
         meeting: detail.meeting,

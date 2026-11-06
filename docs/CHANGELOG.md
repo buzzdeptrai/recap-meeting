@@ -3,6 +3,23 @@
 Mới nhất ở trên. Mỗi mục = một commit (hash tra bằng `git log --grep "<tiêu đề>"`; mục không ghi hash vì chưa biết trước khi commit).
 Quy tắc: trước mỗi commit thêm một mục ở đây (đã làm + vì sao, quyết định đáng nhớ, chưa kiểm chứng) và cập nhật `CLAUDE.md` nếu kiến trúc hoặc việc còn lại đổi.
 
+## 2026-11-06 · Tách dữ liệu meeting theo user: member chỉ thấy của mình, admin thấy tất cả
+**Vì sao:** trước đây ai đăng nhập cũng xem, sửa, xóa được mọi meeting (dùng chung là chủ đích, xem mục 2026-10-30). Chủ đổi quyết định: member chỉ thấy meeting của mình.
+
+**Làm gì:**
+- Migration 015: `meetings.owner_id` + index; gán mọi meeting cũ (kể cả đã xóa mềm) cho admin tạo sớm nhất. Không có admin thì NULL, chỉ admin thấy.
+- `@recap/core/meeting-access.ts`: một quy tắc `canAccessMeeting` + `ownerRestriction`, web và realtime dùng chung.
+- Web: mọi route dưới `api/meetings/[id]/` dùng `withMeetingAuth`, test fail nếu route quên. Danh sách, tìm kiếm, thùng rác, dashboard và dòng theo meeting ở `/usage` lọc trong SQL. Các trang truyền viewer.
+- Realtime: `ClientConnection` giữ `{id, role}`; `start` vào meeting không có quyền trả `MEETING_NOT_FOUND`. Service token (`tools/stream-file`) không bị kiểm tra; khi ghi thẳng DB, stream-file gán owner là admin đầu tiên.
+
+**Quyết định:** không có quyền trả 404 giống meeting không tồn tại (không dùng 403); không làm chia sẻ; không thêm `usage_events.user_id` nên tổng ở `/usage` vẫn toàn hệ thống; `meetings.create` để `ownerId` tùy chọn (mặc định NULL) vì nhiều test cũ gọi không có owner, caller thật đều truyền.
+
+**Đã kiểm chứng:** `npm run verify` xanh (1571 test). Chạy web + realtime thật trên bản sao DB với 2 member tạm: backfill 28/28 về admin đầu tiên; member B nhận 404 trên 16 API vào meeting của A, câu trả lời giống hệt id không tồn tại; danh sách, tìm kiếm, thùng rác, dashboard, usage đúng phạm vi; WS `start` bị từ chối.
+
+**Chưa kiểm chứng:** chưa xem trên trình duyệt thật. `/meetings/<id>` của người khác trả HTTP 200 ở dev dù không hiện nội dung meeting, chưa xem màn hình hiển thị gì. `start` thành công của chủ meeting và admin chỉ có test tự động. Migration chưa chạy trên DB của VPS.
+
+**Còn để ngỏ:** member có được xem `/usage` không (tổng chi phí vẫn hiện toàn hệ thống); cột "Người tạo" cho admin.
+
 ## 2026-11-04 · Chọn loại cuộc họp bằng thẻ (card) + thẻ loại ở danh sách + đổi loại ngay trong phòng họp
 **Vì sao:** Select một dòng không giúp thành viên hiểu mỗi loại làm gì; chủ muốn thẻ đẹp có mô tả, dùng ở mọi nơi chọn/sửa loại, và muốn quét danh sách theo loại.
 

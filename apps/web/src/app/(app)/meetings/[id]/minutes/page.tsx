@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MinutesView } from "@/features/minutes/minutes-view";
+import { requirePageUser } from "@/server/auth-page";
 import { getMeetingById } from "@/server/meetings-service";
 
 export const dynamic = "force-dynamic";
@@ -11,13 +12,15 @@ interface MinutesPageProps {
 
 export async function generateMetadata({ params }: MinutesPageProps): Promise<Metadata> {
   const { id } = await params;
-  const detail = getMeetingById(id);
+  const user = await requirePageUser(`/meetings/${id}/minutes`);
+  const detail = getMeetingById(id, user);
   return { title: detail ? `Biên bản — ${detail.title}` : "Biên bản" };
 }
 
 export default async function MinutesPage({ params }: MinutesPageProps) {
   const { id } = await params;
-  const detail = getMeetingById(id);
+  const user = await requirePageUser(`/meetings/${id}/minutes`);
+  const detail = getMeetingById(id, user);
   if (!detail) notFound();
   const meeting = detail;
   return (

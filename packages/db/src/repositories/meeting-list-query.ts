@@ -1,4 +1,4 @@
-import type { SourceLang } from "@recap/core";
+import { ownerRestriction, type MeetingViewer, type SourceLang } from "@recap/core";
 import type { MeetingStatus, RepoContext } from "../types";
 import type { MeetingRow } from "./meetings";
 import { minutesStaleSql } from "./minutes-staleness";
@@ -25,6 +25,8 @@ export interface MeetingFilters {
 }
 
 export interface ListQueryOptions extends MeetingFilters {
+  /** Restricts rows, counts and totals to meetings this viewer may access (members: own). */
+  viewer?: MeetingViewer;
   limit?: number;
   offset?: number;
   /** Start of "this week" (ISO instant); meetings created at/after it count in `thisWeek`. */
@@ -87,8 +89,9 @@ const ORDER: Record<MeetingSort, string> = {
   name: "title_key(m.title) ASC, m.title ASC, m.created_at DESC",
 };
 
-function conditions(filters: MeetingFilters, withStatus: boolean): string[] {
+function conditions(filters: ListQueryOptions, withStatus: boolean): string[] {
   const out: string[] = ["m.deleted_at IS NULL"];
+  if (ownerRestriction(filters.viewer) !== null) out.push("m.owner_id = @owner");
   if (withStatus && filters.status) out.push("m.status = @status");
   if (filters.minutes) out.push(MINUTES_PREDICATE[filters.minutes]);
   if (filters.lang) out.push("m.source_lang = @lang");
@@ -149,6 +152,7 @@ export function queryMeetingList(
 ): ListQueryResult {
   const params = {
     fts,
+    owner: ownerRestriction(options.viewer),
     status: options.status ?? null,
     lang: options.lang ?? null,
     from: options.from ?? null,

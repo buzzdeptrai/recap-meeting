@@ -1,3 +1,4 @@
+import type { MeetingViewer } from "@recap/core";
 import type { Meeting } from "@recap/db";
 import { getRepositories } from "@/server/db";
 import { listMeetings } from "@/server/meetings-service";
@@ -33,23 +34,31 @@ export interface DashboardInputs extends MeetingSource {
   reliability: ReturnType<typeof getReliability>;
 }
 
-function loadMeetingSource(nowMs: number, range: DashboardInputs["range"]): MeetingSource {
+function loadMeetingSource(
+  viewer: MeetingViewer,
+  nowMs: number,
+  range: DashboardInputs["range"],
+): MeetingSource {
   const repos = getRepositories();
   const page = (status: "ended" | "draft") =>
-    listMeetings({ status, limit: ATTENTION_SCAN, now: nowMs }).meetings;
+    listMeetings(viewer, { status, limit: ATTENTION_SCAN, now: nowMs }).meetings;
   return {
-    meetings: repos.meetings.list({ limit: ALL_MEETINGS }),
-    recent: listMeetings({ limit: RECENT_COUNT, now: nowMs }).meetings,
+    meetings: repos.meetings.list({ limit: ALL_MEETINGS, viewer }),
+    recent: listMeetings(viewer, { limit: RECENT_COUNT, now: nowMs }).meetings,
     ended: page("ended"),
     drafts: page("draft"),
-    needMinutes: listMeetings({ minutes: "need", limit: 1, now: nowMs }).total,
-    conclusions: repos.marks.countByKind("conclusion", range.from, range.to),
+    needMinutes: listMeetings(viewer, { minutes: "need", limit: 1, now: nowMs }).total,
+    conclusions: repos.marks.countByKind("conclusion", range.from, range.to, viewer),
   };
 }
 
-/** Everything `/` shows, for the current local month. `source` is injectable for tests. */
+/**
+ * Everything `/` shows, for the current local month, limited to the meetings `viewer` may access
+ * (service health stays global). `source` is injectable for tests.
+ */
 export function loadDashboard(
   nowMs: number,
+  viewer: MeetingViewer,
   deps?: UsageServiceDeps,
   source?: Partial<MeetingSource>,
 ): DashboardInputs {
@@ -65,7 +74,7 @@ export function loadDashboard(
         conclusions: 0,
         ...source,
       }
-    : loadMeetingSource(nowMs, range);
+    : loadMeetingSource(viewer, nowMs, range);
   return {
     ...base,
     nowMs,

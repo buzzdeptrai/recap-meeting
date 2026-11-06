@@ -1,16 +1,17 @@
 import { parseQuery } from "@/server/http";
-import { getCsv } from "@/server/usage-service";
+import { getCsv, usageDepsFor } from "@/server/usage-service";
 import { exportQuerySchema } from "@/server/usage-range";
 import { withAuth } from "@/server/auth";
+import { viewerOf } from "@/server/meeting-auth";
 
 export const dynamic = "force-dynamic";
 
-export const GET = withAuth(async (request: Request) => {
+export const GET = withAuth(async (request: Request, _context: unknown, session) => {
   const parsed = parseQuery(request.url, exportQuerySchema);
   if (!parsed.ok) return parsed.response;
   const { from, to, groupBy } = parsed.data;
   const name = `usage-${groupBy}-${from.slice(0, 10)}_${to.slice(0, 10)}.csv`;
-  return new Response(getCsv(parsed.data), {
+  return new Response(getCsv(parsed.data, usageDepsFor(viewerOf(session))), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="${name}"`,

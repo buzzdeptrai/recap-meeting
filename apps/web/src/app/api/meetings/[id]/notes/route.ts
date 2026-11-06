@@ -1,7 +1,7 @@
 import { createNoteSchema } from "@recap/core";
 import { checkSameOrigin, parseBody, respond } from "@/server/http";
 import { createNote, listNotes } from "@/server/notes-service";
-import { withAuth } from "@/server/auth";
+import { withMeetingAuth } from "@/server/meeting-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,12 +11,12 @@ interface RouteContext {
 
 const HTTP_CREATED = 201;
 
-export const GET = withAuth(async (_request: Request, { params }: RouteContext) => {
+export const GET = withMeetingAuth(async (_request: Request, { params }: RouteContext) => {
   const { id } = await params;
   return respond(() => listNotes(id));
 });
 
-export const POST = withAuth(async (request: Request, { params }: RouteContext) => {
+export const POST = withMeetingAuth(async (request: Request, { params }: RouteContext) => {
   const forbidden = checkSameOrigin(request);
   if (forbidden) return forbidden;
   const { id } = await params;

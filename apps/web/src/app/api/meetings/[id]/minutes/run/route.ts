@@ -2,7 +2,7 @@ import { jsonError, respond } from "@/server/http";
 import { getLatestRun } from "@/server/minutes-run-service";
 import { ServiceError } from "@/server/service-error";
 import { minutesQuerySchema } from "@/server/schemas";
-import { withAuth } from "@/server/auth";
+import { withMeetingAuth } from "@/server/meeting-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ interface RouteContext {
 }
 
 /** Latest generation run of the minutes in one language; 404 RUN_NOT_FOUND when none yet. */
-export const GET = withAuth(async (request: Request, { params }: RouteContext) => {
+export const GET = withMeetingAuth(async (request: Request, { params }: RouteContext) => {
   const { id } = await params;
   const query = minutesQuerySchema.safeParse({
     lang: new URL(request.url).searchParams.get("lang"),

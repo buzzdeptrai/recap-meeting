@@ -6,6 +6,8 @@ import { listMeetingsQuerySchema } from "./schemas";
 let repos: Repositories;
 vi.mock("./db", () => ({ getRepositories: () => repos }));
 
+const ADMIN = { id: "admin", role: "admin" } as const;
+
 const content = { summary: "s", topics: [], actionItems: [], openIssues: [] };
 
 beforeEach(() => {
@@ -17,7 +19,7 @@ describe("listMeetings", () => {
     const a = repos.meetings.create({ title: "A" });
     repos.meetings.create({ title: "B" });
     repos.minutes.upsert({ meetingId: a.id, lang: "vi", content, source: "ai" });
-    const result = listMeetings();
+    const result = listMeetings(ADMIN);
     expect(result.total).toBe(2);
     expect(result.meetings.find((m) => m.id === a.id)).toMatchObject({
       title: "A",
@@ -41,11 +43,11 @@ describe("listMeetings", () => {
       text: "Đàm phán hợp đồng",
     });
     repos.meetings.create({ title: "Khác" });
-    const hit = listMeetings({ q: "dam phan", status: "ended" });
+    const hit = listMeetings(ADMIN, { q: "dam phan", status: "ended" });
     expect(hit.total).toBe(1);
     expect(hit.meetings[0]?.snippet).toBe("<mark>Đàm</mark> <mark>phán</mark> hợp đồng");
-    expect(listMeetings({ q: "dam phan", status: "draft" }).total).toBe(0);
-    expect(listMeetings({ q: "dam", limit: 1, offset: 1 })).toMatchObject({
+    expect(listMeetings(ADMIN, { q: "dam phan", status: "draft" }).total).toBe(0);
+    expect(listMeetings(ADMIN, { q: "dam", limit: 1, offset: 1 })).toMatchObject({
       total: 1,
       meetings: [],
     });
@@ -102,29 +104,31 @@ describe("listMeetings filters, counts and totals", () => {
   it("resolves range presets in Vietnam time and reports counts and totals", () => {
     repos.meetings.create({ title: "today" });
     const now = Date.now();
-    const result = listMeetings({ range: "today", now });
+    const result = listMeetings(ADMIN, { range: "today", now });
     expect(result.total).toBe(1);
     expect(result.totals).toMatchObject({ meetings: 1, thisWeek: 1, needMinutes: 0 });
     expect(result.counts).toEqual({ all: 1, draft: 1, live: 0, ended: 0 });
-    expect(listMeetings({ range: "today", now: now + 3 * 86_400_000 }).total).toBe(0);
-    expect(listMeetings({ range: "7d", now: now + 3 * 86_400_000 }).total).toBe(1);
-    expect(listMeetings({ from: "2000-01-01", to: "2000-01-02" }).total).toBe(0);
+    expect(listMeetings(ADMIN, { range: "today", now: now + 3 * 86_400_000 }).total).toBe(0);
+    expect(listMeetings(ADMIN, { range: "7d", now: now + 3 * 86_400_000 }).total).toBe(1);
+    expect(listMeetings(ADMIN, { from: "2000-01-01", to: "2000-01-02" }).total).toBe(0);
   });
 
   it("passes minutes/lang/sort through and keeps backward-compatible fields", () => {
     const a = repos.meetings.create({ title: "Bravo", sourceLang: "en", targetLang: "vi" });
     repos.meetings.create({ title: "Alpha", sourceLang: "vi", targetLang: "en" });
     repos.minutes.upsert({ meetingId: a.id, lang: "en", content, source: "edited" });
-    const byName = listMeetings({ sort: "name" });
+    const byName = listMeetings(ADMIN, { sort: "name" });
     expect(byName.meetings.map((m) => m.title)).toEqual(["Alpha", "Bravo"]);
-    expect(listMeetings({ lang: "en" }).meetings.map((m) => m.title)).toEqual(["Bravo"]);
-    const withEn = listMeetings({ minutes: "en" });
+    expect(listMeetings(ADMIN, { lang: "en" }).meetings.map((m) => m.title)).toEqual(["Bravo"]);
+    const withEn = listMeetings(ADMIN, { minutes: "en" });
     expect(withEn.meetings[0]).toMatchObject({
       minutesLangs: ["en"],
       minutes: { en: { source: "edited", stale: false } },
       topicCount: 0,
     });
     expect(withEn.meetings[0]).not.toHaveProperty("costUsd");
-    expect(listMeetings({ minutes: "none" }).meetings.map((m) => m.title)).toEqual(["Alpha"]);
+    expect(listMeetings(ADMIN, { minutes: "none" }).meetings.map((m) => m.title)).toEqual([
+      "Alpha",
+    ]);
   });
 });

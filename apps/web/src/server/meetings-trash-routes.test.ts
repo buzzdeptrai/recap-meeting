@@ -14,12 +14,13 @@ const SECRET = "web-test-secret-web-test-secret-123456";
 const PASSWORD = "correct horse battery";
 let cookie = "";
 let meetingId = "";
+let userId = "";
 
 beforeEach(async () => {
   repos = createRepositories(openDatabase(IN_MEMORY));
   const auth = new AuthService({ repos, secret: SECRET });
   setAuthServiceForTests(auth);
-  repos.users.create({
+  const user = repos.users.create({
     email: "m@example.com",
     name: "M",
     role: "member",
@@ -27,8 +28,9 @@ beforeEach(async () => {
   });
   const login = await auth.login({ email: "m@example.com", password: PASSWORD, ip: "t" });
   if (!login.ok) throw new Error("login failed");
+  userId = user.id;
   cookie = `recap_session=${login.cookieValue}`;
-  const meeting = repos.meetings.create({ title: "Họp A" });
+  const meeting = repos.meetings.create({ title: "Họp A", ownerId: user.id });
   meetingId = meeting.id;
   repos.meetings.start(meetingId);
   repos.meetings.end(meetingId);
@@ -95,7 +97,7 @@ describe("soft delete REST routes", () => {
   });
 
   it("refuses a live meeting with 409 and a Vietnamese message", async () => {
-    const live = repos.meetings.create({ title: "Đang ghi" });
+    const live = repos.meetings.create({ title: "Đang ghi", ownerId: userId });
     repos.meetings.start(live.id);
     const res = await call(deleteRoute, "DELETE", live.id);
     expect(res.status).toBe(409);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MeetingRoom } from "@/features/meeting-room/meeting-room";
+import { requirePageUser } from "@/server/auth-page";
 import { loadMinutesSuggestions } from "@/server/minutes-suggestions-service";
 import { getMeetingById, getMeetingDetail } from "@/server/meetings-service";
 
@@ -20,14 +21,16 @@ function parseFocusMs(raw: string | string[] | undefined): number | null {
 
 export async function generateMetadata({ params }: MeetingRoomPageProps): Promise<Metadata> {
   const { id } = await params;
-  const meeting = getMeetingById(id);
+  const user = await requirePageUser(`/meetings/${id}`);
+  const meeting = getMeetingById(id, user);
   return { title: meeting ? `${meeting.title} — Biên bản` : "Biên bản" };
 }
 
 export default async function MeetingRoomPage({ params, searchParams }: MeetingRoomPageProps) {
   const { id } = await params;
   const focusMs = parseFocusMs((await searchParams).t);
-  const detail = getMeetingDetail(id, { aroundMs: focusMs });
+  const user = await requirePageUser(`/meetings/${id}`);
+  const detail = getMeetingDetail(id, user, { aroundMs: focusMs });
   if (!detail) notFound();
   const { meeting, marks, markAnchors, stats, page } = detail;
   return (

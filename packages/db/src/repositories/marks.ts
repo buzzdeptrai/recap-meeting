@@ -1,4 +1,4 @@
-import type { MarkKind } from "@recap/core";
+import { ownerRestriction, type MarkKind, type MeetingViewer } from "@recap/core";
 import type { RepoContext, StoredMark } from "../types";
 
 interface MarkRow {
@@ -37,13 +37,20 @@ function normalizeLabel(label: string | null | undefined): string | null {
 
 /** Marks of one kind created in [from, to) (ISO instants), across all non-deleted meetings. */
 function createMarkCounter({ db }: Pick<RepoContext, "db">) {
-  const countStmt = db.prepare<[string, string, string], { n: number }>(
+  const countStmt = db.prepare<
+    [string, string, string, string | null, string | null],
+    { n: number }
+  >(
     `SELECT COUNT(*) AS n FROM marks k JOIN meetings m ON m.id = k.meeting_id
-     WHERE k.kind = ? AND k.created_at >= ? AND k.created_at < ? AND m.deleted_at IS NULL`,
+     WHERE k.kind = ? AND k.created_at >= ? AND k.created_at < ? AND m.deleted_at IS NULL
+       AND (? IS NULL OR m.owner_id = ?)`,
   );
   return {
-    countByKind: (kind: MarkKind, from: string, to: string): number =>
-      countStmt.get(kind, from, to)?.n ?? 0,
+    /** With a `viewer`, only meetings that viewer may access (members: their own) count. */
+    countByKind: (kind: MarkKind, from: string, to: string, viewer?: MeetingViewer): number => {
+      const owner = ownerRestriction(viewer);
+      return countStmt.get(kind, from, to, owner, owner)?.n ?? 0;
+    },
   };
 }
 

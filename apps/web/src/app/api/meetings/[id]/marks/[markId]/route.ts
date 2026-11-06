@@ -1,6 +1,6 @@
 import { checkSameOrigin, parseBody, respond } from "@/server/http";
 import { deleteMark, patchMarkSchema, renameMark } from "@/server/marks-service";
-import { withAuth } from "@/server/auth";
+import { withMeetingAuth } from "@/server/meeting-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ interface RouteContext {
   params: Promise<{ id: string; markId: string }>;
 }
 
-export const PATCH = withAuth(async (request: Request, { params }: RouteContext) => {
+export const PATCH = withMeetingAuth(async (request: Request, { params }: RouteContext) => {
   const forbidden = checkSameOrigin(request);
   if (forbidden) return forbidden;
   const { id, markId } = await params;
@@ -17,7 +17,7 @@ export const PATCH = withAuth(async (request: Request, { params }: RouteContext)
   return respond(() => ({ mark: renameMark(id, markId, parsed.data.label) }));
 });
 
-export const DELETE = withAuth(async (request: Request, { params }: RouteContext) => {
+export const DELETE = withMeetingAuth(async (request: Request, { params }: RouteContext) => {
   const forbidden = checkSameOrigin(request);
   if (forbidden) return forbidden;
   const { id, markId } = await params;

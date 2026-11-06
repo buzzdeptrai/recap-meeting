@@ -1,4 +1,10 @@
-import type { ClientMessage, ErrorCode, ServerMessage, StartMessage } from "@recap/core";
+import type {
+  ClientMessage,
+  ErrorCode,
+  MeetingViewer,
+  ServerMessage,
+  StartMessage,
+} from "@recap/core";
 import { parseClientMessage } from "@recap/core";
 import type { RawData, WebSocket } from "ws";
 import { sendWithBackpressure } from "./backpressure";
@@ -40,9 +46,16 @@ export class ClientConnection implements SessionOwner {
   constructor(
     private readonly socket: WebSocket,
     private readonly deps: RealtimeDeps | undefined,
-    /** Authenticated user (null: service token or no authenticator). */
-    readonly userId: string | null = null,
+    /**
+     * Authenticated user with role (null: service token or no authenticator, which skip the
+     * meeting ownership check).
+     */
+    private readonly viewer: MeetingViewer | null = null,
   ) {}
+
+  get userId(): string | null {
+    return this.viewer?.id ?? null;
+  }
 
   /**
    * Entry point for socket frames. Nothing may throw out of here: an exception in an event
@@ -186,7 +199,7 @@ export class ClientConnection implements SessionOwner {
 
   private async createSession(deps: RealtimeDeps, message: StartMessage): Promise<MeetingSession> {
     const create = (m: StartMessage) =>
-      createMeetingSession(deps, m, (out) => this.send(out), this);
+      createMeetingSession(deps, m, (out) => this.send(out), this, this.viewer);
     try {
       return create(message);
     } catch (error) {

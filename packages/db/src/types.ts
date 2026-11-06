@@ -38,6 +38,8 @@ export interface Meeting {
   durationMs: number | null;
   /** ISO time the meeting was soft-deleted; null for a normal meeting. */
   deletedAt: string | null;
+  /** User who owns the meeting; null = no owner (admins only). See `canAccessMeeting`. */
+  ownerId: string | null;
 }
 
 export interface StoredSegment {

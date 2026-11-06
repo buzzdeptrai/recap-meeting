@@ -33,7 +33,9 @@ async function createViaRest(webUrl: string, meeting: NewMeeting): Promise<strin
 function createViaDatabase(dbPath: string, meeting: NewMeeting): string {
   const db = openDatabase(dbPath);
   try {
-    return createRepositories(db).meetings.create(meeting).id;
+    const repos = createRepositories(db);
+    // No login here, so the meeting belongs to the first admin (the web REST path has no cookie either).
+    return repos.meetings.create({ ...meeting, ownerId: repos.users.firstAdminId() }).id;
   } finally {
     db.close();
   }

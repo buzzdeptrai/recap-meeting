@@ -1,3 +1,4 @@
+import { ownerRestriction, type MeetingViewer } from "@recap/core";
 import type { Meeting, RepoContext } from "../types";
 import { toMeeting, type MeetingRow } from "./meetings";
 
@@ -7,6 +8,8 @@ export type SoftDeleteResult =
 export interface ListDeletedOptions {
   limit?: number;
   offset?: number;
+  /** Only the viewer's own deleted meetings for members; omitted/admin = all. */
+  viewer?: MeetingViewer;
 }
 
 export interface DeletedMeetingsPage {
@@ -53,16 +56,19 @@ function listDeletedMeetings(
   { db }: RepoContext,
   options: ListDeletedOptions = {},
 ): DeletedMeetingsPage {
+  const owner = ownerRestriction(options.viewer);
+  const where = `deleted_at IS NOT NULL${owner === null ? "" : " AND owner_id = @owner"}`;
+  const scope = owner === null ? {} : { owner };
   const rows = db
-    .prepare<[number, number], MeetingRow>(
-      `SELECT * FROM meetings WHERE deleted_at IS NOT NULL
-       ORDER BY deleted_at DESC, rowid DESC LIMIT ? OFFSET ?`,
+    .prepare<Record<string, unknown>, MeetingRow>(
+      `SELECT * FROM meetings WHERE ${where}
+       ORDER BY deleted_at DESC, rowid DESC LIMIT @limit OFFSET @offset`,
     )
-    .all(options.limit ?? DEFAULT_LIMIT, options.offset ?? 0);
+    .all({ ...scope, limit: options.limit ?? DEFAULT_LIMIT, offset: options.offset ?? 0 });
   const total = db
-    .prepare("SELECT COUNT(*) FROM meetings WHERE deleted_at IS NOT NULL")
+    .prepare<Record<string, unknown>, number>(`SELECT COUNT(*) FROM meetings WHERE ${where}`)
     .pluck()
-    .get() as number;
+    .get(scope) as number;
   return { meetings: rows.map(toMeeting), total };
 }
 

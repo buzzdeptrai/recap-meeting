@@ -1,4 +1,4 @@
-import type { StartMessage } from "@recap/core";
+import { canAccessMeeting, type MeetingViewer, type StartMessage } from "@recap/core";
 import type { Meeting } from "@recap/db";
 import { AudioWriter, wavPathFor } from "../audio/audio-writer";
 import { resolveSttLanguage, type RealtimeDeps } from "../deps";
@@ -23,14 +23,35 @@ export class SessionActiveError extends StartRefusedError {
   }
 }
 
-function checkStartable(deps: RealtimeDeps, message: StartMessage): Meeting {
+function checkStartable(
+  deps: RealtimeDeps,
+  message: StartMessage,
+  viewer: MeetingViewer | null,
+): Meeting {
   const meeting = deps.repos.meetings.get(message.meetingId);
-  if (!meeting) throw new StartRefusedError("MEETING_NOT_FOUND", "Meeting not found");
+  // Someone else's meeting gets the very same answer as an unknown one. `viewer === null` is a
+  // service token (stream-file tool): trusted, no owner check.
+  const allowed =
+    meeting !== undefined && (viewer === null || canAccessMeeting(viewer, meeting.ownerId));
+  if (!meeting || !allowed) throw new StartRefusedError("MEETING_NOT_FOUND", "Meeting not found");
   const recorded = deps.repos.segments.nextSeq(meeting.id) > 0 || meeting.status === "ended";
   if (recorded && !message.resume) {
     throw new StartRefusedError("BAD_MESSAGE", "Meeting already recorded; start with resume=true");
   }
   return meeting;
+}
+
+function usageOptions(deps: RealtimeDeps, message: StartMessage) {
+  const { usage } = deps;
+  return (
+    usage && {
+      sink: usage.sink,
+      vendor: usage.sttVendor,
+      model: usage.sttModel,
+      language: resolveSttLanguage(message.sourceLang, usage.sttLanguage),
+      channels: message.channels,
+    }
+  );
 }
 
 /**
@@ -42,8 +63,9 @@ export function createMeetingSession(
   message: StartMessage,
   sink: SessionSink,
   owner?: SessionOwner,
+  viewer: MeetingViewer | null = null,
 ): MeetingSession {
-  const meeting = checkStartable(deps, message);
+  const meeting = checkStartable(deps, message, viewer);
   if (!deps.registry.reserve(meeting.id)) {
     throw new SessionActiveError();
   }
@@ -69,13 +91,7 @@ export function createMeetingSession(
       targetLang: message.targetLang,
       variants: glossary.variants,
       segmenterConfig: deps.segmenterConfigFor?.(message.sourceLang),
-      usage: deps.usage && {
-        sink: deps.usage.sink,
-        vendor: deps.usage.sttVendor,
-        model: deps.usage.sttModel,
-        language: resolveSttLanguage(message.sourceLang, deps.usage.sttLanguage),
-        channels: message.channels,
-      },
+      usage: usageOptions(deps, message),
       onEnded: () => deps.registry.release(meeting.id),
     });
     deps.registry.register(session, owner);

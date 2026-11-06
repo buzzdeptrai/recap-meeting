@@ -8,7 +8,7 @@ import {
 } from "@/server/export-service";
 import { jsonError } from "@/server/http";
 import { ServiceError } from "@/server/service-error";
-import { withAuth } from "@/server/auth";
+import { withMeetingAuth } from "@/server/meeting-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export const GET = withAuth(async (request: Request, { params }: RouteContext) => {
+export const GET = withMeetingAuth(async (request: Request, { params }: RouteContext) => {
   const { id } = await params;
   const query = new URL(request.url).searchParams;
   const mode = parseExportMode(query.get("lang"));

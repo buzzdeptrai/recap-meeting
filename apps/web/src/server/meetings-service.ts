@@ -1,4 +1,4 @@
-import type { Mark } from "@recap/core";
+import { canAccessMeeting, type Mark, type MeetingViewer } from "@recap/core";
 import type { LangFilter, Meeting, MeetingSort, MeetingStatus, MinutesFilter } from "@recap/db";
 import type {
   DeletedMeetingListDto,
@@ -37,12 +37,16 @@ export interface MeetingListParams {
  * Meetings newest first (or by `sort`), ranked by relevance when `q` is given, with per-row
  * counters and list-level `counts` / `totals` (see `MeetingListDto`).
  */
-export function listMeetings(params: MeetingListParams = {}): MeetingListDto {
+export function listMeetings(
+  viewer: MeetingViewer,
+  params: MeetingListParams = {},
+): MeetingListDto {
   const { now = Date.now(), range, from, to, ...rest } = params;
   const window = resolveRange({ range, from, to }, now);
   const result = getRepositories().meetings.search({
     ...rest,
     ...window,
+    viewer,
     weekFrom: new Date(vnWeekStart(now)).toISOString(),
   });
   return {
@@ -87,10 +91,11 @@ function markAnchors(meetingId: string, marks: Mark[]): Record<string, MarkAncho
 /** Meeting, all marks, counters and the first page of the transcript (see `MeetingDetailDto`). */
 export function getMeetingDetail(
   id: string,
+  viewer: MeetingViewer,
   options: MeetingDetailOptions = {},
 ): MeetingDetailDto | undefined {
   const repos = getRepositories();
-  const meeting = repos.meetings.get(id);
+  const meeting = getMeetingById(id, viewer);
   if (!meeting) return undefined;
   const marks = repos.marks
     .list(id)
@@ -104,9 +109,14 @@ export function getMeetingDetail(
   };
 }
 
-/** Just the meeting row (pages that do not show the transcript). */
-export const getMeetingById = (id: string): Meeting | undefined =>
-  getRepositories().meetings.get(id);
+/**
+ * Just the meeting row (pages that do not show the transcript). A meeting the viewer may not
+ * access is `undefined`, the same as an unknown id.
+ */
+export function getMeetingById(id: string, viewer: MeetingViewer): Meeting | undefined {
+  const meeting = getRepositories().meetings.get(id);
+  return meeting && canAccessMeeting(viewer, meeting.ownerId) ? meeting : undefined;
+}
 
 /** Server clock in epoch ms (a function so render code stays free of impure calls). */
 export const serverNow = (): number => Date.now();
@@ -129,6 +139,10 @@ export function restoreMeeting(id: string): MeetingDto {
 }
 
 /** "Đã xóa gần đây": soft-deleted meetings, most recently deleted first. */
-export function listDeletedMeetings(limit?: number, offset?: number): DeletedMeetingListDto {
-  return getRepositories().meetings.listDeleted({ limit, offset });
+export function listDeletedMeetings(
+  viewer: MeetingViewer,
+  limit?: number,
+  offset?: number,
+): DeletedMeetingListDto {
+  return getRepositories().meetings.listDeleted({ viewer, limit, offset });
 }

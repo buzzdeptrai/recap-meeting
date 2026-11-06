@@ -1,6 +1,6 @@
 import type { IncomingMessage, Server } from "node:http";
 import type { Duplex } from "node:stream";
-import { WS_PATH, type ServerMessage } from "@recap/core";
+import { WS_PATH, type MeetingViewer, type ServerMessage } from "@recap/core";
 import { WebSocketServer, type WebSocket } from "ws";
 import { sendWithBackpressure } from "./backpressure";
 import { ClientConnection } from "./connection";
@@ -63,7 +63,7 @@ export function attachWebSocketServer(
   const maxConnections = options.maxConnections ?? DEFAULT_MAX_CONNECTIONS;
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_PAYLOAD_BYTES });
   /** Authenticated user per upgrade request (absent for service-token tools and unauthenticated tests). */
-  const userIds = new WeakMap<IncomingMessage, string>();
+  const viewers = new WeakMap<IncomingMessage, MeetingViewer>();
   startHeartbeat(wss, options.heartbeatIntervalMs ?? HEARTBEAT_INTERVAL_MS);
 
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
@@ -74,7 +74,9 @@ export function attachWebSocketServer(
     }
     const auth = options.authenticator?.authenticate(req.headers);
     if (auth && !auth.ok) return rejectUpgrade(socket, "401 Unauthorized");
-    if (auth?.ok && auth.kind === "user") userIds.set(req, auth.user.id);
+    if (auth?.ok && auth.kind === "user") {
+      viewers.set(req, { id: auth.user.id, role: auth.user.role });
+    }
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
   });
 
@@ -84,7 +86,7 @@ export function attachWebSocketServer(
       return;
     }
     trackHeartbeat(socket);
-    const connection = new ClientConnection(socket, deps, userIds.get(req) ?? null);
+    const connection = new ClientConnection(socket, deps, viewers.get(req) ?? null);
     socket.on("message", (data, isBinary) => connection.handleMessage(data, isBinary));
     socket.on("close", () => connection.handleClose());
     socket.on("error", (error) => {

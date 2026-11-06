@@ -1,6 +1,8 @@
 import {
   DEFAULT_TEMPLATE_ID,
+  ownerRestriction,
   type MeetingTemplateId,
+  type MeetingViewer,
   type SourceLang,
   type TargetLang,
 } from "@recap/core";
@@ -23,10 +25,16 @@ export interface MeetingRow {
   ended_at: string | null;
   duration_ms: number | null;
   deleted_at: string | null;
+  owner_id: string | null;
 }
 
 export interface CreateMeetingInput {
   title: string;
+  /**
+   * Owner of the new meeting. Omitted/null = no owner (visible to admins only); only internal
+   * tools and tests leave it out, the REST create always passes the signed-in user.
+   */
+  ownerId?: string | null;
   sourceLang?: SourceLang | null;
   targetLang?: TargetLang | null;
   agenda?: string | null;
@@ -45,6 +53,8 @@ export interface ListMeetingsOptions {
   offset?: number;
   /** Soft-deleted meetings are hidden unless asked for (usage history needs their titles). */
   includeDeleted?: boolean;
+  /** Only meetings this viewer may access (members: their own). Omitted = no scoping. */
+  viewer?: MeetingViewer;
 }
 
 const DEFAULT_LIST_LIMIT = 100;
@@ -64,6 +74,7 @@ export function toMeeting(row: MeetingRow): Meeting {
     endedAt: row.ended_at,
     durationMs: row.duration_ms,
     deletedAt: row.deleted_at ?? null,
+    ownerId: row.owner_id ?? null,
   };
 }
 
@@ -77,12 +88,17 @@ function getMeeting({ db }: RepoContext, id: string): Meeting | undefined {
   return row ? toMeeting(row) : undefined;
 }
 
+function getAnyMeeting({ db }: RepoContext, id: string): Meeting | undefined {
+  const row = db.prepare<[string], MeetingRow>("SELECT * FROM meetings WHERE id = ?").get(id);
+  return row ? toMeeting(row) : undefined;
+}
+
 function createMeeting(ctx: RepoContext, input: CreateMeetingInput): Meeting {
   const id = ctx.newId();
   ctx.db
     .prepare(
-      `INSERT INTO meetings (id, title, status, source_lang, target_lang, agenda, template_id, extra_instructions, created_at)
-       VALUES (@id, @title, 'draft', @sourceLang, @targetLang, @agenda, @templateId, @extraInstructions, @createdAt)`,
+      `INSERT INTO meetings (id, title, status, source_lang, target_lang, agenda, template_id, extra_instructions, owner_id, created_at)
+       VALUES (@id, @title, 'draft', @sourceLang, @targetLang, @agenda, @templateId, @extraInstructions, @ownerId, @createdAt)`,
     )
     .run({
       id,
@@ -92,18 +108,28 @@ function createMeeting(ctx: RepoContext, input: CreateMeetingInput): Meeting {
       agenda: input.agenda ?? null,
       templateId: input.templateId ?? DEFAULT_TEMPLATE_ID,
       extraInstructions: blankToNull(input.extraInstructions),
+      ownerId: input.ownerId ?? null,
       createdAt: ctx.now(),
     });
   return getMeeting(ctx, id) as Meeting;
 }
 
 function listMeetings({ db }: RepoContext, options: ListMeetingsOptions = {}): Meeting[] {
+  const owner = ownerRestriction(options.viewer);
+  const filters = [
+    ...(options.includeDeleted ? [] : ["deleted_at IS NULL"]),
+    ...(owner === null ? [] : ["owner_id = @owner"]),
+  ];
   return db
-    .prepare<[number, number], MeetingRow>(
-      `SELECT * FROM meetings ${options.includeDeleted ? "" : "WHERE deleted_at IS NULL"}
-       ORDER BY created_at DESC, rowid DESC LIMIT ? OFFSET ?`,
+    .prepare<Record<string, unknown>, MeetingRow>(
+      `SELECT * FROM meetings ${filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : ""}
+       ORDER BY created_at DESC, rowid DESC LIMIT @limit OFFSET @offset`,
     )
-    .all(options.limit ?? DEFAULT_LIST_LIMIT, options.offset ?? 0)
+    .all({
+      ...(owner === null ? {} : { owner }),
+      limit: options.limit ?? DEFAULT_LIST_LIMIT,
+      offset: options.offset ?? 0,
+    })
     .map(toMeeting);
 }
 
@@ -171,6 +197,8 @@ export function createMeetingsRepository(ctx: RepoContext) {
   return {
     create: (input: CreateMeetingInput) => createMeeting(ctx, input),
     get: (id: string) => getMeeting(ctx, id),
+    /** Like `get` but also finds soft-deleted meetings (access checks on restore). */
+    getIncludingDeleted: (id: string) => getAnyMeeting(ctx, id),
     list: (options?: ListMeetingsOptions) => listMeetings(ctx, options),
     search: (options?: SearchMeetingsOptions) => searchMeetings(ctx, options),
     updateTitle: (id: string, title: string) => setColumn(ctx, id, "title", title),

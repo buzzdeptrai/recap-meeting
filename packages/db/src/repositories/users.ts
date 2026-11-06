@@ -32,6 +32,14 @@ const toUser = (row: UserRow): StoredUser => ({
 /** Emails are stored and looked up lowercased. */
 export const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
+/** Same pick as the migration 015 backfill. */
+const firstAdminId = (db: RepoContext["db"]): string | null =>
+  db
+    .prepare<[], { id: string }>(
+      "SELECT id FROM users WHERE role = 'admin' ORDER BY created_at, rowid, id LIMIT 1",
+    )
+    .get()?.id ?? null;
+
 export function createUsersRepository({ db, now, newId }: RepoContext) {
   const insertStmt = db.prepare(
     `INSERT INTO users (id, email, name, role, password_hash, disabled, created_at)
@@ -81,6 +89,8 @@ export function createUsersRepository({ db, now, newId }: RepoContext) {
     setRole: (id: string, role: UserRole): void => void roleStmt.run(role, id),
     setName: (id: string, name: string): void => void nameStmt.run(name, id),
     touchLogin: (id: string): void => void loginStmt.run(now(), id),
+    /** Earliest-created admin (same pick as the migration 015 backfill); null when none. */
+    firstAdminId: (): string | null => firstAdminId(db),
     /** Enabled admins; used to protect the last one. */
     countActiveAdmins: (): number => adminCountStmt.get()?.n ?? 0,
   };

@@ -1,4 +1,10 @@
-import type { UsageEventInput, UsageService, UsageVendor } from "@recap/core";
+import {
+  ownerRestriction,
+  type MeetingViewer,
+  type UsageEventInput,
+  type UsageService,
+  type UsageVendor,
+} from "@recap/core";
 import type { RepoContext } from "../types";
 
 /** Asia/Ho_Chi_Minh (UTC+7) — day buckets default to Vietnam local days. */
@@ -249,16 +255,23 @@ function createReports({ db }: RepoContext) {
 }
 
 function createRankings({ db }: RepoContext) {
-  function topMeetings(range: UsageRange, limit = DEFAULT_TOP_LIMIT): UsageTopMeeting[] {
+  /** With a `viewer`, only meetings that viewer may access (members: their own) are ranked. */
+  function topMeetings(
+    range: UsageRange,
+    limit = DEFAULT_TOP_LIMIT,
+    viewer?: MeetingViewer,
+  ): UsageTopMeeting[] {
+    const owner = ownerRestriction(viewer);
     return db
       .prepare<unknown[], UsageTopMeeting>(
         `SELECT meeting_id AS meetingId,
            (SELECT title FROM meetings WHERE id = meeting_id) AS title, ${SUMS_SQL}
          FROM usage_events
          WHERE ts >= ? AND ts < ? AND meeting_id IS NOT NULL
+           AND (? IS NULL OR meeting_id IN (SELECT id FROM meetings WHERE owner_id = ?))
          GROUP BY meeting_id ORDER BY costUsd DESC, audioSeconds DESC, meeting_id LIMIT ?`,
       )
-      .all(range.from, range.to, limit);
+      .all(range.from, range.to, owner, owner, limit);
   }
 
   function reliability(range: UsageRange): UsageReliabilityRow[] {

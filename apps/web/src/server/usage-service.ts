@@ -1,4 +1,4 @@
-import type { Pricing } from "@recap/core";
+import { ownerRestriction, type MeetingViewer, type Pricing } from "@recap/core";
 import type { Repositories, UsageSums } from "@recap/db";
 import { scaleCost } from "./cost-display";
 import { getRepositories } from "./db";
@@ -25,6 +25,16 @@ export interface UsageServiceDeps {
   budgetUsd: number;
   /** Display multiplier for money; omitted = read `USAGE_COST_DISPLAY_MULTIPLIER`. */
   costMultiplier?: number;
+  /**
+   * Who is looking. A member only gets per-meeting rows (titles, per-meeting cost) of meetings
+   * they own; aggregate totals are unchanged. Omitted = no scoping (internal callers, tests).
+   */
+  viewer?: MeetingViewer;
+}
+
+/** Default dependencies, scoped to `viewer` (routes and pages always pass the signed-in user). */
+export function usageDepsFor(viewer?: MeetingViewer): UsageServiceDeps {
+  return { ...defaultDeps(), viewer };
 }
 
 function defaultDeps(): UsageServiceDeps {
@@ -162,12 +172,14 @@ export function getBreakdown(query: BreakdownQuery, deps: UsageServiceDeps = def
   const rows = deps.repos.usage
     .aggregate({ ...rangeOf(query), groupBy: query.groupBy })
     .map((r) => withMoney(r, deps));
-  const totalCost = rows.reduce((sum, r) => sum + r.costUsd, 0);
   const titles = query.groupBy === "meeting" ? meetingTitles(deps) : new Map<string, string>();
+  const restricted = query.groupBy === "meeting" && ownerRestriction(deps.viewer) !== null;
+  const visible = restricted ? rows.filter((r) => r.key === UNASSIGNED || titles.has(r.key)) : rows;
+  const totalCost = visible.reduce((sum, r) => sum + r.costUsd, 0);
   return {
     range: echo(query),
     groupBy: query.groupBy,
-    rows: rows
+    rows: visible
       .map((r) => ({
         ...r,
         label: query.groupBy === "meeting" ? (titles.get(r.key) ?? null) : r.key,
@@ -180,7 +192,9 @@ export function getBreakdown(query: BreakdownQuery, deps: UsageServiceDeps = def
 
 function meetingTitles(deps: UsageServiceDeps): Map<string, string> {
   return new Map(
-    deps.repos.meetings.list({ limit: 10_000, includeDeleted: true }).map((m) => [m.id, m.title]),
+    deps.repos.meetings
+      .list({ limit: 10_000, includeDeleted: true, viewer: deps.viewer })
+      .map((m) => [m.id, m.title]),
   );
 }
 
@@ -203,7 +217,7 @@ export function getTopMeetings(query: MeetingsQuery, deps: UsageServiceDeps = de
   return {
     range: echo(query),
     meetings: deps.repos.usage
-      .topMeetings(rangeOf(query), query.limit)
+      .topMeetings(rangeOf(query), query.limit, deps.viewer)
       .map((m) => withMoney(m, deps)),
   };
 }

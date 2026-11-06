@@ -24,7 +24,7 @@ Aggregations: by day/vendor/model/service/meeting; totals; p50/p95 latency; erro
 Single-tenant. Roles `admin` | `member`. Passwords scrypt (node:crypto), session cookie HttpOnly+SameSite=Lax, HMAC-signed with `AUTH_SECRET` (env; generate if absent in dev with a warning). Middleware redirects unauthenticated to `/login`; API returns 401. Realtime WS upgrade must verify the same cookie. First admin via `npm run create-admin -- --email --name` (password prompt, never echoed/logged).
 
 ## Usage REST (T13, implemented)
-All GET, JSON, login required (any role; wrapped in `withAuth`). Query parsing in `apps/web/src/server/usage-range.ts`, logic in `usage-service.ts`.
+All GET, JSON, login required (any role; wrapped in `withAuth`). Totals/series/reliability are global; per-meeting rows (`/api/usage/meetings`, `/api/usage/breakdown?groupBy=meeting`, CSV with `groupBy=meeting`) are limited to meetings the viewer can access (members: their own; admins: all). Query parsing in `apps/web/src/server/usage-range.ts`, logic in `usage-service.ts`.
 
 **Common query**: `from`, `to`, `tz`. `from`/`to` are `YYYY-MM-DD` (local day in `tz`; `to` **inclusive**) or a full ISO instant (`to` exclusive). Defaults: `from` = start of the current local month, `to` = now. `tz` = minutes east of UTC (`420`) or `+07:00`; default `+07:00` (Asia/Ho_Chi_Minh). Max range 366 days. Errors: `400 {error:{code:"VALIDATION",message}}`.
 Every response echoes `range: {from, to, tzOffsetMinutes}` (ISO UTC, `to` exclusive).
@@ -55,4 +55,4 @@ Deleting a meeting only sets `meetings.deleted_at` (+ `deleted_by` = user id); s
 - `DELETE /api/meetings/:id` -> `200 { meeting }` (with `deletedAt`); `409 MEETING_LIVE` while `status = live`; `404` unknown; idempotent (a second delete keeps the first `deletedAt`). Login + same-origin required.
 - `POST /api/meetings/:id/restore` -> `200 { meeting }`; idempotent (restoring a meeting that is not deleted just returns it); `404` unknown.
 - `GET /api/meetings?deleted=1[&limit&offset]` -> `{ meetings: [{...meeting, deletedAt}] (most recently deleted first), total }` (no filters/search).
-- Any logged-in user may delete or restore (single-tenant, same as rename). No purge: a hard delete (`meetings.remove`, cascades) is a follow-up and is not exposed over REST.
+- Only the meeting's owner or an admin may delete or restore (and rename); anyone else gets `404 NOT_FOUND`. `GET /api/meetings?deleted=1` lists only the viewer's own deleted meetings (all for admins). No purge: a hard delete (`meetings.remove`, cascades) is a follow-up and is not exposed over REST.

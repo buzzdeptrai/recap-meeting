@@ -8,6 +8,8 @@ import { UsageDetailCards } from "@/features/usage/usage-detail-cards";
 import { BudgetCard } from "@/features/usage/usage-sections";
 import { parseUsageState } from "@/features/usage/usage-url";
 import { buildUsageViewModel } from "@/features/usage/usage-view-model";
+import { requirePageUser } from "@/server/auth-page";
+import { usageDepsFor } from "@/server/usage-service";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Mức sử dụng — Biên bản" };
@@ -17,7 +19,8 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function UsagePage({ searchParams }: { searchParams: SearchParams }) {
   const state = parseUsageState(await searchParams);
   const now = nowMs();
-  const data = loadUsagePage(state, now);
+  const user = await requirePageUser("/usage");
+  const data = loadUsagePage(state, now, usageDepsFor(user));
   const vm = buildUsageViewModel(data, state);
   return (
     <>

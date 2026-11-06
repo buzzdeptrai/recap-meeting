@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/server/auth";
+import { viewerOf, withMeetingAuth } from "@/server/meeting-auth";
 import { jsonError, notFound, parseQuery } from "@/server/http";
 import { getMeetingById } from "@/server/meetings-service";
 import { locateSegment } from "@/server/transcript-service";
@@ -12,13 +12,13 @@ interface RouteContext {
 }
 
 /** Cursor of the page holding a time (`?atMs=`) or a segment (`?seq=`). */
-export const GET = withAuth(async (request: Request, { params }: RouteContext) => {
+export const GET = withMeetingAuth(async (request: Request, { params }: RouteContext, session) => {
   const { id } = await params;
   const parsed = parseQuery(request.url, locateQuerySchema);
   if (!parsed.ok) return parsed.response;
   const located = locateSegment(id, parsed.data);
   if (located) return NextResponse.json(located);
-  return getMeetingById(id)
+  return getMeetingById(id, viewerOf(session))
     ? jsonError(404, "SEGMENT_NOT_FOUND", "Không có đoạn nào ở vị trí này.")
     : notFound();
 });

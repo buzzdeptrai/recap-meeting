@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MeetingBrowser } from "@/features/meeting-list/meeting-browser";
 import { PAGE_SIZE, parseListState } from "@/lib/list-query";
+import { requirePageUser } from "@/server/auth-page";
 import { listMeetings, serverNow } from "@/server/meetings-service";
 
 export const metadata: Metadata = { title: "Cuộc họp — Biên bản" };
@@ -14,7 +15,8 @@ export default async function MeetingListPage({
 }) {
   const state = parseListState(await searchParams);
   const now = serverNow();
-  const initial = listMeetings({
+  const user = await requirePageUser("/meetings");
+  const initial = listMeetings(user, {
     q: state.q,
     status: state.status === "all" ? undefined : state.status,
     minutes: state.minutes === "all" ? undefined : state.minutes,

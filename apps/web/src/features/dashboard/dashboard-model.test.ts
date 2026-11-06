@@ -49,6 +49,7 @@ const meeting = (over: Partial<MeetingListItemDto> = {}): MeetingListItemDto => 
   endedAt: null,
   durationMs: 60_000,
   deletedAt: null,
+  ownerId: null,
   minutesLangs: ["vi"],
   minutes: { vi: { source: "ai", stale: false } },
   topicCount: 0,
@@ -63,7 +64,9 @@ beforeEach(() => {
 
 describe("dashboard model", () => {
   it("is quiet (no invented numbers) when there are no meetings", () => {
-    const model = buildDashboardModel(loadDashboard(NOW, deps(), {}));
+    const model = buildDashboardModel(
+      loadDashboard(NOW, { id: "admin", role: "admin" }, deps(), {}),
+    );
     expect(model.quiet).toBe(true);
     expect(model.meetings).toEqual({ value: 0, delta: null });
     expect(model.hours.value).toBe("0");
@@ -75,7 +78,7 @@ describe("dashboard model", () => {
   it("maps meetings into cards and chart series without any usage figures", () => {
     event("2026-10-10T03:00:00Z"); // usage exists but must not leak into the model
     const model = buildDashboardModel(
-      loadDashboard(NOW, deps(), {
+      loadDashboard(NOW, { id: "admin", role: "admin" }, deps(), {
         meetings: [
           { createdAt: "2026-10-12T03:00:00Z", startedAt: null, durationMs: 5_400_000 },
           { createdAt: "2026-10-12T05:00:00Z", startedAt: null, durationMs: 1_800_000 },
@@ -115,7 +118,9 @@ describe("dashboard model", () => {
   it("rates services by error rate, grey without requests", () => {
     for (let i = 0; i < 9; i++) event("2026-10-10T03:00:00Z");
     event("2026-10-10T04:00:00Z", { status: "error" });
-    const model = buildDashboardModel(loadDashboard(NOW, deps(), {}));
+    const model = buildDashboardModel(
+      loadDashboard(NOW, { id: "admin", role: "admin" }, deps(), {}),
+    );
     expect(model.services[0]?.health.status).toBe("bad"); // 10% errors
   });
 });

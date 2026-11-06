@@ -11,6 +11,7 @@ const WAIT_MS = 2_000;
 
 let harness: Harness;
 const cookies: Record<string, string> = {};
+const userIds: Record<string, string> = {};
 
 async function login(auth: AuthService, email: string): Promise<string> {
   const result = await auth.login({ email, password: PASSWORD, ip: "x" });
@@ -29,13 +30,18 @@ beforeAll(async () => {
     },
   );
   const { repos } = harness.deps;
-  for (const name of ["an", "binh"]) {
-    repos.users.create({
+  // "binh" is an admin so that he may see the meeting of "an" and still be refused a takeover.
+  for (const [name, role] of [
+    ["an", "member"],
+    ["binh", "admin"],
+  ] as const) {
+    const user = repos.users.create({
       email: `${name}@example.com`,
       name,
-      role: "member",
+      role,
       passwordHash: await hashPassword(PASSWORD),
     });
+    userIds[name] = user.id;
   }
   const auth = new AuthService({ repos, secret: SECRET });
   cookies.an = await login(auth, "an@example.com");
@@ -79,7 +85,8 @@ class Client {
   close = () => this.socket.terminate();
 }
 
-const newMeeting = () => harness.deps.repos.meetings.create({ title: "Takeover" }).id;
+const newMeeting = () =>
+  harness.deps.repos.meetings.create({ title: "Takeover", ownerId: userIds.an }).id;
 
 describe("resuming a meeting held by another connection", () => {
   it("lets the same user replace their own stale session", async () => {

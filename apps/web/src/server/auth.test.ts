@@ -108,16 +108,38 @@ describe("API route coverage", () => {
     });
   }
 
-  it("wraps every handler in withAuth except login/logout", () => {
-    for (const file of routeFiles(apiDir)) {
-      const rel = file.slice(apiDir.length + 1).replaceAll("\\", "/");
+  const HANDLER = /export const (GET|POST|PUT|PATCH|DELETE) = (\w+)\(/g;
+  const wrappersOf = (source: string) => [...source.matchAll(HANDLER)].map((m) => m[2]);
+  const apiRoutes = () =>
+    routeFiles(apiDir).map((file) => ({
+      rel: file.slice(apiDir.length + 1).replaceAll("\\", "/"),
+      source: readFileSync(file, "utf8"),
+    }));
+
+  it("wraps every handler in withAuth (or withMeetingAuth) except login/logout", () => {
+    for (const { rel, source } of apiRoutes()) {
       if (PUBLIC_ROUTES.has(rel)) continue;
-      const source = readFileSync(file, "utf8");
       const handlers = source.match(/export (?:async )?function (?:GET|POST|PUT|PATCH|DELETE)\b/g);
       expect(handlers, `${rel} exports a bare handler`).toBeNull();
-      expect(source, `${rel} must use withAuth`).toMatch(
-        /export const (GET|POST|PUT|PATCH|DELETE) = withAuth\(/,
-      );
+      const wrappers = wrappersOf(source);
+      expect(wrappers.length, `${rel} must export a wrapped handler`).toBeGreaterThan(0);
+      for (const wrapper of wrappers) {
+        expect(["withAuth", "withMeetingAuth"], `${rel} must use withAuth`).toContain(wrapper);
+      }
+    }
+  });
+
+  it("guards every route under /api/meetings/[id]/ with the ownership check (withMeetingAuth)", () => {
+    const meetingRoutes = apiRoutes().filter(({ rel }) => rel.startsWith("meetings/[id]/"));
+    expect(meetingRoutes.length).toBeGreaterThan(0);
+    for (const { rel, source } of meetingRoutes) {
+      const wrappers = wrappersOf(source);
+      expect(wrappers.length, `${rel} must export a wrapped handler`).toBeGreaterThan(0);
+      for (const wrapper of wrappers) {
+        expect(wrapper, `${rel} must use withMeetingAuth (ownership guard)`).toBe(
+          "withMeetingAuth",
+        );
+      }
     }
   });
 });

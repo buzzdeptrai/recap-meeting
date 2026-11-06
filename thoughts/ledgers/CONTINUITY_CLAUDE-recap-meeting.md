@@ -154,3 +154,8 @@ Done = T1–T6 in `docs/PLAN.md` ticked, `npm test` + `npm run typecheck` green,
 ## Phiên 2026-11-04 - thẻ chọn loại cuộc họp
 - Done (verify xanh, chưa commit): `OptionCardGroup` (admin-ui), `TemplateCards`/`TemplateTag`/icon map (web), dùng ở `/meetings/new`, `/m`, trang biên bản; chip loại trong phòng họp mở dialog đổi loại; tag loại ở `/meetings` và dashboard. Chi tiết: CHANGELOG mục đầu.
 - Next: chủ xem trên trình duyệt (light/dark, 390px, bàn phím); cân nhắc lọc danh sách theo loại (cần đổi API `list-query`); UNCONFIRMED: độ rộng tag trong bảng xl.
+
+## State (2026-11-05, tách meeting theo user)
+- Done (đã commit và push): migration 015 `meetings.owner_id`; admin thấy tất cả, member chỉ thấy của mình, không có quyền = 404; meeting cũ gán cho admin đầu tiên; không có chia sẻ. Verify xanh (194 file, 1571 test). Chạy thật trên bản sao DB, 2 member tạm: backfill 28/28, REST, trang, thùng rác, usage, WS từ chối đều đạt.
+- Next: chủ thử trên trình duyệt; deploy lên VPS theo `docs/DEPLOY.md` mục 9, backup DB trước.
+- UNCONFIRMED: `/meetings/<id>` của người khác trả HTTP 200 (dev) dù không hiện nội dung meeting, chưa xem giao diện hiển thị gì. Tổng `/usage` vẫn toàn hệ thống với member (không có `usage_events.user_id`). DB thật `data/recap.db` chưa migrate; sẽ tự migrate lần mở tới.

@@ -19,7 +19,7 @@ beforeEach(async () => {
   repos = createRepositories(openDatabase(IN_MEMORY));
   const auth = new AuthService({ repos, secret: SECRET });
   setAuthServiceForTests(auth);
-  repos.users.create({
+  const user = repos.users.create({
     email: "m@example.com",
     name: "M",
     role: "member",
@@ -28,7 +28,7 @@ beforeEach(async () => {
   const login = await auth.login({ email: "m@example.com", password: PASSWORD, ip: "t" });
   if (!login.ok) throw new Error("login failed");
   cookie = `recap_session=${login.cookieValue}`;
-  meetingId = repos.meetings.create({ title: "Họp dài" }).id;
+  meetingId = repos.meetings.create({ title: "Họp dài", ownerId: user.id }).id;
   for (let seq = 0; seq < 30; seq++) {
     const s = repos.segments.insert({
       meetingId,
@@ -122,23 +122,25 @@ describe("transcript REST routes", () => {
   });
 });
 
+const ADMIN = { id: "admin", role: "admin" } as const;
+
 describe("getMeetingDetail pages", () => {
   it("sends the head page for an ended meeting, the tail for a live one, the page around ?t", () => {
     repos.meetings.start(meetingId);
-    expect(getMeetingDetail(meetingId, { pageSize: 10 })?.page.segments[0]?.seq).toBe(20);
+    expect(getMeetingDetail(meetingId, ADMIN, { pageSize: 10 })?.page.segments[0]?.seq).toBe(20);
     repos.meetings.end(meetingId);
-    const head = getMeetingDetail(meetingId, { pageSize: 10 });
+    const head = getMeetingDetail(meetingId, ADMIN, { pageSize: 10 });
     expect(head?.page.segments[0]?.seq).toBe(0);
     expect(head?.page.translations).toHaveLength(10);
     expect(head?.stats.segments).toBe(30);
-    const around = getMeetingDetail(meetingId, { aroundMs: 20_000, pageSize: 10 });
+    const around = getMeetingDetail(meetingId, ADMIN, { aroundMs: 20_000, pageSize: 10 });
     expect(around?.page.segments.map((s) => s.seq)).toContain(20);
-    expect(getMeetingDetail("nope")).toBeUndefined();
+    expect(getMeetingDetail("nope", ADMIN)).toBeUndefined();
   });
 
   it("anchors conclusion marks on their segment", () => {
     const mark = repos.marks.insert({ meetingId, kind: "conclusion", atMs: 12_300, label: null });
-    const detail = getMeetingDetail(meetingId);
+    const detail = getMeetingDetail(meetingId, ADMIN);
     expect(detail?.markAnchors[mark.id]).toMatchObject({ seq: 12 });
   });
 });

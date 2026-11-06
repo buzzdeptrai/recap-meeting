@@ -7,3 +7,4 @@ export * from "./minutes";
 export * from "./usage";
 export * from "./notes";
 export * from "./meeting-templates";
+export * from "./meeting-access";
